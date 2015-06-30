@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Elltwo Editor</title>
+<link href="{{ static_url('css/proxima-nova.css') }}" type="text/css" rel="stylesheet"/>
+<link href="{{ static_url('katex/katex.min.css') }}" type="text/css" rel="stylesheet"/>
+<link href="{{ static_url('css/elltwo_editor.css') }}" type="text/css" rel="stylesheet"/>
+</head>
+
+<body>
+
+<div class="elltwo">
+<div class="marquee"></div>
+<div class="topbar">
+<span class="topbar_save">Save</span>
+<span class="topbar_revert">Revert</span>
+<span class="topbar_editing">Editing</span>
+</div>
+<div class="content"></div>
+</div>
+
+<script type="text/javascript">fname = '{{ fname }}';</script>
+<script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
+<script src="{{ static_url('katex/katex.min.js') }}" type="text/javascript"></script>
+<script src="{{ static_url('js/elltwo_editor.js') }}" type="text/javascript"></script>
+
+</body>
+
+</html>

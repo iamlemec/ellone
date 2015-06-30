@@ -1,0 +1,33 @@
+html {
+  font-family: proxima-nova;
+}
+
+.title {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.directory a {
+  text-decoration: none;
+  font-size: 20px;
+}
+
+.directory {
+  margin: auto;
+  margin-top: 50px;
+  width: 400px;
+  border: 1px solid #CCC;
+  border-radius: 5px;
+}
+
+.directory .entry {
+  padding: 20px;
+}
+
+.directory .entry:hover {
+  background-color: #EEE;
+}
+
+.directory .entry:not(:first-child) {
+  border-top: 1px solid #CCC;
+}

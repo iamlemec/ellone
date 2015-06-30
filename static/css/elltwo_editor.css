@@ -1,0 +1,211 @@
+@import url("proxima-nova.css");
+
+* {
+  box-sizing: border-box;
+}
+
+.elltwo {
+  font-family: proxima-nova;
+  font-size: 17px;
+  margin: 0px;
+}
+
+.elltwo * {
+  text-decoration: none;
+}
+
+.elltwo a:focus {
+  outline: 0px;
+}
+
+.elltwo div.content {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  padding-top: 80px;
+  padding-bottom: 200px;
+}
+
+/* in place editing */
+.elltwo *:focus {
+  outline: 0;
+}
+
+.elltwo .para_inner {
+  margin-top: 20px;
+  padding-left: 5px;
+  border-left: 1px solid white;
+}
+
+.elltwo .para_outer.editing .para_inner {
+  border-left: 1px solid rgb(53, 122, 232);
+}
+
+.elltwo .para_outer.modified .para_inner {
+  border-left: 1px solid red;
+}
+
+.elltwo .para_outer {
+  position: relative;
+  border-right: 1px solid white;
+  padding-right: 30px;
+}
+
+.elltwo .toolbar {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 97.3%;
+  cursor: default;
+  line-height: 100%;
+}
+
+.elltwo .add_button {
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+.elltwo .del_button {
+  font-size: 15px;
+  background-color: rgba(232, 50, 90, 0.8);
+  color: white;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+.elltwo.editing .para_outer:hover {
+  border-right: 1px solid #CCC;
+}
+
+.elltwo.editing .para_outer:hover > .toolbar {
+  display: block;
+}
+
+.elltwo.editing .para_outer:first-child > .toolbar > .del_button {
+  display: none;
+}
+
+.elltwo div.tex {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.elltwo div.equation_inner {
+  margin: auto;
+  text-align: center;
+}
+
+.elltwo div.equation_number {
+  position: absolute;
+  margin-left: -60px;
+  margin-top: -17px;
+  vertical-align: middle;
+  width: 20px;
+  color: #888;
+}
+
+.elltwo div.equation_inner div.equation_row:not(:first-child) {
+  margin-top: 20px;
+}
+
+.elltwo .section_title {
+  font-weight: 600;
+}
+
+.elltwo .section_title:before {
+  content: attr(sec-num) " ";
+}
+
+.elltwo .section_title.section_level1 {
+  font-size: 30px;  
+}
+
+.elltwo .section_title.section_level2 {
+  font-size: 24px;  
+}
+
+.elltwo .title {
+  font-size: 35px;
+  font-weight: 600;
+  text-align: center !important;
+}
+
+/* theme */
+
+.elltwo .para_inner {
+  text-align: justify;
+}
+
+.elltwo li {
+  text-align: justify;
+}
+
+.elltwo * {
+  line-height: 150%;
+}
+
+.elltwo div.content {
+  width: 650px !important;
+  margin: 0px auto;
+  background-color: white;
+  color: #333;
+}
+
+.elltwo div.marquee {
+  color: #333;
+  position: fixed;
+}
+
+.elltwo div.topbar {
+  position: fixed;
+  right: 10px;
+}
+
+.elltwo span.topbar_save {
+  display: none;
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+.elltwo.modified span.topbar_save {
+  display: inline;
+}
+
+.elltwo span.topbar_revert {
+  display: none;
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+.elltwo.modified span.topbar_revert {
+  display: inline;
+}
+
+.elltwo span.topbar_editing {
+  cursor: default;
+  font-size: 15px;
+  color: #BBB !important;
+  background-color: #666;
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+.elltwo.editing span.topbar_editing {
+  color: white !important;
+  background-color: rgb(53, 122, 232);
+}
