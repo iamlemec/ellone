@@ -90,7 +90,8 @@
   display: none;
 }
 
-.elltwo div.tex {
+.elltwo div.equation {
+  position: relative;
   text-align: center;
   margin-top: 10px;
   margin-bottom: 10px;
@@ -103,10 +104,9 @@
 
 .elltwo div.equation_number {
   position: absolute;
-  margin-left: -60px;
-  margin-top: -17px;
-  vertical-align: middle;
-  width: 20px;
+  top: 50%;
+  right: 10px;
+  -webkit-transform: translateY(-50%);
   color: #888;
 }
 
@@ -208,4 +208,17 @@
 .elltwo.editing span.topbar_editing {
   color: white !important;
   background-color: rgb(53, 122, 232);
+}
+
+.elltwo span.topbar_reload {
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+.elltwo.modified span.topbar_reload {
+  display: none;
 }

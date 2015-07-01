@@ -7,11 +7,6 @@ html {
   margin-top: 50px;
 }
 
-.directory a {
-  text-decoration: none;
-  font-size: 20px;
-}
-
 .directory {
   margin: auto;
   margin-top: 50px;
@@ -21,7 +16,7 @@ html {
 }
 
 .directory .entry {
-  padding: 20px;
+  position: relative;
 }
 
 .directory .entry:hover {
@@ -30,4 +25,45 @@ html {
 
 .directory .entry:not(:first-child) {
   border-top: 1px solid #CCC;
+}
+
+.directory .entry a {
+  text-decoration: none;
+  font-size: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  line-height: 300%;
+}
+
+.directory .entry a {
+  color: rgb(53, 122, 232);
+}
+
+.directory .entry a:visited {
+  color: rgb(53, 122, 232);
+}
+
+.directory .create {
+  cursor: default;
+  font-size: 20px;
+  line-height: 300%;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-top: 1px solid #CCC;
+  text-align: center;
+}
+
+.directory .create:hover {
+  background-color: #EEE;
+}
+
+.directory .entry p {
+  outline: 0px;
+  text-decoration: none;
+  font-size: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 0px;
+  line-height: 300%;
+
 }

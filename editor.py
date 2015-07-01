@@ -130,9 +130,50 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
           fid.write(output)
           fid.close()
         elif cmd == 'revert':
-          self.cells = read_cells(self.fname)
+          self.cells = read_cells(self.fullpath)
           vcells = [{'cid': i, 'prev': c['prev'], 'next': c['next'], 'body': c['body']} for (i,c) in self.cells.items()]
           self.write_message(json.dumps({'cmd': 'results', 'content': vcells}))
+
+class FileHandler(tornado.websocket.WebSocketHandler):
+    def initialize(self):
+        print "initializing"
+
+    def allow_draft76(self):
+        return True
+
+    def open(self):
+        print "connection received"
+
+    def on_close(self):
+        print "connection closing"
+
+    def error_msg(self, error_code):
+        if not error_code is None:
+            json_string = json.dumps({"type": "error", "code": error_code})
+            self.write_message("{0}".format(json_string))
+        else:
+            print "error code not found"
+
+    def on_message(self, msg):
+        try:
+          print u'received message: {0}'.format(msg)
+        except Exception as e:
+          print e
+        data = json.loads(msg)
+        (cmd,cont) = (data['cmd'],data['content'])
+        if cmd == 'create':
+          fullpath = os.path.join(args.path,cont)
+          exists = True
+          try:
+            os.stat(fullpath)
+          except:
+            exists = False
+          if exists:
+            print 'File exists!'
+            return
+          fid = open(fullpath,'w+')
+          fid.write('#! Title\n\nBody text.')
+          fid.close()
 
 # tornado content handlers
 class Application(tornado.web.Application):
@@ -140,7 +181,8 @@ class Application(tornado.web.Application):
         handlers = [
             (r"/editor/?", DirectoryHandler),
             (r"/editor/([^/]+)", EditorHandler),
-            (r"/elledit/([^/]*)", ContentHandler)
+            (r"/elledit/([^/]*)", ContentHandler),
+            (r"/diredit/?", FileHandler)
         ]
         settings = dict(
             app_name=u"Elltwo Editor",

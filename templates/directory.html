@@ -9,15 +9,19 @@
 
 <body>
 
-<h1 class="title">Elltwo Files</h1>
+<h1 class="title">Elltwo Documents</h1>
 
 <div class="directory">
 {% for f in files %}
-  <div class="entry"><a href="/editor/{{ f }}">{{ f }}</a></div>
+  <div class="entry">
+    <a href="/editor/{{ f }}">{{ f }}</a>
+  </div>
 {% end %}
+<div class="create">+</div>
 </div>
 
 <script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
+<script src="{{ static_url('js/directory.js') }}" type="text/javascript"></script>
 
 </body>
 

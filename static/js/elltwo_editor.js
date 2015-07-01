@@ -10,12 +10,12 @@ function select_all(elem) {
 
 // editing hooks
 function inline_marker(match, p, offset, string) {
-  return '<span class=\"tex\">' + p + '</span>';
+  return '<span class=\"latex\">' + p + '</span>';
 }
 var inline_re = /\$([^\$]*)\$/g;
 
 function display_marker(match, p, offset, string) {
-  return '<div class=\"tex\">' + p + '</div>';
+  return '<div class=\"equation\">' + p + '</div>';
 }
 var display_re = /\$\$([^\$]*)\$\$/g;
 
@@ -61,12 +61,18 @@ function initialize() {
     elltwo_box.removeClass("modified");
   });
 
+  $("span.topbar_reload").click(function() {
+    var msg = JSON.stringify({"cmd": "query", "content": ""});
+    ws.send(msg);
+  });
+
   $("span.topbar_editing").click(function() {
     elltwo_box.toggleClass("editing");
   });
 
   // core renderer
-  sec_re = /(#+) (.*)/g;
+  var sec_re = /(#+) (.*)/;
+  var lab_re = /\[(.+)\] (.*)/;
   var render = function(box,defer) {
     defer = defer || false;
 
@@ -76,8 +82,8 @@ function initialize() {
       box.addClass('title');
     }
 
-    var ret = html.split(sec_re);
-    if (ret.length > 1) {
+    var ret = sec_re.exec(html);
+    if (ret) {
       var lvl = ret[1].length;
       box.html(ret[2]);
       box.addClass('section_title');
@@ -86,10 +92,10 @@ function initialize() {
       new_section = true;
     }
 
-    box.html(box.html().replace(display_re,display_marker));
+    box.html(box.text().replace(display_re,display_marker));
     box.html(box.html().replace(inline_re,inline_marker));
 
-    box.children("span.tex").each(function() {
+    box.children("span.latex").each(function() {
       var span = $(this);
       var text = span.text();
       try {
@@ -100,11 +106,23 @@ function initialize() {
       }
     });
 
-    box.children("div.tex").each(function () {
+    box.children("div.equation").each(function () {
       var eqn = $(this);
+      var src = eqn.html();
+
       var num_div = $("<div>",{class:"equation_number"});
       var div_inner = $("<div>",{class:"equation_inner"});
-      $(eqn.html().split('\\\\')).each(function (i,txt) {
+
+      var ret = lab_re.exec(src);
+      var label;
+      if (ret) {
+        label = ret[1];
+        src = ret[2];
+        eqn.attr("id",label);
+        eqn.addClass("numbered");
+      }
+
+      $(src.split('\\\\')).each(function (i,txt) {
         var row = $("<div>",{class:"equation_row"});
         try {
           katex.render("\\displaystyle{" + txt + "}",row[0]);
@@ -144,11 +162,12 @@ function initialize() {
           rightlist.push(rightpos);
           offlist.push(myoff);
         });
-        var bigoff = max(leftlist) - max(rightlist);
+        var bigoff = Math.max(leftlist) - Math.max(rightlist);
         eqn_boxes.each(function (i) {
           $(this).children(".katex").css({"margin-left":bigoff+offlist[i]});
         });
       }
+      new_equation = true;
     });
 
     // recalculate sections
@@ -156,12 +175,15 @@ function initialize() {
       if (new_section) {
         number_sections();
       }
+      if (new_equation) {
+        number_equations();
+      }
     }
   }
 
   save_cell = function(cell) {
     var cid = cell.attr("cid");
-    var body = cell.find(".para_inner").html();
+    var body = cell.attr("base_text");
     var msg = JSON.stringify({"cmd": "save", "content": {"cid":cid, "body": body}});
     console.log(msg);
     ws.send(msg);
@@ -200,19 +222,19 @@ function initialize() {
     elltwo_box.addClass("modified");
   }
 
-  make_para = function(html,cid,prev,next,edit,defer) {
+  make_para = function(text,cid,prev,next,edit,defer) {
     edit = edit || false;
     defer = defer || false;
 
     var outer = $("<div>",{class:"para_outer", cid: cid, prev: prev, next: next});
-    var inner = $("<div>",{html:html, class:"para_inner"});
-    outer.attr("base_html",html);
+    var inner = $("<div>",{html:text, class:"para_inner"});
+    outer.attr("base_text",text);
     render(inner,defer);
     inner.dblclick(function(event) {
       if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
         outer.attr("disp_html",inner.html());
         outer.addClass("editing");
-        inner.html(outer.attr("base_html"));
+        inner.html(outer.attr("base_text"));
         inner.attr("contentEditable","true");
         var sel = window.getSelection();
         sel.removeAllRanges();
@@ -221,11 +243,15 @@ function initialize() {
     inner.keydown(function(event) {
       if (outer.hasClass("editing")) {
         if ((event.keyCode == 13) && event.shiftKey) {
+          //var text = inner.html();
+          //text = text.replace(/<div>/g,"\n").replace(/<\/div>/g,"");
+          var text = inner.text();
+          outer.attr("base_text",text);
+          console.log(text);
           if (outer.hasClass("modified")) {
             save_cell(outer);
             outer.removeClass("modified");
           }
-          outer.attr("base_html",inner.html());
           outer.removeClass("editing");
           inner.attr("contentEditable","false");
           render(inner);
@@ -266,17 +292,32 @@ function initialize() {
       sec_num[lvl+1] = 1;
     });
   };
+
+  number_equations = function() {
+    console.log('numbering equations');
+    eqn_num = 1;  
+    $("div.equation.numbered").each(function() {
+      var eqn = $(this);
+      var num = eqn.children(".equation_number");
+      num.html(eqn_num);
+      eqn_num++;
+    });
+  };
 };
 
 function full_render() {
   console.log('rendering');
   new_section = false;
+  new_equation = false;
   $("div.par").replaceWith(function() {
     var par = $(this);
     return make_para(par.html(),par.attr("cid"),par.attr("prev"),par.attr("next"),false,true);
   });
   if (new_section) {
     number_sections();
+  }
+  if (new_equation) {
+    number_equations();
   }
 }
 
