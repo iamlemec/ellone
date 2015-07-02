@@ -254,8 +254,7 @@ function initialize() {
         outer.addClass("editing");
         inner.html(outer.attr("base_text"));
         inner.attr("contentEditable","true");
-        var sel = window.getSelection();
-        sel.removeAllRanges();
+        inner.focus();
       }
     });
     inner.keydown(function(event) {
@@ -285,6 +284,19 @@ function initialize() {
     inner.bind("input", function() {
       outer.addClass("modified");
     });
+    inner.on("focus.setcursor", function() {
+      console.log('focus!');
+      window.setTimeout(function() {
+          var range = document.createRange();
+          range.selectNodeContents(inner[0]);
+          range.collapse(false);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          inner.unbind('focus.setcursor');
+      }, 1);
+    });
+
     if (edit) {
       outer.attr("disp_html",inner.html());
       outer.addClass("editing");
