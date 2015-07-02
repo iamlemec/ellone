@@ -19,6 +19,11 @@ function display_marker(match, p, offset, string) {
 }
 var display_re = /\$\$([^\$]*)\$\$/g;
 
+function reference_marker(match, p, offset, string) {
+  return '<span class=\"reference\" target=\"' + p + '\"></span>';
+}
+var reference_re = /@\[(.+)\]/g;
+
 function initialize() {
   make_toolbar = function(outer) {
     var bar = $("<div>",{class:"toolbar"});
@@ -71,7 +76,7 @@ function initialize() {
   });
 
   // core renderer
-  var sec_re = /(#+) (.*)/;
+  var sec_re = /(#+)([^!].*)/;
   var lab_re = /\[(.+)\] (.*)/;
   var render = function(box,defer) {
     defer = defer || false;
@@ -85,15 +90,24 @@ function initialize() {
     var ret = sec_re.exec(html);
     if (ret) {
       var lvl = ret[1].length;
-      box.html(ret[2]);
+      var title = ret[2];
       box.addClass('section_title');
       box.addClass('section_level'+lvl);
       box.attr("sec-lvl",lvl);
+      var ret = lab_re.exec(title);
+      if (ret) {
+        label = ret[1];
+        title = ret[2];
+        box.attr("id",label);
+        box.addClass("numbered");
+      }
+      box.html(title);
       new_section = true;
     }
 
     box.html(box.text().replace(display_re,display_marker));
     box.html(box.html().replace(inline_re,inline_marker));
+    box.html(box.html().replace(reference_re,reference_marker));
 
     box.children("span.latex").each(function() {
       var span = $(this);
@@ -178,6 +192,7 @@ function initialize() {
       if (new_equation) {
         number_equations();
       }
+      resolve_references(box);
     }
   }
 
@@ -226,6 +241,9 @@ function initialize() {
     edit = edit || false;
     defer = defer || false;
 
+    if (text.includes("\n")) {
+      text = "<div>" + text.replace(/\n/g,"</div><div>") + "</div>";
+    }
     var outer = $("<div>",{class:"para_outer", cid: cid, prev: prev, next: next});
     var inner = $("<div>",{html:text, class:"para_inner"});
     outer.attr("base_text",text);
@@ -243,9 +261,8 @@ function initialize() {
     inner.keydown(function(event) {
       if (outer.hasClass("editing")) {
         if ((event.keyCode == 13) && event.shiftKey) {
-          //var text = inner.html();
-          //text = text.replace(/<div>/g,"\n").replace(/<\/div>/g,"");
-          var text = inner.text();
+          var text = inner.html();
+          text = text.replace(/<div>/g,"\n").replace(/<\/div>/g,"").replace(/<span .*><\/span>/g,"").trim();
           outer.attr("base_text",text);
           console.log(text);
           if (outer.hasClass("modified")) {
@@ -280,6 +297,7 @@ function initialize() {
   }
 
   number_sections = function() {
+    console.log('numbering sections');
     var sec_num = Array();
     sec_num[0] = "";
     sec_num[1] = 1;
@@ -287,7 +305,7 @@ function initialize() {
       var sec = $(this);
       var lvl = parseInt(sec.attr("sec-lvl"));
       var lab = sec_num.slice(1,lvl+1).reverse().join('.');
-      sec.attr("sec-num",lab);
+      sec.attr("sec_num",lab);
       sec_num[lvl]++;
       sec_num[lvl+1] = 1;
     });
@@ -299,8 +317,30 @@ function initialize() {
     $("div.equation.numbered").each(function() {
       var eqn = $(this);
       var num = eqn.children(".equation_number");
+      eqn.attr("eqn_num",eqn_num);
       num.html(eqn_num);
       eqn_num++;
+    });
+  };
+
+  resolve_references = function() {
+    console.log('resolving references');
+    $("span.reference").each(function() {
+      var ref = $(this);
+      var label = ref.attr("target");
+      var targ = $("#"+label);
+      if (targ.hasClass("equation")) {
+        var eqn_num = targ.attr("eqn_num");
+        ref.html("<a href=\"#" + label + "\">Equation " + eqn_num + "</a>");
+        ref.removeClass("error");
+      } else if (targ.hasClass("section_title")) {
+        var sec_num = targ.attr("sec_num");
+        ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
+        ref.removeClass("error");
+      } else {
+        ref.html(label);
+        ref.addClass("error");
+      }
     });
   };
 };
@@ -319,6 +359,7 @@ function full_render() {
   if (new_equation) {
     number_equations();
   }
+  resolve_references();
 }
 
 function connect()

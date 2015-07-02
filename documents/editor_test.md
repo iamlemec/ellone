@@ -2,7 +2,7 @@
 
 Various things are explained in this article. Various things are $\ell^2$ explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. things are $\int_0^{\infty} \frac{\sin(x)}{x} dx$ explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained this article.
 
-# Introduction
+#[intro] Introduction
 
 Intro text. This really sets the tone. After moving.
 
@@ -22,9 +22,9 @@ Let the share of labor devoted to research satisfy $R = s_R L$ so that
 $$[eqn2] g = \frac{\dot{z}}{z} = q s_R^{\eta}$$
 The state variable $Q$ evolves according to
 $$\frac{\dot{q}}{q} = \eta n - (1-\phi) g = \eta n - (1-\phi) q s_R^{\eta}$$
-Executing manual override.
+Executing manual override. Hope this works as seen in @[eqn1].
 
-Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. This is new! Really new! Yep! Not here.
+Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. Various things are explained in this article. This is new! Really new! Yep! Not here. See @[intro].
 
 # Conclusion
 
