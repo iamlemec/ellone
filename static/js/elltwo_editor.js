@@ -413,7 +413,10 @@ function connect()
     };
 
     ws.onclose = function() {
-      console.log('websocket closed');
+      console.log('websocket closed, trying to reestablish');
+      window.setTimeout(function() {
+        ws = new WebSocket(ws_con);
+      }, 1);      
     };
   } else {
     console.log('Sorry, your browser does not support websockets.');
