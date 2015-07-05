@@ -75,40 +75,27 @@ function initialize() {
     elltwo_box.toggleClass("editing");
   });
 
-  // core renderer
+  // regexs
   var sec_re = /(#+)([^!].*)/;
-  var lab_re = /\[(.+)\] (.*)/;
+  var label_re = /\[(.+)\] (.*)/;
+  var list_re = /[\-\*] (.*)/;
+  var div1_re = /<div>/g;
+  var div2_re = /<\/?div>/g;
+
+  // core renderer
   var render = function(box,defer) {
     defer = defer || false;
 
-    var html = box.html();
-    if (html.startsWith('#!')) {
-      box.html(html.slice(2));
-      box.addClass('title');
-    }
+    // strip html and tag markers
+    var btext = box.html();
+    btext = btext.replace(div1_re,"\n");
+    btext = btext.replace(div2_re,"");
+    btext = btext.replace(display_re,display_marker);
+    btext = btext.replace(inline_re,inline_marker);
+    btext = btext.replace(reference_re,reference_marker);
+    box.html(btext);
 
-    var ret = sec_re.exec(html);
-    if (ret) {
-      var lvl = ret[1].length;
-      var title = ret[2];
-      box.addClass('section_title');
-      box.addClass('section_level'+lvl);
-      box.attr("sec-lvl",lvl);
-      var ret = lab_re.exec(title);
-      if (ret) {
-        label = ret[1];
-        title = ret[2];
-        box.attr("id",label);
-        box.addClass("numbered");
-      }
-      box.html(title);
-      new_section = true;
-    }
-
-    box.html(box.text().replace(display_re,display_marker));
-    box.html(box.html().replace(inline_re,inline_marker));
-    box.html(box.html().replace(reference_re,reference_marker));
-
+    // inline-ish elements
     box.children("span.latex").each(function() {
       var span = $(this);
       var text = span.text();
@@ -122,12 +109,13 @@ function initialize() {
 
     box.children("div.equation").each(function () {
       var eqn = $(this);
-      var src = eqn.html();
+      var src = eqn.html().replace(/\n/g," ");
 
       var num_div = $("<div>",{class:"equation_number"});
       var div_inner = $("<div>",{class:"equation_inner"});
 
-      var ret = lab_re.exec(src);
+      console.log(src);
+      var ret = label_re.exec(src);
       var label;
       if (ret) {
         label = ret[1];
@@ -184,7 +172,64 @@ function initialize() {
       new_equation = true;
     });
 
-    // recalculate sections
+    // structural elements
+    var html = box.html().trim();
+    if (html.startsWith('#!')) {
+      box.html(html.slice(2));
+      box.addClass('title');
+    } else if (html.startsWith('-') || html.startsWith('*')) {
+      var lines = html.split('\n');
+      box.html('');
+      var ul = $("<ul>");
+      var text = "";
+      for (i in lines) {
+        var line = lines[i];
+        var ret = list_re.exec(line);
+        if (ret) {
+          text += ret[1];
+          if (text) {
+            ul.append($("<li>",{html:text}));
+            text = "";
+          }
+        } else {
+          text += line;
+        }
+      }
+      if (text) {
+        ul.append($("<li>",{html:text}));
+      }
+      box.append(ul);
+    } else if (ret = sec_re.exec(html)) {
+      var lvl = ret[1].length;
+      var title = ret[2];
+      box.addClass('section_title');
+      box.addClass('section_level'+lvl);
+      box.attr("sec-lvl",lvl);
+      if (ret = label_re.exec(title)) {
+        label = ret[1];
+        title = ret[2];
+        box.attr("id",label);
+        box.addClass("numbered");
+      }
+      box.html(title);
+      new_section = true;
+    }
+
+    // resub to html for mutliline
+    var lines = box.html().split('\n');
+    if (lines.length > 1) {
+      var html = "";
+      for (i in lines) {
+        if (i == 0) {
+          html += lines[i];
+        } else {
+          html += '<div>' + lines[i] + '</div>';
+        }
+      }
+      box.html(html);
+    }
+
+    // recalculate sections, equations, and references
     if (!defer) {
       if (new_section) {
         number_sections();
@@ -244,7 +289,10 @@ function initialize() {
     if (text.includes("\n")) {
       text = "<div>" + text.replace(/\n/g,"</div><div>") + "</div>";
     }
-    var outer = $("<div>",{class:"para_outer", cid: cid, prev: prev, next: next});
+    var outer = $("<div>",{class:"para_outer"});
+    outer.attr("cid",cid);
+    outer.attr("prev",prev);
+    outer.attr("next",next);
     var inner = $("<div>",{html:text, class:"para_inner"});
     outer.attr("base_text",text);
     render(inner,defer);
@@ -263,7 +311,6 @@ function initialize() {
           var text = inner.html();
           text = text.replace(/<div>/g,"\n").replace(/<\/div>/g,"").replace(/<span .*><\/span>/g,"").trim();
           outer.attr("base_text",text);
-          console.log(text);
           if (outer.hasClass("modified")) {
             save_cell(outer);
             outer.removeClass("modified");
@@ -404,7 +451,10 @@ function connect()
           outer_box.children(".para_outer").remove();
           for (i in cells) {
             var c = cells[i];
-            var div = $("<div>",{cid: c["cid"], prev: c["prev"], next: c["next"], html: c["body"], class: "par", editing: "false"});
+            var div = $("<div>",{html: c["body"], class: "par"});
+            div.attr("cid",c["cid"]);
+            div.attr("prev",c["prev"]);
+            div.attr("next",c["next"]);
             outer_box.append(div);
           }
           full_render();
