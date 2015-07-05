@@ -33,14 +33,14 @@ def read_cells(fname):
   fcells = filter(len,tcells)
   if fcells:
     cells = {i: {'prev': i-1, 'next': i+1, 'body': s} for (i,s) in enumerate(fcells)}
-    cells[max(cells.keys())]['next'] = None
-    cells[min(cells.keys())]['prev'] = None
+    cells[max(cells.keys())]['next'] = -1
+    cells[min(cells.keys())]['prev'] = -1
   else:
     cells = {0: {'prev': None, 'next': 1, 'body': '#! Title'}, 1: {'prev':0, 'next': None, 'body': 'Body text.'}}
   return cells
 
 def gen_cells(cells):
-  cur = filter(lambda c: c['prev'] == None,cells.values())
+  cur = filter(lambda c: c['prev'] == -1,cells.values())
   if cur:
     cur = cur[0]
   else:
@@ -100,13 +100,11 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
           self.cells[cid]['body'] = body
         elif cmd == 'create':
           newid = int(cont['newid'])
-          prev = cont['prev']
-          prev = int(prev) if prev != 'null' else None
-          next = cont['next']
-          next = int(next) if next != 'null' else None
-          if prev is not None:
+          prev = int(cont['prev'])
+          next = int(cont['next'])
+          if prev is not -1:
             self.cells[prev]['next'] = newid
-          if next is not None:
+          if next is not -1:
             self.cells[next]['prev'] = newid
           self.cells[newid] = {'prev': prev, 'next': next, 'body': ''}
         elif cmd == 'delete':
