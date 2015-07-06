@@ -62,7 +62,7 @@
 .elltwo .toolbar {
   display: none;
   position: absolute;
-  bottom: 0;
+  bottom: -2px;
   left: 97.3%;
   cursor: default;
   line-height: 100%;
