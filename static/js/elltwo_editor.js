@@ -89,7 +89,7 @@ function initialize() {
   }
 
   var html_to_text = function(html) {
-    return html.replace(/<div>/g,"\n").replace(/<\/div>/g,"").replace(/<span .*><\/span>/g,"");
+    return html.replace(/<div>/g,"\n").replace(/<\/div>/g,"").replace(/<span .*?>/g,"").replace(/<\/span>/g,"").replace(/<br>/g,"");
   }
 
   // core renderer
