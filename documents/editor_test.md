@@ -32,6 +32,9 @@ Various things are explained in this article. Various things are explained in th
 - List item one $x^2$ exists
 - Now we talk about $\int_0^{\infty} \exp(-x) dx$
 
+1. Testing ordered $\ell^2$ lists
+2. How are $\omega\varepsilon$ doing?
+
 # Conclusion
 
 It is here that this portentous article must come to an end. A say day it is indeed. But let it be known that there will be more.

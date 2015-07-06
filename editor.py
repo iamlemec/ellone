@@ -5,6 +5,7 @@ import argparse
 import traceback
 from operator import itemgetter
 from collections import namedtuple
+import codecs
 
 import tornado.ioloop
 import tornado.web
@@ -48,7 +49,7 @@ def gen_cells(cells):
   while cur:
     yield cur
     nextid = cur['next']
-    cur = cells[nextid] if nextid else None
+    cur = cells[nextid] if nextid != -1 else None
 
 # Tornado time
 class DirectoryHandler(tornado.web.RequestHandler):
@@ -124,7 +125,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
           print
           print 'Saving.'
           print ordered
-          fid = open(self.fullpath,'w+')
+          fid = codecs.open(self.fullpath,'w+',encoding='utf-8')
           fid.write(output)
           fid.close()
         elif cmd == 'revert':

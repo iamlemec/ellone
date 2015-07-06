@@ -8,6 +8,14 @@ function select_all(elem) {
   selection.addRange(range);
 }
 
+// regexs
+var sec_re = /(#+)([^!].*)/;
+var label_re = /\[(.+)\](.*)/;
+var ulist_re = /[\-\*](.*)/;
+var olist_re = /[0-9]+\.(.*|$)/;
+var div1_re = /<div>/g;
+var div2_re = /<\/?div>/g;
+
 // editing hooks
 function inline_marker(match, p, offset, string) {
   return '<span class=\"latex\">' + p + '</span>';
@@ -75,21 +83,24 @@ function initialize() {
     elltwo_box.toggleClass("editing");
   });
 
-  // regexs
-  var sec_re = /(#+)([^!].*)/;
-  var label_re = /\[(.+)\] (.*)/;
-  var list_re = /[\-\*] (.*)/;
-  var div1_re = /<div>/g;
-  var div2_re = /<\/?div>/g;
+  // convert text (with newlines) to html (with divs)
+  var text_to_html = function(text) {
+    return text.replace(/\n/,'<div>').replace(/\n/g,'</div><div>') + '</div>';
+  }
+
+  var html_to_text = function(html) {
+    return html.replace(/<div>/g,"\n").replace(/<\/div>/g,"").replace(/<span .*><\/span>/g,"");
+  }
 
   // core renderer
   var render = function(box,defer) {
     defer = defer || false;
 
-    // strip html and tag markers
-    var btext = box.html();
-    btext = btext.replace(div1_re,"\n");
-    btext = btext.replace(div2_re,"");
+    // strip html
+    var html = box.html();
+    var btext = html_to_text(html);
+
+    // tag markers
     btext = btext.replace(display_re,display_marker);
     btext = btext.replace(inline_re,inline_marker);
     btext = btext.replace(reference_re,reference_marker);
@@ -181,24 +192,48 @@ function initialize() {
       var lines = html.split('\n');
       box.html('');
       var ul = $("<ul>");
-      var text = "";
+      var text = '';
+      var first = true;
       for (i in lines) {
         var line = lines[i];
-        var ret = list_re.exec(line);
+        var ret = ulist_re.exec(line);
         if (ret) {
-          text += ret[1];
-          if (text) {
+          if (!first) {
+            text = text || ' ';
             ul.append($("<li>",{html:text}));
-            text = "";
           }
+          first = false;
+          text = ret[1];
         } else {
           text += line;
         }
       }
-      if (text) {
-        ul.append($("<li>",{html:text}));
-      }
+      text = text || ' ';
+      ul.append($("<li>",{html:text}));
       box.append(ul);
+    } else if (html.startsWith('1.')) {
+      var lines = html.split('\n');
+      box.html('');
+      var ol = $("<ol>");
+      var text = '';
+      var first = true;
+      for (i in lines) {
+        var line = lines[i];
+        var ret = olist_re.exec(line);
+        if (ret) {
+          if (!first) {
+            text = text || ' ';
+            ol.append($("<li>",{html:text}));
+          }
+          first = false;
+          text = ret[1];
+        } else {
+          text += line;
+        }
+      }
+      text = text || ' ';
+      ol.append($("<li>",{html:text}));
+      box.append(ol);
     } else if (ret = sec_re.exec(html)) {
       var lvl = ret[1].length;
       var title = ret[2];
@@ -216,18 +251,7 @@ function initialize() {
     }
 
     // resub to html for mutliline
-    var lines = box.html().split('\n');
-    if (lines.length > 1) {
-      var html = "";
-      for (i in lines) {
-        if (i == 0) {
-          html += lines[i];
-        } else {
-          html += '<div>' + lines[i] + '</div>';
-        }
-      }
-      box.html(html);
-    }
+    box.html(text_to_html(box.html()));
 
     // recalculate sections, equations, and references
     if (!defer) {
@@ -300,7 +324,9 @@ function initialize() {
       if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
         outer.attr("disp_html",inner.html());
         outer.addClass("editing");
-        inner.html(outer.attr("base_text"));
+        var text = outer.attr("base_text");
+        var html = text_to_html(text);
+        inner.html(html);
         inner.attr("contentEditable","true");
         inner.focus();
       }
@@ -308,8 +334,8 @@ function initialize() {
     inner.keydown(function(event) {
       if (outer.hasClass("editing")) {
         if ((event.keyCode == 13) && event.shiftKey) {
-          var text = inner.html();
-          text = text.replace(/<div>/g,"\n").replace(/<\/div>/g,"").replace(/<span .*><\/span>/g,"").trim();
+          var html = inner.html();
+          var text = html_to_text(html).trim();
           outer.attr("base_text",text);
           if (outer.hasClass("modified")) {
             save_cell(outer);
@@ -359,14 +385,14 @@ function initialize() {
     console.log('numbering sections');
     var sec_num = Array();
     sec_num[0] = "";
-    sec_num[1] = 1;
+    sec_num[1] = 0;
     $("div.section_title").each(function() {
       var sec = $(this);
       var lvl = parseInt(sec.attr("sec-lvl"));
-      var lab = sec_num.slice(1,lvl+1).reverse().join('.');
-      sec.attr("sec_num",lab);
       sec_num[lvl]++;
-      sec_num[lvl+1] = 1;
+      sec_num[lvl+1] = 0;
+      var lab = sec_num.slice(1,lvl+1).join('.');
+      sec.attr("sec_num",lab);
     });
   };
 
