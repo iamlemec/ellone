@@ -42,15 +42,14 @@
 .elltwo .para_inner {
   margin-top: 20px;
   padding-left: 5px;
-  border-left: 1px solid white;
 }
 
-.elltwo .para_outer.editing .para_inner {
-  border-left: 1px solid rgb(53, 122, 232);
+.elltwo .para_outer.editing {
+  border-right: 1px solid rgb(53, 122, 232) !important;
 }
 
-.elltwo .para_outer.modified .para_inner {
-  border-left: 1px solid red;
+.elltwo .para_outer.modified {
+  border-right: 1px solid red !important;
 }
 
 .elltwo .para_outer {

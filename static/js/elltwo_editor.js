@@ -9,12 +9,10 @@ function select_all(elem) {
 }
 
 // regexs
-var sec_re = /(#+)([^!].*)/;
+var sec_re = /^(#+)([^!].*)/;
 var label_re = /\[(.+)\](.*)/;
 var ulist_re = /[\-\*](.*)/;
 var olist_re = /[0-9]+\.(.*|$)/;
-var div1_re = /<div>/g;
-var div2_re = /<\/?div>/g;
 
 // editing hooks
 function inline_marker(match, p, offset, string) {
@@ -85,16 +83,27 @@ function initialize() {
 
   // convert text (with newlines) to html (with divs)
   var text_to_html = function(text) {
-    return text.replace(/\n/,'<div>').replace(/\n/g,'</div><div>') + '</div>';
+    if (text.includes('\n')) {
+      return '<div>' + text.replace(/\n/g,'</div><div>') + '</div>';
+    } else {
+      return text;
+    }
   }
 
   var html_to_text = function(html) {
-    return html.replace(/<div>/g,"\n").replace(/<\/div>/g,"").replace(/<span .*?>/g,"").replace(/<\/span>/g,"").replace(/<br>/g,"");
+    if (html.startsWith('<div>')) {
+      html = html.replace(/<div>/,'');
+    }
+    return html.replace(/<div ?.*?>/g,'\n').replace(/<\/div>/g,'').replace(/<span ?.*?>/g,'').replace(/<\/span>/g,'').replace(/<br>/g,'');
   }
 
   // core renderer
   var render = function(box,defer) {
     defer = defer || false;
+
+    // clean out
+    box.removeClass();
+    box.addClass('para_inner');
 
     // strip html
     var html = box.html();
@@ -184,11 +193,25 @@ function initialize() {
     });
 
     // structural elements
-    var html = box.html().trim();
+    var html = box.html();
     if (html.startsWith('#!')) {
       box.html(html.slice(2));
       box.addClass('title');
-    } else if (html.startsWith('-') || html.startsWith('*')) {
+    } else if (ret = sec_re.exec(html)) {
+      var lvl = ret[1].length;
+      var title = ret[2];
+      box.addClass('section_title');
+      box.addClass('section_level'+lvl);
+      box.attr("sec-lvl",lvl);
+      if (ret = label_re.exec(title)) {
+        label = ret[1];
+        title = ret[2];
+        box.attr("id",label);
+        box.addClass("numbered");
+      }
+      box.html(title);
+      new_section = true;
+    } if (html.startsWith('-') || html.startsWith('*')) {
       var lines = html.split('\n');
       box.html('');
       var ul = $("<ul>");
@@ -234,20 +257,6 @@ function initialize() {
       text = text || ' ';
       ol.append($("<li>",{html:text}));
       box.append(ol);
-    } else if (ret = sec_re.exec(html)) {
-      var lvl = ret[1].length;
-      var title = ret[2];
-      box.addClass('section_title');
-      box.addClass('section_level'+lvl);
-      box.attr("sec-lvl",lvl);
-      if (ret = label_re.exec(title)) {
-        label = ret[1];
-        title = ret[2];
-        box.attr("id",label);
-        box.addClass("numbered");
-      }
-      box.html(title);
-      new_section = true;
     }
 
     // resub to html for mutliline

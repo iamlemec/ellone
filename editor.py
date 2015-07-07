@@ -12,6 +12,7 @@ import tornado.web
 import tornado.websocket
 
 # utils
+tmpdir = './documents'
 
 # parse input arguments
 parser = argparse.ArgumentParser(description='Elltwo Server.')
@@ -37,7 +38,7 @@ def read_cells(fname):
     cells[max(cells.keys())]['next'] = -1
     cells[min(cells.keys())]['prev'] = -1
   else:
-    cells = {0: {'prev': None, 'next': 1, 'body': '#! Title'}, 1: {'prev':0, 'next': None, 'body': 'Body text.'}}
+    cells = {0: {'prev': -1, 'next': 1, 'body': '#! Title'}, 1: {'prev':0, 'next': -1, 'body': 'Body text.'}}
   return cells
 
 def gen_cells(cells):
@@ -72,6 +73,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
     def open(self,fname):
         print "connection received: %s" % fname
         self.fname = fname
+        self.temppath = os.path.join(tmpdir,fname)
         self.fullpath = os.path.join(args.path,fname)
 
     def on_close(self):
@@ -110,13 +112,11 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
           self.cells[newid] = {'prev': prev, 'next': next, 'body': ''}
         elif cmd == 'delete':
           cid = int(cont['cid'])
-          prev = cont['prev']
-          prev = int(prev) if prev != 'null' else None
-          next = cont['next']
-          next = int(next) if next != 'null' else None
-          if prev is not None:
+          prev = int(cont['prev'])
+          next = int(cont['next'])
+          if prev is not -1:
             self.cells[prev]['next'] = next
-          if next is not None:
+          if next is not -1:
             self.cells[next]['prev'] = prev
           del self.cells[cid]
         elif cmd == 'write':
@@ -125,9 +125,10 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
           print
           print 'Saving.'
           print ordered
-          fid = codecs.open(self.fullpath,'w+',encoding='utf-8')
+          fid = codecs.open(self.temppath,'w+',encoding='utf-8')
           fid.write(output)
           fid.close()
+          os.system('mv %s %s' % (self.temppath,self.fullpath))
         elif cmd == 'revert':
           self.cells = read_cells(self.fullpath)
           vcells = [{'cid': i, 'prev': c['prev'], 'next': c['next'], 'body': c['body']} for (i,c) in self.cells.items()]
