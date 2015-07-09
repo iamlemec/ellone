@@ -2,23 +2,32 @@
 <html>
 
 <head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Elltwo Editor</title>
+
 <link href="{{ static_url('css/proxima-nova.css') }}" type="text/css" rel="stylesheet"/>
 <link href="{{ static_url('katex/katex.min.css') }}" type="text/css" rel="stylesheet"/>
 <link href="{{ static_url('css/elltwo_editor.css') }}" type="text/css" rel="stylesheet"/>
+
 </head>
 
 <body>
 
-<div class="elltwo editing">
-<div class="marquee"></div>
-<div class="topbar">
-<span class="topbar_save">Save</span>
-<span class="topbar_revert">Revert</span>
-<span class="topbar_reload">Reload</span>
-<span class="topbar_editing">Editing</span>
+<div id="elltwo" class="editing">
+<div id="marquee"></div>
+<div id="topbar">
+<span id="topbar_markdown">Markdown</span>
+<span id="topbar_latex">LaTeX</span>
+<span id="topbar_pdf">PDF</span>
+<span id="topbar_save">Save</span>
+<span id="topbar_revert">Revert</span>
+<span id="topbar_reload">Reload</span>
+<span id="topbar_editing">Editing</span>
 </div>
-<div class="content"></div>
+<div id="content"></div>
 </div>
 
 <script type="text/javascript">fname = '{{ fname }}';</script>

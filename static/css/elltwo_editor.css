@@ -4,61 +4,122 @@
   box-sizing: border-box;
 }
 
-.elltwo {
+#elltwo {
   font-family: proxima-nova;
   font-size: 17px;
   margin: 0px;
 }
 
-.elltwo * {
-  text-decoration: none;
-}
+/* content */
 
-.elltwo a:focus {
-  outline: 0px;
-}
-
-.elltwo a {
-  color: blue;
-}
-
-.elltwo a:visited {
-  color: blue;
-}
-
-.elltwo div.content {
+#content {
+  width: 650px !important;
+  margin: 0px auto;
+  padding-top: 80px;
+  padding-bottom: 200px;
+  background-color: white;
+  color: #333;
   -webkit-box-sizing: content-box;
   -moz-box-sizing: content-box;
   box-sizing: content-box;
-  padding-top: 80px;
-  padding-bottom: 200px;
 }
 
-/* in place editing */
-.elltwo *:focus {
+#content * {
+  text-decoration: none;
+}
+
+#content a:focus {
+  outline: 0px;
+}
+
+#content a {
+  color: blue;
+}
+
+#content a:visited {
+  color: blue;
+}
+
+#content *:focus {
   outline: 0;
 }
 
-.elltwo .para_inner {
+/* paragraph cells */
+
+.para_inner {
   margin-top: 20px;
   padding-left: 5px;
 }
 
-.elltwo .para_outer.editing {
+.para_outer.editing {
   border-right: 1px solid rgb(53, 122, 232) !important;
 }
 
-.elltwo .para_outer.modified {
+.para_outer.modified {
   border-right: 1px solid red !important;
 }
 
-.elltwo .para_outer {
+.para_outer {
   position: relative;
   border-right: 1px solid white;
   padding-right: 30px;
 }
 
-.elltwo .toolbar {
+#elltwo.editing .para_outer:hover {
+  border-right: 1px solid #CCC;
+}
+
+#elltwo.editing .para_outer:hover > .toolbar {
+  display: block;
+}
+
+#elltwo.editing .para_outer:first-child > .toolbar > .del_button {
+  display: none;
+}
+
+/* equations */
+
+.equation {
+  position: relative;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.equation_inner {
+  margin: auto;
+  text-align: center;
+}
+
+.equation_number {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  -webkit-transform: translateY(-50%);
+  color: #888;
+}
+
+.equation_inner .equation_row:not(:first-child) {
+  margin-top: 20px;
+}
+
+/* sections */
+
+.section_title {
+  font-weight: 600;
+}
+
+.section_title:before {
+  content: attr(sec_num) " ";
+}
+
+.para_outer.editing .section_title:before {
+  content: "";
+}
+
+/* hover toolbar */
+
+.toolbar {
   display: none;
   position: absolute;
   bottom: -2px;
@@ -67,7 +128,7 @@
   line-height: 100%;
 }
 
-.elltwo .add_button {
+.add_button {
   font-size: 15px;
   background-color: rgb(53, 122, 232);
   color: white;
@@ -76,7 +137,7 @@
   padding: 0px 6px 0px 6px;
 }
 
-.elltwo .del_button {
+.del_button {
   font-size: 15px;
   background-color: rgba(232, 50, 90, 0.8);
   color: white;
@@ -85,60 +146,41 @@
   padding: 0px 6px 0px 6px;
 }
 
-.elltwo.editing .para_outer:hover {
-  border-right: 1px solid #CCC;
-}
+/* top toolbar */
 
-.elltwo.editing .para_outer:hover > .toolbar {
-  display: block;
-}
-
-.elltwo.editing .para_outer:first-child > .toolbar > .del_button {
-  display: none;
-}
-
-.elltwo div.equation {
-  position: relative;
-  text-align: center;
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-
-.elltwo div.equation_inner {
-  margin: auto;
-  text-align: center;
-}
-
-.elltwo div.equation_number {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  -webkit-transform: translateY(-50%);
-  color: #888;
-}
-
-.elltwo div.equation_inner div.equation_row:not(:first-child) {
-  margin-top: 20px;
-}
-
-.elltwo .section_title {
-  font-weight: 600;
-}
-
-.elltwo .section_title:before {
-  content: attr(sec_num) " ";
-}
-
-.elltwo .para_outer.editing .section_title:before {
-  content: "";
-}
-
-.elltwo div.topbar {
+#topbar {
   position: fixed;
   right: 10px;
 }
 
-.elltwo span.topbar_save {
+#topbar_markdown {
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+#topbar_latex {
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+#topbar_pdf {
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+#topbar_save {
   display: none;
   cursor: default;
   font-size: 15px;
@@ -148,11 +190,11 @@
   padding: 0px 6px 0px 6px;
 }
 
-.elltwo.modified span.topbar_save {
+#elltwo.modified #topbar_save {
   display: inline;
 }
 
-.elltwo span.topbar_revert {
+#topbar_revert {
   display: none;
   cursor: default;
   font-size: 15px;
@@ -162,11 +204,11 @@
   padding: 0px 6px 0px 6px;
 }
 
-.elltwo.modified span.topbar_revert {
+#elltwo.modified #topbar_revert {
   display: inline;
 }
 
-.elltwo span.topbar_editing {
+#topbar_editing {
   cursor: default;
   font-size: 15px;
   color: #BBB !important;
@@ -176,12 +218,12 @@
   padding: 0px 6px 0px 6px;
 }
 
-.elltwo.editing span.topbar_editing {
+#elltwo.editing #topbar_editing {
   color: white !important;
   background-color: rgb(53, 122, 232);
 }
 
-.elltwo span.topbar_reload {
+#topbar_reload {
   cursor: default;
   font-size: 15px;
   background-color: rgb(53, 122, 232);
@@ -190,55 +232,48 @@
   padding: 0px 6px 0px 6px;
 }
 
-.elltwo.modified span.topbar_reload {
+#elltwo.modified #topbar_reload {
   display: none;
 }
 
 /* theme */
 
-.elltwo .title {
+#marquee {
+  color: #333;
+  position: fixed;
+}
+
+.title {
   font-size: 35px;
   font-weight: 600;
   text-align: center !important;
   margin-bottom: 40px;
 }
 
-.elltwo .section_title.section_level1 {
+.section_title.section_level1 {
   font-size: 25px;  
 }
 
-.elltwo .section_title.section_level2 {
+.section_title.section_level2 {
   font-size: 20px;  
 }
 
-.elltwo .para_inner {
+.para_inner {
   text-align: justify;
 }
 
-.elltwo li {
+#elltwo li {
   text-align: justify;
 }
 
-.elltwo * {
+#elltwo * {
   line-height: 150%;
 }
 
-.elltwo div.content {
-  width: 650px !important;
-  margin: 0px auto;
-  background-color: white;
-  color: #333;
-}
-
-.elltwo div.marquee {
-  color: #333;
-  position: fixed;
-}
-
-.elltwo span.reference {
+.reference {
   color: blue;
 }
 
-.elltwo .error {
+.error {
   color: red;
 }

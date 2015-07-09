@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import json
 import argparse
 import traceback
@@ -13,6 +14,61 @@ import tornado.websocket
 
 # utils
 tmpdir = './documents'
+
+# latex
+latex_template = """\\documentclass{article}
+
+\\usepackage{amsmath}
+\\usepackage{amssymb}
+\\usepackage[utf8]{inputenc}
+
+\\begin{document}
+
+%s
+
+\end{document}
+"""
+
+title_template = """\\begin{center}
+{\\LARGE \\bf %s}
+\\end{center}"""
+
+section_template = """\\%ssection{%s}"""
+
+enum_template = """\\begin{enumerate}
+%s
+\\end{enumerate}"""
+
+def gen_latex(cells):
+  for cell in cells:
+    if cell.startswith('#!'):
+      yield title_template % cell[2:].strip()
+      continue
+    ret = re.match(r'(#+) ?(.*)',cell)
+    if ret:
+      (pound,title) = ret.groups()
+      level = len(pound)
+      yield section_template % ('sub'*(level-1),title)
+      continue
+    if cell.startswith('1.'):
+      items = cell.split('\n')
+      text = ''
+      for item in items:
+        ret = re.match(r'[0-9]\. ?(.*)',item)
+        if ret:
+          text += '\\item %s\n' % ret.group(1)
+        else:
+          text += '%s\n' % item
+      yield enum_template % text
+      continue
+    yield cell
+
+def construct_latex(text):
+  text = re.sub(r'\"(.*?)\"','``\\1\'\'',text)
+  cells = filter(len,map(str.strip,text.split('\n\n')))
+  tex = '\n\n'.join(gen_latex(cells))
+  latex = latex_template % tex
+  return latex
 
 # parse input arguments
 parser = argparse.ArgumentParser(description='Elltwo Server.')
@@ -52,6 +108,9 @@ def gen_cells(cells):
     nextid = cur['next']
     cur = cells[nextid] if nextid != -1 else None
 
+def construct_markdown(cells):
+  return '\n\n'.join(map(itemgetter('body'),gen_cells(cells)))
+
 # Tornado time
 class DirectoryHandler(tornado.web.RequestHandler):
     def get(self):
@@ -61,6 +120,67 @@ class DirectoryHandler(tornado.web.RequestHandler):
 class EditorHandler(tornado.web.RequestHandler):
     def get(self,fname):
         self.render("editor.html",fname=fname)
+
+class MarkdownHandler(tornado.web.RequestHandler):
+    def post(self,fname):
+        fullpath = os.path.join(args.path,fname)
+        fid = open(fullpath,'r')
+        text = fid.read()
+
+        self.set_header('Content-Type','text/markdown')
+        self.set_header('Content-Disposition','attachment; filename=%s' % fname)
+        self.write(text)
+    get = post
+
+class LatexHandler(tornado.web.RequestHandler):
+    def post(self,fname):
+        fullpath = os.path.join(args.path,fname)
+        fid = open(fullpath,'r')
+        text = fid.read()
+        latex = construct_latex(text)
+
+        ret = re.match(r'(.*)\.md',fname)
+        if ret:
+          fname_new = ret.group(1)
+        else:
+          fname_new = fname
+
+        self.set_header('Content-Type','text/latex')
+        self.set_header('Content-Disposition','attachment; filename=%s.tex' % fname_new)
+        self.write(latex)
+    get = post
+
+class PdfHandler(tornado.web.RequestHandler):
+    def post(self,fname):
+        fullpath = os.path.join(args.path,fname)
+        fid = open(fullpath,'r')
+        text = fid.read()
+        latex = construct_latex(text)
+
+        ret = re.match(r'(.*)\.md',fname)
+        if ret:
+          fname_new = ret.group(1)
+        else:
+          fname_new = fname
+
+        fname_tex = '%s.tex' % fname_new
+        ftex = open(os.path.join(tmpdir,fname_tex),'w+')
+        ftex.write(latex)
+        ftex.close()
+
+        cwd = os.getcwd()
+        os.chdir(tmpdir)
+        os.system('pdflatex %s' % fname_tex)
+        os.chdir(cwd)
+
+        fname_pdf = '%s.pdf' % fname_new
+        fpdf = open(os.path.join(tmpdir,fname_pdf),'rb')
+        data = fpdf.read()
+
+        self.set_header('Content-Type','application/pdf')
+        self.set_header('Content-Disposition','attachment; filename=%s' % fname_pdf)
+        self.write(data)
+    get = post
 
 class ContentHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -120,11 +240,10 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             self.cells[next]['prev'] = prev
           del self.cells[cid]
         elif cmd == 'write':
-          ordered = list(gen_cells(self.cells))
-          output = '\n\n'.join(map(itemgetter('body'),ordered))
+          output = construct_markdown(self.cells)
           print
           print 'Saving.'
-          print ordered
+          print output
           fid = codecs.open(self.temppath,'w+',encoding='utf-8')
           fid.write(output)
           fid.close()
@@ -181,6 +300,9 @@ class Application(tornado.web.Application):
         handlers = [
             (r"/editor/?", DirectoryHandler),
             (r"/editor/([^/]+)", EditorHandler),
+            (r"/markdown/([^/]+)", MarkdownHandler),
+            (r"/latex/([^/]+)", LatexHandler),
+            (r"/pdf/([^/]+)", PdfHandler),
             (r"/elledit/([^/]*)", ContentHandler),
             (r"/diredit/?", FileHandler)
         ]

@@ -1,20 +1,12 @@
 // Elltwo editor
 
-function select_all(elem) {
-  var selection = window.getSelection();
-  var range = document.createRange();
-  range.selectNodeContents(elem);
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-
 // regexs
+
 var sec_re = /^(#+)([^!].*)/;
 var label_re = /\[(.+)\](.*)/;
 var ulist_re = /[\-\*](.*)/;
 var olist_re = /[0-9]+\.(.*|$)/;
 
-// editing hooks
 function inline_marker(match, p, offset, string) {
   return '<span class=\"latex\">' + p + '</span>';
 }
@@ -30,54 +22,63 @@ function reference_marker(match, p, offset, string) {
 }
 var reference_re = /@\[(.+)\]/g;
 
-function initialize() {
-  make_toolbar = function(outer) {
-    var bar = $("<div>",{class:"toolbar"});
-    var add = $("<span>",{class:"add_button",html:"+"});
-    var del = $("<span>",{class:"del_button",html:"x"});
-    add.click(function() {
-      create_cell(outer);
-    });
-    del.click(function() {
-      delete_cell(outer);
-    });
-    bar.append(add);
-    bar.append(del);
-    return bar;
-  }
+// utilities
 
+function select_all(elem) {
+  var selection = window.getSelection();
+  var range = document.createRange();
+  range.selectNodeContents(elem);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+// bulk code
+
+function initialize() {
   // find outer box
-  elltwo_box = $("div.elltwo");
-  outer_box = elltwo_box.children("div.content");
+  elltwo_box = $("#elltwo");
+  outer_box = elltwo_box.children("#content");
 
   // optional marquee box
-  if (marquee=elltwo_box.children("div.marquee")) {
+  if (marquee=elltwo_box.children("#marquee")) {
     var span = $("<span>");
     katex.render("\\ell^2",span[0]);
     marquee.append(span);
   }
 
-  // topbar (save button)
-  $("span.topbar_save").click(function() {
+  // topbar
+  $("#topbar_markdown").click(function() {
+    window.location.replace("/markdown/"+fname);
+  });
+
+  $("#topbar_latex").click(function() {
+    window.location.replace("/latex/"+fname);
+  });
+
+  $("#topbar_pdf").click(function() {
+    window.location.replace("/pdf/"+fname);
+  });
+
+  $("#topbar_save").click(function() {
     var msg = JSON.stringify({"cmd": "write", "content": ""});
     console.log(msg);
     ws.send(msg);
     elltwo_box.removeClass("modified");
   });
 
-  $("span.topbar_revert").click(function() {
+  $("#topbar_revert").click(function() {
     var msg = JSON.stringify({"cmd": "revert", "content": ""});
     console.log(msg);
     ws.send(msg);
     elltwo_box.removeClass("modified");
   });
 
-  $("span.topbar_reload").click(function() {
+  $("#topbar_reload").click(function() {
     var msg = JSON.stringify({"cmd": "query", "content": ""});
     ws.send(msg);
   });
 
-  $("span.topbar_editing").click(function() {
+  $("#topbar_editing").click(function() {
     elltwo_box.toggleClass("editing");
   });
 
@@ -94,7 +95,12 @@ function initialize() {
     if (html.startsWith('<div>')) {
       html = html.replace(/<div>/,'');
     }
-    return html.replace(/<div ?.*?>/g,'\n').replace(/<\/div>/g,'').replace(/<span ?.*?>/g,'').replace(/<\/span>/g,'').replace(/<br>/g,'');
+    return html.replace(/<div ?.*?>/g,'\n')
+               .replace(/<\/div>/g,'')
+               .replace(/<span ?.*?>/g,'')
+               .replace(/<\/span>/g,'')
+               .replace(/<br>/g,'')
+               .replace(/&nbsp;/g,' ');
   }
 
   // core renderer
@@ -108,6 +114,14 @@ function initialize() {
     // strip html
     var html = box.html();
     var btext = html_to_text(html);
+    /*
+    var btext;
+    if (box.children("div").length > 0) {
+      console.log('found divs');
+      btext = box.children("div").map(function() { return $(this).text(); }).get().join('\n');
+    } else {
+      btext = box.text();
+    }*/
 
     // tag markers
     btext = btext.replace(display_re,display_marker);
@@ -274,7 +288,7 @@ function initialize() {
     }
   }
 
-  save_cell = function(cell) {
+  var save_cell = function(cell) {
     var cid = cell.attr("cid");
     var body = cell.attr("base_text");
     var msg = JSON.stringify({"cmd": "save", "content": {"cid":cid, "body": body}});
@@ -283,11 +297,11 @@ function initialize() {
     elltwo_box.addClass("modified");
   }
 
-  create_cell = function(cell) {
-    var newid = Math.max.apply(null,$("div.para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
+  var create_cell = function(cell) {
+    var newid = Math.max.apply(null,$(".para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
     var prev = cell.attr("cid");
     var next = cell.attr("next");
-    var cnext = $("div.para_outer[cid="+next+"]");
+    var cnext = $(".para_outer[cid="+next+"]");
     cnext.attr("prev",newid);
     cell.attr("next",newid);
     var par = make_para("Text",newid,prev,next,true);
@@ -300,11 +314,11 @@ function initialize() {
     elltwo_box.addClass("modified");
   }
 
-  delete_cell = function(cell) {
+  var delete_cell = function(cell) {
     prev = cell.attr("prev");
     next = cell.attr("next");
-    cprev = $("div.para_outer[cid="+prev+"]");
-    cnext = $("div.para_outer[cid="+next+"]");
+    cprev = $(".para_outer[cid="+prev+"]");
+    cnext = $(".para_outer[cid="+next+"]");
     cprev.attr("next",next);
     cnext.attr("prev",prev);
     cell.remove();
@@ -315,18 +329,31 @@ function initialize() {
     elltwo_box.addClass("modified");
   }
 
-  make_para = function(text,cid,prev,next,edit,defer) {
+  var make_toolbar = function(outer) {
+    var bar = $("<div>",{class:"toolbar"});
+    var add = $("<span>",{class:"add_button",html:"+"});
+    var del = $("<span>",{class:"del_button",html:"x"});
+    add.click(function() {
+      create_cell(outer);
+    });
+    del.click(function() {
+      delete_cell(outer);
+    });
+    bar.append(add);
+    bar.append(del);
+    return bar;
+  }
+
+  var make_para = function(text,cid,prev,next,edit,defer) {
     edit = edit || false;
     defer = defer || false;
 
-    if (text.includes("\n")) {
-      text = "<div>" + text.replace(/\n/g,"</div><div>") + "</div>";
-    }
+    var html = text_to_html(text);
     var outer = $("<div>",{class:"para_outer"});
     outer.attr("cid",cid);
     outer.attr("prev",prev);
     outer.attr("next",next);
-    var inner = $("<div>",{html:text, class:"para_inner"});
+    var inner = $("<div>",{html:html, class:"para_inner"});
     outer.attr("base_text",text);
     render(inner,defer);
     inner.dblclick(function(event) {
@@ -390,12 +417,12 @@ function initialize() {
     return outer;
   }
 
-  number_sections = function() {
+  var number_sections = function() {
     console.log('numbering sections');
     var sec_num = Array();
     sec_num[0] = "";
     sec_num[1] = 0;
-    $("div.section_title").each(function() {
+    $(".section_title").each(function() {
       var sec = $(this);
       var lvl = parseInt(sec.attr("sec-lvl"));
       sec_num[lvl]++;
@@ -405,10 +432,10 @@ function initialize() {
     });
   };
 
-  number_equations = function() {
+  var number_equations = function() {
     console.log('numbering equations');
     eqn_num = 1;  
-    $("div.equation.numbered").each(function() {
+    $(".equation.numbered").each(function() {
       var eqn = $(this);
       var num = eqn.children(".equation_number");
       eqn.attr("eqn_num",eqn_num);
@@ -417,9 +444,9 @@ function initialize() {
     });
   };
 
-  resolve_references = function() {
+  var resolve_references = function() {
     console.log('resolving references');
-    $("span.reference").each(function() {
+    $(".reference").each(function() {
       var ref = $(this);
       var label = ref.attr("target");
       var targ = $("#"+label);
@@ -437,24 +464,25 @@ function initialize() {
       }
     });
   };
+
+  full_render = function() {
+    console.log('rendering');
+    new_section = false;
+    new_equation = false;
+    $("div.par").replaceWith(function() {
+      var par = $(this);
+      return make_para(par.html(),par.attr("cid"),par.attr("prev"),par.attr("next"),false,true);
+    });
+    if (new_section) {
+      number_sections();
+    }
+    if (new_equation) {
+      number_equations();
+    }
+    resolve_references();
+  }
 };
 
-function full_render() {
-  console.log('rendering');
-  new_section = false;
-  new_equation = false;
-  $("div.par").replaceWith(function() {
-    var par = $(this);
-    return make_para(par.html(),par.attr("cid"),par.attr("prev"),par.attr("next"),false,true);
-  });
-  if (new_section) {
-    number_sections();
-  }
-  if (new_equation) {
-    number_equations();
-  }
-  resolve_references();
-}
 
 function connect()
 {
