@@ -49,6 +49,7 @@
 .para_inner {
   margin-top: 20px;
   padding-left: 5px;
+  white-space: pre-wrap;
 }
 
 .para_outer.editing {

@@ -100,7 +100,12 @@ function initialize() {
                .replace(/<span ?.*?>/g,'')
                .replace(/<\/span>/g,'')
                .replace(/<br>/g,'')
-               .replace(/&nbsp;/g,' ');
+               .replace(/\n+/g,'\n')
+               .replace(/&nbsp;/g,' ')
+               .replace(/&amp;/g,'&')
+               .replace(/&quot;/g,'"')
+               .replace(/&#96;/g,'`')
+               .replace(/&#x27/g,'\'');
   }
 
   // core renderer
