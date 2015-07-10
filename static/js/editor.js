@@ -1,7 +1,6 @@
 // Elltwo editor
 
 // regexs
-
 var sec_re = /^(#+)([^!].*)/;
 var label_re = /\[(.+)\](.*)/;
 var ulist_re = /[\-\*](.*)/;
@@ -13,7 +12,7 @@ function inline_marker(match, p, offset, string) {
 var inline_re = /\$([^\$]*)\$/g;
 
 function display_marker(match, p, offset, string) {
-  return '<div class=\"equation\">' + p + '</div>';
+  return '<div class=\"equation\">' + p.replace(/\n/g,' ') + '</div>';
 }
 var display_re = /\$\$([^\$]*)\$\$/g;
 
@@ -23,7 +22,6 @@ function reference_marker(match, p, offset, string) {
 var reference_re = /@\[(.+)\]/g;
 
 // utilities
-
 function select_all(elem) {
   var selection = window.getSelection();
   var range = document.createRange();
@@ -33,7 +31,6 @@ function select_all(elem) {
 }
 
 // bulk code
-
 function initialize() {
   // find outer box
   elltwo_box = $("#elltwo");
@@ -82,60 +79,119 @@ function initialize() {
     elltwo_box.toggleClass("editing");
   });
 
-  // convert text (with newlines) to html (with divs)
-  var text_to_html = function(text) {
+  // convert text (with newlines) to html (with divs) and vice versa
+  var fill_tags = function(text) {
     if (text.includes('\n')) {
       return '<div>' + text.replace(/\n/g,'</div><div>') + '</div>';
     } else {
       return text;
     }
-  }
+  };
 
-  var html_to_text = function(html) {
+  var strip_tags = function(html) {
     if (html.startsWith('<div>')) {
       html = html.replace(/<div>/,'');
     }
     return html.replace(/<div ?.*?>/g,'\n')
                .replace(/<\/div>/g,'')
-               .replace(/<span ?.*?>/g,'')
-               .replace(/<\/span>/g,'')
-               .replace(/<br>/g,'')
+               .replace(/<br>/g,'\n')
                .replace(/\n+/g,'\n')
-               .replace(/&nbsp;/g,' ')
-               .replace(/&amp;/g,'&')
-               .replace(/&quot;/g,'"')
-               .replace(/&#96;/g,'`')
-               .replace(/&#x27/g,'\'');
-  }
+               .replace(/<span ?.*?>/g,'')
+               .replace(/<\/span>/g,'');
+  };
+
+  var escape_html = function(text) {
+    return text.replace(/</g,'&lt;')
+               .replace(/>/g,'&gt;');
+  };
+
+  var unescape_html = function(text) {
+    return text.replace(/&lt;/g,'<')
+               .replace(/&gt;/g,'>');
+  };
 
   // core renderer
-  var render = function(box,defer) {
+  var render = function(box,text,defer) {
     defer = defer || false;
+
+    // escape carets
+    text = escape_html(text);
 
     // clean out
     box.removeClass();
     box.addClass('para_inner');
 
-    // strip html
-    var html = box.html();
-    var btext = html_to_text(html);
-    /*
-    var btext;
-    if (box.children("div").length > 0) {
-      console.log('found divs');
-      btext = box.children("div").map(function() { return $(this).text(); }).get().join('\n');
-    } else {
-      btext = box.text();
-    }*/
+    // classify cell type
+    if (text.startsWith('#!')) {
+      text = text.slice(2);
+      box.addClass('title');
+    } else if (ret = sec_re.exec(text)) {
+      var lvl = ret[1].length;
+      var title = ret[2];
+      box.addClass('section_title');
+      box.addClass('section_level'+lvl);
+      box.attr("sec-lvl",lvl);
+      if (ret = label_re.exec(title)) {
+        label = ret[1];
+        title = ret[2];
+        box.attr("id",label);
+        box.addClass("numbered");
+      }
+      text = title;
+      new_section = true;
+    } else if (text.startsWith('-') || text.startsWith('*')) {
+      var lines = text.split('\n');
+      var list = '<ul>';
+      var item = '';
+      var first = true;
+      for (i in lines) {
+        var line = lines[i];
+        var ret = ulist_re.exec(line);
+        if (ret) {
+          if (!first) {
+            list += '<li>' + (item.trim() || ' ') + '</li>'
+          }
+          first = false;
+          item = ret[1];
+        } else {
+          item += line;
+        }
+      }
+      list += '<li>' + (item.trim() || ' ') + '</li>';
+      list += '</ul>';
+      text = list;
+    } else if (text.startsWith('1.')) {
+      var lines = text.split('\n');
+      var list = '<ol>';
+      var item = '';
+      var first = true;
+      for (i in lines) {
+        var line = lines[i];
+        var ret = olist_re.exec(line);
+        if (ret) {
+          if (!first) {
+            list += '<li>' + (item.trim() || ' ') + '</li>';
+          }
+          first = false;
+          item = ret[1];
+        } else {
+          item += line;
+        }
+      }
+      list += '<li>' + (item.trim() || ' ') + '</li>';
+      list += '</ol>';
+      text = list;
+    }
 
     // tag markers
-    btext = btext.replace(display_re,display_marker);
-    btext = btext.replace(inline_re,inline_marker);
-    btext = btext.replace(reference_re,reference_marker);
-    box.html(btext);
+    text = text.replace(display_re,display_marker);
+    text = text.replace(inline_re,inline_marker);
+    text = text.replace(reference_re,reference_marker);
+    var html = fill_tags(text);
+    box.html(html);
 
     // inline-ish elements
-    box.children("span.latex").each(function() {
+    box.find("span.latex").each(function() {
       var span = $(this);
       var text = span.text();
       try {
@@ -146,7 +202,7 @@ function initialize() {
       }
     });
 
-    box.children("div.equation").each(function () {
+    box.find("div.equation").each(function () {
       var eqn = $(this);
       var src = eqn.html().replace(/\n/g," ");
 
@@ -211,76 +267,6 @@ function initialize() {
       new_equation = true;
     });
 
-    // structural elements
-    var html = box.html();
-    if (html.startsWith('#!')) {
-      box.html(html.slice(2));
-      box.addClass('title');
-    } else if (ret = sec_re.exec(html)) {
-      var lvl = ret[1].length;
-      var title = ret[2];
-      box.addClass('section_title');
-      box.addClass('section_level'+lvl);
-      box.attr("sec-lvl",lvl);
-      if (ret = label_re.exec(title)) {
-        label = ret[1];
-        title = ret[2];
-        box.attr("id",label);
-        box.addClass("numbered");
-      }
-      box.html(title);
-      new_section = true;
-    } if (html.startsWith('-') || html.startsWith('*')) {
-      var lines = html.split('\n');
-      box.html('');
-      var ul = $("<ul>");
-      var text = '';
-      var first = true;
-      for (i in lines) {
-        var line = lines[i];
-        var ret = ulist_re.exec(line);
-        if (ret) {
-          if (!first) {
-            text = text || ' ';
-            ul.append($("<li>",{html:text}));
-          }
-          first = false;
-          text = ret[1];
-        } else {
-          text += line;
-        }
-      }
-      text = text || ' ';
-      ul.append($("<li>",{html:text}));
-      box.append(ul);
-    } else if (html.startsWith('1.')) {
-      var lines = html.split('\n');
-      box.html('');
-      var ol = $("<ol>");
-      var text = '';
-      var first = true;
-      for (i in lines) {
-        var line = lines[i];
-        var ret = olist_re.exec(line);
-        if (ret) {
-          if (!first) {
-            text = text || ' ';
-            ol.append($("<li>",{html:text}));
-          }
-          first = false;
-          text = ret[1];
-        } else {
-          text += line;
-        }
-      }
-      text = text || ' ';
-      ol.append($("<li>",{html:text}));
-      box.append(ol);
-    }
-
-    // resub to html for mutliline
-    box.html(text_to_html(box.html()));
-
     // recalculate sections, equations, and references
     if (!defer) {
       if (new_section) {
@@ -291,7 +277,7 @@ function initialize() {
       }
       resolve_references(box);
     }
-  }
+  };
 
   var save_cell = function(cell) {
     var cid = cell.attr("cid");
@@ -300,7 +286,7 @@ function initialize() {
     console.log(msg);
     ws.send(msg);
     elltwo_box.addClass("modified");
-  }
+  };
 
   var create_cell = function(cell) {
     var newid = Math.max.apply(null,$(".para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
@@ -317,7 +303,7 @@ function initialize() {
     console.log(msg);
     ws.send(msg);
     elltwo_box.addClass("modified");
-  }
+  };
 
   var delete_cell = function(cell) {
     prev = cell.attr("prev");
@@ -332,7 +318,7 @@ function initialize() {
     console.log(msg);
     ws.send(msg);
     elltwo_box.addClass("modified");
-  }
+  };
 
   var make_toolbar = function(outer) {
     var bar = $("<div>",{class:"toolbar"});
@@ -347,27 +333,26 @@ function initialize() {
     bar.append(add);
     bar.append(del);
     return bar;
-  }
+  };
 
   var make_para = function(text,cid,prev,next,edit,defer) {
     edit = edit || false;
     defer = defer || false;
 
-    var html = text_to_html(text);
     var outer = $("<div>",{class:"para_outer"});
     outer.attr("cid",cid);
     outer.attr("prev",prev);
     outer.attr("next",next);
-    var inner = $("<div>",{html:html, class:"para_inner"});
+    var inner = $("<div>",{class:"para_inner"});
     outer.attr("base_text",text);
-    render(inner,defer);
+    render(inner,text,defer);
     inner.dblclick(function(event) {
       if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
         outer.attr("disp_html",inner.html());
         outer.addClass("editing");
-        var text = outer.attr("base_text");
-        var html = text_to_html(text);
-        inner.html(html);
+        var base = outer.attr("base_text");
+        var text = escape_html(base);
+        inner.html(text);
         inner.attr("contentEditable","true");
         inner.focus();
       }
@@ -376,15 +361,16 @@ function initialize() {
       if (outer.hasClass("editing")) {
         if ((event.keyCode == 13) && event.shiftKey) {
           var html = inner.html();
-          var text = html_to_text(html).trim();
-          outer.attr("base_text",text);
+          var text = strip_tags(html);
+          var base = unescape_html(text);
+          outer.attr("base_text",base);
           if (outer.hasClass("modified")) {
             save_cell(outer);
             outer.removeClass("modified");
           }
           outer.removeClass("editing");
           inner.attr("contentEditable","false");
-          render(inner);
+          render(inner,text);
           event.preventDefault();
         }
         if (event.keyCode == 27) {
@@ -420,7 +406,7 @@ function initialize() {
     outer.append(inner);
     outer.append(make_toolbar(outer));
     return outer;
-  }
+  };
 
   var number_sections = function() {
     console.log('numbering sections');
@@ -485,10 +471,10 @@ function initialize() {
       number_equations();
     }
     resolve_references();
-  }
+  };
 };
 
-
+// websockets
 function connect()
 {
   if ('MozWebSocket' in window) {

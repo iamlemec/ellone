@@ -17,9 +17,9 @@ $$
 [eqn1] \dot{z} = z^{\phi} R^{\eta} \\
 \dot{q} = \kappa q
 $$
-There is a mass $L$ of labor, which grows at rate $n$. A mass $R$ is devoted
-to research. Output is simply
-$$Y = z(L-R)$$Define the state variable
+There is a mass $L$ of labor, which grows at rate $n$. A mass $R$ is devoted to research. Output is simply
+$$Y = z(L-R)$$
+Define the state variable
 $$q = z^{\phi-1}L^{\eta}$$
 Let the share of labor devoted to research satisfy $R = s_R L$ so that
 $$[eqn2] g = \frac{\dot{z}}{z} = q s_R^{\eta}$$
@@ -34,6 +34,7 @@ Various things are explained in this article. Various things are explained in th
 
 1. Testing ordered $\ell^2$ lists
 2. How are $\omega\varepsilon$ doing?
+
 
 # Conclusion
 
