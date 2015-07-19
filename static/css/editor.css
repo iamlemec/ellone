@@ -66,6 +66,11 @@
   padding-right: 30px;
 }
 
+.para_outer.editing .para_inner {
+  text-align: left;
+  font-family: courier;
+}
+
 #elltwo.editing .para_outer:hover {
   border-right: 1px solid #CCC;
 }
@@ -152,6 +157,10 @@
 #topbar {
   position: fixed;
   right: 10px;
+}
+
+#topbar_control {
+  float: right;
 }
 
 #topbar_markdown {
@@ -252,11 +261,11 @@
 }
 
 .section_title.section_level1 {
-  font-size: 25px;  
+  font-size: 25px;
 }
 
 .section_title.section_level2 {
-  font-size: 20px;  
+  font-size: 20px;
 }
 
 .para_inner {

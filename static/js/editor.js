@@ -2,7 +2,7 @@
 
 // regexs
 var sec_re = /^(#+)([^!].*)/;
-var label_re = /\[(.+)\](.*)/;
+var label_re = /^ *\[([\w-_]+)\](.*)/;
 var ulist_re = /[\-\*](.*)/;
 var olist_re = /[0-9]+\.(.*|$)/;
 
@@ -107,7 +107,8 @@ function initialize() {
 
   var unescape_html = function(text) {
     return text.replace(/&lt;/g,'<')
-               .replace(/&gt;/g,'>');
+               .replace(/&gt;/g,'>')
+               .replace(/&nbsp;/g,' ');
   };
 
   // core renderer
@@ -116,10 +117,6 @@ function initialize() {
 
     // escape carets
     text = escape_html(text);
-
-    // clean out
-    box.removeClass();
-    box.addClass('para_inner');
 
     // classify cell type
     if (text.startsWith('#!')) {
@@ -209,7 +206,6 @@ function initialize() {
       var num_div = $("<div>",{class:"equation_number"});
       var div_inner = $("<div>",{class:"equation_inner"});
 
-      console.log(src);
       var ret = label_re.exec(src);
       var label;
       if (ret) {
@@ -350,6 +346,8 @@ function initialize() {
       if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
         outer.attr("disp_html",inner.html());
         outer.addClass("editing");
+        inner.removeClass();
+        inner.addClass('para_inner');
         var base = outer.attr("base_text");
         var text = escape_html(base);
         inner.html(text);
@@ -425,7 +423,7 @@ function initialize() {
 
   var number_equations = function() {
     console.log('numbering equations');
-    eqn_num = 1;  
+    eqn_num = 1;
     $(".equation.numbered").each(function() {
       var eqn = $(this);
       var num = eqn.children(".equation_number");
@@ -520,7 +518,7 @@ function connect()
       console.log('websocket closed, trying to reestablish');
       window.setTimeout(function() {
         ws = new WebSocket(ws_con);
-      }, 1);      
+      }, 1);
     };
   } else {
     console.log('Sorry, your browser does not support websockets.');
