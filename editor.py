@@ -12,6 +12,23 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
+# authentication
+with open('auth.txt') as fid:
+    auth = json.load(fid)
+cookie_secret = auth['cookie_secret']
+username_true = auth['username']
+password_true = auth['password']
+
+def authenticated(get0):
+    def get1(self):
+        current_user = self.get_secure_cookie("user")
+        print(current_user)
+        if not current_user:
+            self.redirect("/auth/login/")
+            return
+        get0(self)
+    return get1
+
 # utils
 tmpdir = './documents'
 
@@ -22,6 +39,8 @@ latex_template = """\\documentclass{article}
 \\usepackage{amssymb}
 \\usepackage[utf8]{inputenc}
 
+\\setlength\\parindent{0pt}
+
 \\begin{document}
 
 %s
@@ -31,6 +50,7 @@ latex_template = """\\documentclass{article}
 
 title_template = """\\begin{center}
 {\\LARGE \\bf %s}
+\\vspace{0.8cm}
 \\end{center}"""
 
 section_template = """\\%ssection{%s}"""
@@ -50,24 +70,23 @@ def gen_latex(cells):
       level = len(pound)
       yield section_template % ('sub'*(level-1),title)
       continue
-    if cell.startswith('1.'):
-      items = cell.split('\n')
-      text = ''
-      for item in items:
-        ret = re.match(r'[0-9]\. ?(.*)',item)
-        if ret:
-          text += '\\item %s\n' % ret.group(1)
-        else:
-          text += '%s\n' % item
+    if cell.startswith('+'):
+      items = cell[1:].split('\n+')
+      text = '\n'.join(['\\item %s\n' % item for item in items])
       yield enum_template % text
       continue
     yield cell
 
 def construct_latex(text):
   text = re.sub(r'\"(.*?)\"','``\\1\'\'',text)
+  text = re.sub(r'\&','\\&',text)
+  text = re.sub(r'\\align','&',text)
+  text = re.sub(r'\$\$([^\$]*)\$\$','\\\\begin{align*}\n\\1\n\\\\end{align*}',text)
+  print(text)
   cells = filter(len,map(str.strip,text.split('\n\n')))
   tex = '\n\n'.join(gen_latex(cells))
   latex = latex_template % tex
+  print(latex)
   return latex
 
 # parse input arguments
@@ -79,15 +98,15 @@ args = parser.parse_args()
 # initialize/open database
 def read_cells(fname):
   try:
-    fid = open(fname,'r+')
-    text = unicode(fid.read(),"utf-8")
+    fid = open(fname,'r+',encoding='utf-8')
+    text = fid.read()
     fid.close()
   except:
     text = u''
 
   # construct cell dictionary
   CellStruct = namedtuple('CellStruct','id body')
-  tcells = map(unicode.strip,text.split('\n\n'))
+  tcells = map(str.strip,text.split('\n\n'))
   fcells = filter(len,tcells)
   if fcells:
     cells = {i: {'prev': i-1, 'next': i+1, 'body': s} for (i,s) in enumerate(fcells)}
@@ -98,7 +117,7 @@ def read_cells(fname):
   return cells
 
 def gen_cells(cells):
-  cur = filter(lambda c: c['prev'] == -1,cells.values())
+  cur = [c for c in cells.values() if c['prev'] == -1]
   if cur:
     cur = cur[0]
   else:
@@ -112,7 +131,44 @@ def construct_markdown(cells):
   return '\n\n'.join(map(itemgetter('body'),gen_cells(cells)))
 
 # Tornado time
+class AuthLoginHandler(tornado.web.RequestHandler):
+    def get(self):
+        try:
+            errormessage = self.get_argument("error")
+        except:
+            errormessage = ""
+        self.render("login.html",errormessage=errormessage)
+
+    def check_permission(self, password, username):
+        if username == username_true and password == password_true:
+            return True
+        return False
+
+    def post(self):
+        username = self.get_argument("username", "")
+        password = self.get_argument("password", "")
+        auth = self.check_permission(password,username)
+        if auth:
+            self.set_current_user(username)
+            self.redirect("/")
+        else:
+            error_msg = "?error=" + tornado.escape.url_escape("Login incorrect")
+            self.redirect("/auth/login/" + error_msg)
+
+    def set_current_user(self, user):
+        if user:
+            print(user)
+            self.set_secure_cookie("user",tornado.escape.json_encode(user))
+        else:
+            self.clear_cookie("user")
+
+class AuthLogoutHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.clear_cookie("user")
+        self.redirect(self.get_argument("next","/"))
+
 class DirectoryHandler(tornado.web.RequestHandler):
+    @authenticated
     def get(self):
         files = os.listdir(args.path)
         self.render("directory.html",files=files)
@@ -184,33 +240,33 @@ class PdfHandler(tornado.web.RequestHandler):
 
 class ContentHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
-        print "initializing"
+        print("initializing")
         self.cells = {}
 
     def allow_draft76(self):
         return True
 
     def open(self,fname):
-        print "connection received: %s" % fname
+        print("connection received: %s" % fname)
         self.fname = fname
         self.temppath = os.path.join(tmpdir,fname)
         self.fullpath = os.path.join(args.path,fname)
 
     def on_close(self):
-        print "connection closing"
+        print("connection closing")
 
     def error_msg(self, error_code):
         if not error_code is None:
             json_string = json.dumps({"type": "error", "code": error_code})
             self.write_message("{0}".format(json_string))
         else:
-            print "error code not found"
+            print("error code not found")
 
     def on_message(self, msg):
         try:
-          print u'received message: {0}'.format(msg)
+          print(u'received message: {0}'.format(msg))
         except Exception as e:
-          print e
+          print(e)
         data = json.loads(msg)
         (cmd,cont) = (data['cmd'],data['content'])
         if cmd == 'query':
@@ -242,8 +298,8 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         elif cmd == 'write':
           output = construct_markdown(self.cells)
           print
-          print 'Saving.'
-          print output
+          print('Saving.')
+          print(output)
           fid = codecs.open(self.temppath,'w+',encoding='utf-8')
           fid.write(output)
           fid.close()
@@ -255,29 +311,29 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 
 class FileHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
-        print "initializing"
+        print("initializing")
 
     def allow_draft76(self):
         return True
 
     def open(self):
-        print "connection received"
+        print("connection received")
 
     def on_close(self):
-        print "connection closing"
+        print("connection closing")
 
     def error_msg(self, error_code):
         if not error_code is None:
             json_string = json.dumps({"type": "error", "code": error_code})
             self.write_message("{0}".format(json_string))
         else:
-            print "error code not found"
+            print("error code not found")
 
     def on_message(self, msg):
         try:
-          print u'received message: {0}'.format(msg)
+          print(u'received message: {0}'.format(msg))
         except Exception as e:
-          print e
+          print(e)
         data = json.loads(msg)
         (cmd,cont) = (data['cmd'],data['content'])
         if cmd == 'create':
@@ -288,7 +344,7 @@ class FileHandler(tornado.websocket.WebSocketHandler):
           except:
             exists = False
           if exists:
-            print 'File exists!'
+            print('File exists!')
             return
           fid = open(fullpath,'w+')
           fid.write('#! Title\n\nBody text.')
@@ -298,7 +354,9 @@ class FileHandler(tornado.websocket.WebSocketHandler):
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r"/editor/?", DirectoryHandler),
+            (r"/?", DirectoryHandler),
+            (r"/auth/login/?", AuthLoginHandler),
+            (r"/auth/logout/?", AuthLogoutHandler),
             (r"/editor/([^/]+)", EditorHandler),
             (r"/markdown/([^/]+)", MarkdownHandler),
             (r"/latex/([^/]+)", LatexHandler),
@@ -310,7 +368,7 @@ class Application(tornado.web.Application):
             app_name=u"Elltwo Editor",
             template_path="templates",
             static_path="static",
-            xsrf_cookies=True,
+            cookie_secret=cookie_secret
         )
         tornado.web.Application.__init__(self, handlers, debug=True, **settings)
 

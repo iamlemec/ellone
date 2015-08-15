@@ -69,6 +69,7 @@
 .para_outer.editing .para_inner {
   text-align: left;
   font-family: courier;
+  font-size: 14px;
 }
 
 #elltwo.editing .para_outer:hover {

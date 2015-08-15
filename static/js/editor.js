@@ -1,10 +1,19 @@
 // Elltwo editor
 
+// utils
+var max = function(arr) {
+  return Math.max.apply(null,arr);
+};
+
+var min = function(arr) {
+  return Math.min.apply(null,arr);
+};
+
 // regexs
 var sec_re = /^(#+)([^!].*)/;
 var label_re = /^ *\[([\w-_]+)\](.*)/;
-var ulist_re = /[\-\*](.*)/;
-var olist_re = /[0-9]+\.(.*|$)/;
+var ulist_re = /[\-](.*)/;
+var olist_re = /[\+](.*)/;
 
 function inline_marker(match, p, offset, string) {
   return '<span class=\"latex\">' + p + '</span>';
@@ -108,6 +117,7 @@ function initialize() {
   var unescape_html = function(text) {
     return text.replace(/&lt;/g,'<')
                .replace(/&gt;/g,'>')
+               .replace(/&amp;/g,'&')
                .replace(/&nbsp;/g,' ');
   };
 
@@ -136,46 +146,22 @@ function initialize() {
       }
       text = title;
       new_section = true;
-    } else if (text.startsWith('-') || text.startsWith('*')) {
-      var lines = text.split('\n');
+    } else if (text.startsWith('-')) {
+      var items = text.slice(1).split('\n-');
       var list = '<ul>';
-      var item = '';
-      var first = true;
-      for (i in lines) {
-        var line = lines[i];
-        var ret = ulist_re.exec(line);
-        if (ret) {
-          if (!first) {
-            list += '<li>' + (item.trim() || ' ') + '</li>'
-          }
-          first = false;
-          item = ret[1];
-        } else {
-          item += line;
-        }
+      for (i in items) {
+        var item = items[i];
+        list += '<li>' + (item.trim(),replace(/\n/g,' ') || ' ') + '</li>'
       }
-      list += '<li>' + (item.trim() || ' ') + '</li>';
       list += '</ul>';
       text = list;
-    } else if (text.startsWith('1.')) {
-      var lines = text.split('\n');
+    } else if (text.startsWith('+')) {
+      var items = text.slice(1).split('\n+');
       var list = '<ol>';
-      var item = '';
-      var first = true;
-      for (i in lines) {
-        var line = lines[i];
-        var ret = olist_re.exec(line);
-        if (ret) {
-          if (!first) {
-            list += '<li>' + (item.trim() || ' ') + '</li>';
-          }
-          first = false;
-          item = ret[1];
-        } else {
-          item += line;
-        }
+      for (i in items) {
+        var item = items[i];
+        list += '<li>' + (item.trim().replace(/\n/g,' ') || ' ') + '</li>';
       }
-      list += '<li>' + (item.trim() || ' ') + '</li>';
       list += '</ol>';
       text = list;
     }
@@ -188,7 +174,7 @@ function initialize() {
     box.html(html);
 
     // inline-ish elements
-    box.find("span.latex").each(function() {
+    box.find(".latex").each(function() {
       var span = $(this);
       var text = span.text();
       try {
@@ -199,7 +185,7 @@ function initialize() {
       }
     });
 
-    box.find("div.equation").each(function () {
+    box.find(".equation").each(function () {
       var eqn = $(this);
       var src = eqn.html().replace(/\n/g," ");
 
@@ -233,33 +219,9 @@ function initialize() {
 
       var eqn_boxes = div_inner.children(".equation_row");
       if (eqn_boxes.length > 1) {
-        var leftlist = [];
-        var rightlist = [];
-        var offlist = [];
-        eqn_boxes.each(function () {
-          var eqn = $(this);
-          var ktx = eqn.children(".katex");
-          var kwidth = ktx.width();
-          var anchor = ktx.find(".align");
-          var leftpos;
-          var rightpos;
-          if (anchor.length) {
-            leftpos = (anchor.offset().left+anchor.width()/2) - ktx.offset().left;
-            rightpos = kwidth - leftpos;
-          } else {
-            leftpos = kwidth/2;
-            rightpos = kwidth/2;
-          }
-          var myoff = rightpos - leftpos;
-          leftlist.push(leftpos);
-          rightlist.push(rightpos);
-          offlist.push(myoff);
-        });
-        var bigoff = Math.max(leftlist) - Math.max(rightlist);
-        eqn_boxes.each(function (i) {
-          $(this).children(".katex").css({"margin-left":bigoff+offlist[i]});
-        });
+        eqn.addClass("multiline");
       }
+
       new_equation = true;
     });
 
@@ -269,7 +231,7 @@ function initialize() {
         number_sections();
       }
       if (new_equation) {
-        number_equations();
+        polish_equations();
       }
       resolve_references(box);
     }
@@ -421,8 +383,9 @@ function initialize() {
     });
   };
 
-  var number_equations = function() {
-    console.log('numbering equations');
+  var polish_equations = function() {
+    console.log('polishing equations');
+
     eqn_num = 1;
     $(".equation.numbered").each(function() {
       var eqn = $(this);
@@ -431,7 +394,51 @@ function initialize() {
       num.html(eqn_num);
       eqn_num++;
     });
-  };
+
+    $(".equation.multiline").each(function() {
+      var eqn = $(this);
+      var div_inner = eqn.children(".equation_inner")
+      var eqn_boxes = div_inner.children(".equation_row");
+      if (eqn_boxes.length > 1) {
+        var leftlist = [];
+        var rightlist = [];
+        var offlist = [];
+        eqn_boxes.each(function () {
+          var eqn = $(this);
+          var rwidth = eqn.width();
+          var ktx = eqn.children(".katex");
+          var kwidth = ktx.width();
+          var anchor = ktx.find(".align");
+          var leftpos;
+          var rightpos;
+          if (anchor.length) {
+            leftpos = (anchor.offset().left+anchor.width()/2) - ktx.offset().left;
+            rightpos = kwidth - leftpos;
+          } else {
+            leftpos = kwidth/2;
+            rightpos = kwidth/2;
+          }
+          var myoff = rightpos - leftpos;
+          leftlist.push(leftpos);
+          rightlist.push(rightpos);
+          offlist.push(myoff);
+        });
+        var bigoff = max(leftlist) - max(rightlist);
+
+        if (eqn.attr('id') == 'debug') {
+          console.log(leftlist);
+          console.log(rightlist);
+          console.log(offlist);
+          console.log(bigoff);
+        }
+
+        eqn_boxes.each(function (i) {
+          var ktx = $(this).children(".katex");
+          ktx.css({"margin-left":bigoff+offlist[i]});
+        });
+      }
+    });
+  }
 
   var resolve_references = function() {
     console.log('resolving references');
@@ -466,7 +473,7 @@ function initialize() {
       number_sections();
     }
     if (new_equation) {
-      number_equations();
+      polish_equations();
     }
     resolve_references();
   };
