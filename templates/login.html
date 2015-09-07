@@ -1,0 +1,19 @@
+<form action="/auth/login/" method="post" id="login_form">
+    <fieldset>
+        <label for="username">Username</label>
+        <input class="text-input" id="username" name="username" type="text" value="">
+    </fieldset>
+
+    <fieldset>
+        <label for="password">Password</label>
+        <input class="text-input" id="password" name="password" type="password" value="">
+    </fieldset>
+
+    <fieldset>
+        <span class="errormessage">{{ errormessage }}</span>
+    </fieldset>
+
+    <div id="form_btn">
+        <input id="signin-btn" type="submit" value="Sign In" tabindex="3">
+    </div>
+</form>
