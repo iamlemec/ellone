@@ -47,7 +47,7 @@
 /* paragraph cells */
 
 .para_inner {
-  margin-top: 20px;
+  /*margin-top: 20px;*/
   padding-left: 5px;
   white-space: pre-wrap;
 }
@@ -62,7 +62,10 @@
 
 .para_outer {
   position: relative;
+  margin-top: 10px;
+  padding: 3px;
   border-right: 1px solid white;
+  /*border-radius: 5px;*/
   padding-right: 30px;
 }
 
@@ -73,7 +76,9 @@
 }
 
 #elltwo.editing .para_outer:hover {
+  /*border-left: 1px solid #CCC;*/
   border-right: 1px solid #CCC;
+  /*background-color: #F6F6F6;*/
 }
 
 #elltwo.editing .para_outer:hover > .toolbar {
