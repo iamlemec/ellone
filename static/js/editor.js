@@ -152,7 +152,7 @@ function initialize() {
       var list = '<ul>';
       for (i in items) {
         var item = items[i];
-        list += '<li>' + (item.trim(),replace(/\n/g,' ') || ' ') + '</li>'
+        list += '<li>' + (item.trim().replace(/\n/g,' ') || ' ') + '</li>'
       }
       list += '</ul>';
       text = list;

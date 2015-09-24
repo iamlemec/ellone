@@ -170,7 +170,7 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
 class DirectoryHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self):
-        files = os.listdir(args.path)
+        files = sorted(os.listdir(args.path))
         self.render("directory.html",files=files)
 
 class EditorHandler(tornado.web.RequestHandler):
