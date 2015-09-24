@@ -167,6 +167,7 @@ function initialize() {
       text = list;
     } else if (ret = img_re.exec(text)) {
       var src = ret[1];
+      box.addClass("image");
       text = '<img src="' + src + '"/>';
     }
 

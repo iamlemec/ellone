@@ -115,6 +115,24 @@
   margin-top: 20px;
 }
 
+/* images */
+
+.image {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.image > img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* lists */
+
+ul {
+  margin-top: 0px;
+}
+
 /* sections */
 
 .section_title {
