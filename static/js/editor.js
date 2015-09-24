@@ -11,6 +11,7 @@ var min = function(arr) {
 
 // regexs
 var sec_re = /^(#+)([^!].*)/;
+var img_re = /^!\[([^\]]*)\]/;
 var label_re = /^ *\[([\w-_]+)\](.*)/;
 var ulist_re = /[\-](.*)/;
 var olist_re = /[\+](.*)/;
@@ -164,6 +165,9 @@ function initialize() {
       }
       list += '</ol>';
       text = list;
+    } else if (ret = img_re.exec(text)) {
+      var src = ret[1];
+      text = '<img src="' + src + '"/>';
     }
 
     // tag markers
