@@ -183,11 +183,24 @@ ul {
   right: 10px;
 }
 
+#elltwo.nocontrol #topbar {
+  display: none;
+}
+
 #topbar_control {
   float: right;
 }
 
 #topbar_markdown {
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
+}
+
+#topbar_html {
   cursor: default;
   font-size: 15px;
   background-color: rgb(53, 122, 232);

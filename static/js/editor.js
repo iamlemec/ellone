@@ -58,6 +58,21 @@ function initialize() {
     window.location.replace("/markdown/"+fname);
   });
 
+  $("#topbar_html").click(function() {
+    var edit = elltwo_box.hasClass("editing");
+    elltwo_box.removeClass("editing");
+    elltwo_box.addClass("nocontrol");
+    var ns = new XMLSerializer();
+    var html = ns.serializeToString(document);
+    var msg = JSON.stringify({"cmd": "html", "content": html});
+    console.log(msg);
+    ws.send(msg);
+    if (edit) {
+      elltwo_box.addClass("editing");
+    }
+    elltwo_box.removeClass("nocontrol");
+  });
+
   $("#topbar_latex").click(function() {
     window.location.replace("/latex/"+fname);
   });
@@ -522,6 +537,8 @@ function connect()
             outer_box.append(div);
           }
           full_render();
+        } else if (cmd == 'html') {
+          window.location.replace("/html/"+fname);
         }
       }
     };

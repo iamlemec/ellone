@@ -12,6 +12,12 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
+# parse input arguments
+parser = argparse.ArgumentParser(description='Elltwo Server.')
+parser.add_argument('--path', type=str, default='.', help='path for files')
+parser.add_argument('--port', type=int, default=8500, help='port to serve on')
+args = parser.parse_args()
+
 # authentication
 with open('auth.txt') as fid:
     auth = json.load(fid)
@@ -89,12 +95,6 @@ def construct_latex(text):
   print(latex)
   return latex
 
-# parse input arguments
-parser = argparse.ArgumentParser(description='Elltwo Server.')
-parser.add_argument('--path', type=str, default='.', help='path for files')
-parser.add_argument('--port', type=int, default=8500, help='port to serve on')
-args = parser.parse_args()
-
 # initialize/open database
 def read_cells(fname):
   try:
@@ -129,6 +129,14 @@ def gen_cells(cells):
 
 def construct_markdown(cells):
   return '\n\n'.join(map(itemgetter('body'),gen_cells(cells)))
+
+def get_base_name(fname):
+  ret = re.match(r'(.*)\.md',fname)
+  if ret:
+    fname_new = ret.group(1)
+  else:
+    fname_new = fname
+  return fname_new
 
 # Tornado time
 class AuthLoginHandler(tornado.web.RequestHandler):
@@ -186,6 +194,30 @@ class MarkdownHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type','text/markdown')
         self.set_header('Content-Disposition','attachment; filename=%s' % fname)
         self.write(text)
+    get = post
+
+class HtmlHandler(tornado.web.RequestHandler):
+    def post(self,fname):
+        fname_base = get_base_name(fname)
+        fname_html = '%s.html' % fname_base
+        path_html = os.path.join(tmpdir,fname_html)
+        data = open(path_html).read()
+
+        # style data
+        css_extern = '<link href="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css" type="text/css" rel="stylesheet">\n\n'
+        css_files = ['css/proxima-nova.css','css/editor.css']
+        css_inline = ''
+        for css_file in css_files:
+            css_inline += open('static/%s' % css_file).read() + '\n\n'
+
+        # sub in proper css files
+        data = re.sub(r'<link[^>]*>',r'',data)
+        data = re.sub(r'<script[^>]*></script>',r'',data)
+        data = re.sub(r'<head>',r'<head>\n%s\n<style>\n%s\n</style>\n' % (css_extern,css_inline),data)
+
+        self.set_header('Content-Type','application/pdf')
+        self.set_header('Content-Disposition','attachment; filename=%s' % fname_html)
+        self.write(data)
     get = post
 
 class LatexHandler(tornado.web.RequestHandler):
@@ -249,6 +281,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
     def open(self,fname):
         print("connection received: %s" % fname)
         self.fname = fname
+        self.basename = get_base_name(fname)
         self.temppath = os.path.join(tmpdir,fname)
         self.fullpath = os.path.join(args.path,fname)
 
@@ -308,6 +341,12 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
           self.cells = read_cells(self.fullpath)
           vcells = [{'cid': i, 'prev': c['prev'], 'next': c['next'], 'body': c['body']} for (i,c) in self.cells.items()]
           self.write_message(json.dumps({'cmd': 'results', 'content': vcells}))
+        elif cmd == 'html':
+          fname_html = '%s.html' % self.basename
+          path_html = os.path.join(tmpdir,fname_html)
+          file_html = open(path_html,'w+')
+          file_html.write(cont)
+          self.write_message(json.dumps({'cmd': 'html', 'content': ''}))
 
 class FileHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -359,6 +398,7 @@ class Application(tornado.web.Application):
             (r"/auth/logout/?", AuthLogoutHandler),
             (r"/editor/([^/]+)", EditorHandler),
             (r"/markdown/([^/]+)", MarkdownHandler),
+            (r"/html/([^/]+)", HtmlHandler),
             (r"/latex/([^/]+)", LatexHandler),
             (r"/pdf/([^/]+)", PdfHandler),
             (r"/elledit/([^/]*)", ContentHandler),
