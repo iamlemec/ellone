@@ -197,12 +197,7 @@ function initialize() {
     box.find(".latex").each(function() {
       var span = $(this);
       var text = span.text();
-      try {
-        katex.render(text,span[0]);
-      } catch(e) {
-        span.html(text);
-        span.css({'color': 'red'});
-      }
+      katex.render(text,span[0],{throwOnError: false});
     });
 
     box.find(".equation").each(function () {
@@ -223,13 +218,7 @@ function initialize() {
 
       $(src.split('\\\\')).each(function (i,txt) {
         var row = $("<div>",{class:"equation_row"});
-        try {
-          katex.render("\\displaystyle{" + txt + "}",row[0]);
-        } catch(err) {
-          row.html(txt);
-          console.log(err);
-          row.css({'color': 'red'});
-        }
+        katex.render(txt,row[0],{displayMode: true, throwOnError: false});
         div_inner.append(row);
       });
 
