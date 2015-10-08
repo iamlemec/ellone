@@ -32,12 +32,30 @@ function reference_marker(match, p, offset, string) {
 var reference_re = /@\[(.+)\]/g;
 
 // utilities
-function select_all(elem) {
-  var selection = window.getSelection();
+function set_caret_at_end(element) {
   var range = document.createRange();
-  range.selectNodeContents(elem);
-  selection.removeAllRanges();
-  selection.addRange(range);
+  range.selectNodeContents(element);
+  range.collapse(false);
+  var sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  element.focus();
+}
+
+function get_caret_position(element) {
+  sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    var range = window.getSelection().getRangeAt(0);
+    var preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(element);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    caretOffset = preCaretRange.toString().length;
+  }
+  return caretOffset;
+}
+
+function get_text_length(element) {
+  return element.textContent.length;
 }
 
 // bulk code
@@ -63,7 +81,7 @@ function initialize() {
     elltwo_box.removeClass("editing");
     elltwo_box.addClass("nocontrol");
     var ns = new XMLSerializer();
-    var html = ns.serializeToString(document);
+    var html = ns.serializeToString(elltwo_box[0]);
     var msg = JSON.stringify({"cmd": "html", "content": html});
     console.log(msg);
     ws.send(msg);
@@ -102,6 +120,48 @@ function initialize() {
 
   $("#topbar_editing").click(function() {
     elltwo_box.toggleClass("editing");
+  });
+
+  var activate_prev = function() {
+    active.removeClass("active");
+    var prev = active.prev(".para_outer");
+    if (prev.length > 0) {
+      active = prev;
+    }
+    active.addClass("active");
+  }
+
+  var activate_next = function() {
+    active.removeClass("active");
+    var next = active.next(".para_outer");
+    if (next.length > 0) {
+      active = next;
+    }
+    active.addClass("active");
+  }
+
+  // vim-like controls :)
+  $(window).keydown(function(event) {
+    console.log(event.keyCode);
+    if (!elltwo_box.hasClass("editing")) {
+      return;
+    }
+    if (active.hasClass("editing")) {
+      //
+    } else {
+      if (event.keyCode == 38) { // up
+        activate_prev();
+      } else if (event.keyCode == 40) { // down
+        activate_next();
+      } else if (event.keyCode == 87) { // w
+        unfreeze_cell(active);
+        return false;
+      } else if (event.keyCode == 79) { // o
+        create_cell(active);
+        activate_next();
+        return false;
+      }
+    }
   });
 
   // convert text (with newlines) to html (with divs) and vice versa
@@ -262,10 +322,10 @@ function initialize() {
     var cnext = $(".para_outer[cid="+next+"]");
     cnext.attr("prev",newid);
     cell.attr("next",newid);
-    var par = make_para("Text",newid,prev,next,true);
+    var par = make_para("",newid,prev,next,true);
     par.insertAfter(cell);
     var inner = par.children(".para_inner");
-    select_all(inner[0]);
+    set_caret_at_end(inner[0]);
     var msg = JSON.stringify({"cmd": "create", "content": {"newid": newid, "prev": prev, "next": next}});
     console.log(msg);
     ws.send(msg);
@@ -286,6 +346,34 @@ function initialize() {
     ws.send(msg);
     elltwo_box.addClass("modified");
   };
+
+  var freeze_cell = function(outer) {
+    var inner = outer.children(".para_inner");
+    var html = inner.html();
+    var text = strip_tags(html);
+    var base = unescape_html(text);
+    outer.attr("base_text",base);
+    if (outer.hasClass("modified")) {
+      save_cell(outer);
+      outer.removeClass("modified");
+    }
+    outer.removeClass("editing");
+    inner.attr("contentEditable","false");
+    render(inner,text);
+  }
+
+  var unfreeze_cell = function(outer) {
+    var inner = outer.children(".para_inner");
+    outer.attr("disp_html",inner.html());
+    outer.addClass("editing");
+    inner.removeClass();
+    inner.addClass('para_inner');
+    var base = outer.attr("base_text");
+    var text = escape_html(base);
+    inner.html(text);
+    inner.attr("contentEditable","true");
+    set_caret_at_end(inner[0]);
+  }
 
   var make_toolbar = function(outer) {
     var bar = $("<div>",{class:"toolbar"});
@@ -315,55 +403,44 @@ function initialize() {
     render(inner,text,defer);
     inner.dblclick(function(event) {
       if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
-        outer.attr("disp_html",inner.html());
-        outer.addClass("editing");
-        inner.removeClass();
-        inner.addClass('para_inner');
-        var base = outer.attr("base_text");
-        var text = escape_html(base);
-        inner.html(text);
-        inner.attr("contentEditable","true");
-        inner.focus();
+        unfreeze_cell(outer);
       }
     });
     inner.keydown(function(event) {
       if (outer.hasClass("editing")) {
-        if ((event.keyCode == 13) && event.shiftKey) {
-          var html = inner.html();
-          var text = strip_tags(html);
-          var base = unescape_html(text);
-          outer.attr("base_text",base);
-          if (outer.hasClass("modified")) {
-            save_cell(outer);
-            outer.removeClass("modified");
+        if (event.keyCode == 13) {
+          if (event.shiftKey) {
+            freeze_cell(outer);
+            event.preventDefault();
+          } else {
+            var cpos = get_caret_position(inner[0]);
+            var tlen = get_text_length(inner[0]);
+            if (cpos == tlen) {
+              create_cell(outer);
+              activate_next(outer);
+              return false;
+            }
           }
-          outer.removeClass("editing");
-          inner.attr("contentEditable","false");
-          render(inner,text);
+        } else if (event.keyCode == 27) {
+          freeze_cell(outer);
           event.preventDefault();
-        }
-        if (event.keyCode == 27) {
-          outer.removeClass("editing");
-          outer.removeClass("modified");
-          inner.attr("contentEditable","false");
-          inner.html(outer.attr("disp_html"));
+        } else if (event.keyCode == 8) {
+          var tlen = get_text_length(inner[0]);
+          if (tlen == 0) {
+            var pout = outer.prev(".para_outer.editing");
+            var prev = pout.children('.para_inner');
+            if (prev.length > 0) {
+              set_caret_at_end(prev[0]);
+            }
+            activate_prev(outer);
+            delete_cell(outer);
+            event.preventDefault();
+          }
         }
       }
     });
     inner.bind("input", function() {
       outer.addClass("modified");
-    });
-    inner.on("focus.setcursor", function() {
-      console.log('focus!');
-      window.setTimeout(function() {
-          var range = document.createRange();
-          range.selectNodeContents(inner[0]);
-          range.collapse(false);
-          var sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-          inner.unbind('focus.setcursor');
-      }, 1);
     });
 
     if (edit) {
@@ -526,6 +603,8 @@ function connect()
             outer_box.append(div);
           }
           full_render();
+          active = outer_box.children(".para_outer").last();
+          active.addClass("active");
         } else if (cmd == 'html') {
           window.location.replace("/html/"+fname);
         }

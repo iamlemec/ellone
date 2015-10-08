@@ -203,21 +203,19 @@ class HtmlHandler(tornado.web.RequestHandler):
         path_html = os.path.join(tmpdir,fname_html)
         data = open(path_html).read()
 
-        # style data
-        css_extern = '<link href="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css" type="text/css" rel="stylesheet">\n\n'
+        # generate html
+        css_extern = '<link href="http://dohan.dyndns.org/local/ellsworth/katex/katex.min.css" type="text/css" rel="stylesheet">'
         css_files = ['css/proxima-nova.css','css/editor.css']
         css_inline = ''
         for css_file in css_files:
             css_inline += open('static/%s' % css_file).read() + '\n\n'
-
-        # sub in proper css files
-        data = re.sub(r'<link[^>]*>',r'',data)
-        data = re.sub(r'<script[^>]*></script>',r'',data)
-        data = re.sub(r'<head>',r'<head>\n%s\n<style>\n%s\n</style>\n' % (css_extern,css_inline),data)
+        css = '%s\n\n<style>\n\n%s\n\n</style>' % (css_extern,css_inline)
+        meta = '<meta charset="UTF-8">'
+        html = '<!DOCTYPE html>\n<html>\n\n<head>\n\n%s\n\n%s\n\n</head>\n\n<body>\n\n%s\n\n</body>\n\n</html>\n' % (meta,css,data)
 
         self.set_header('Content-Type','application/pdf')
         self.set_header('Content-Disposition','attachment; filename=%s' % fname_html)
-        self.write(data)
+        self.write(html)
     get = post
 
 class LatexHandler(tornado.web.RequestHandler):

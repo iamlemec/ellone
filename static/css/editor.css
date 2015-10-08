@@ -48,6 +48,7 @@
 
 .para_inner {
   /*margin-top: 20px;*/
+  min-height: 21px;
   padding-left: 5px;
   white-space: pre-wrap;
 }
@@ -64,8 +65,8 @@
   position: relative;
   margin-top: 10px;
   padding: 3px;
+  border-left: 1px solid white;
   border-right: 1px solid white;
-  /*border-radius: 5px;*/
   padding-right: 30px;
 }
 
@@ -76,9 +77,7 @@
 }
 
 #elltwo.editing .para_outer:hover {
-  /*border-left: 1px solid #CCC;*/
   border-right: 1px solid #CCC;
-  /*background-color: #F6F6F6;*/
 }
 
 #elltwo.editing .para_outer:hover > .toolbar {
@@ -87,6 +86,10 @@
 
 #elltwo.editing .para_outer:first-child > .toolbar > .del_button {
   display: none;
+}
+
+#elltwo.editing .para_outer.active {
+  border-left: 1px solid #BBB;
 }
 
 /* equations */
@@ -188,6 +191,14 @@ ul {
 }
 
 #topbar_control {
+  float: right;
+}
+
+#topbar_export1 {
+  float: right;
+}
+
+#topbar_export2 {
   float: right;
 }
 
