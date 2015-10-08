@@ -122,45 +122,54 @@ function initialize() {
     elltwo_box.toggleClass("editing");
   });
 
-  var activate_prev = function() {
+  // active cell manipulation
+  var activate_cell = function(cell) {
     active.removeClass("active");
+    cell.addClass("active");
+    active = cell;
+  }
+
+  var activate_prev = function() {
     var prev = active.prev(".para_outer");
     if (prev.length > 0) {
-      active = prev;
+      activate_cell(prev);
+      return true;
+    } else {
+      return false;
     }
-    active.addClass("active");
   }
 
   var activate_next = function() {
-    active.removeClass("active");
     var next = active.next(".para_outer");
     if (next.length > 0) {
-      active = next;
+      activate_cell(next);
+      return true;
+    } else {
+      return false;
     }
-    active.addClass("active");
   }
 
   // vim-like controls :)
   $(window).keydown(function(event) {
     console.log(event.keyCode);
-    if (!elltwo_box.hasClass("editing")) {
-      return;
-    }
-    if (active.hasClass("editing")) {
-      //
-    } else {
-      if (event.keyCode == 38) { // up
-        activate_prev();
-      } else if (event.keyCode == 40) { // down
-        activate_next();
-      } else if (event.keyCode == 87) { // w
-        unfreeze_cell(active);
-        return false;
-      } else if (event.keyCode == 79) { // o
-        create_cell(active);
-        activate_next();
-        return false;
+    if (elltwo_box.hasClass("editing")) {
+      if (active.hasClass("editing")) {
+        //
+      } else {
+        if (event.keyCode == 38) { // up
+          activate_prev();
+        } else if (event.keyCode == 40) { // down
+          activate_next();
+        } else if (event.keyCode == 87) { // w
+          unfreeze_cell(active);
+          return false;
+        } else if (event.keyCode == 79) { // o
+          create_cell(active);
+          return false;
+        }
       }
+    } else {
+      //
     }
   });
 
@@ -315,35 +324,56 @@ function initialize() {
     elltwo_box.addClass("modified");
   };
 
+  // create cell (after para_outer)
   var create_cell = function(cell) {
+    // generate id and stitch into linked list
     var newid = Math.max.apply(null,$(".para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
     var prev = cell.attr("cid");
     var next = cell.attr("next");
     var cnext = $(".para_outer[cid="+next+"]");
     cnext.attr("prev",newid);
     cell.attr("next",newid);
-    var par = make_para("",newid,prev,next,true);
-    par.insertAfter(cell);
-    var inner = par.children(".para_inner");
+
+    // generate html
+    var outer = make_para("",newid,prev,next,true);
+    outer.insertAfter(cell);
+
+    // place caret inside
+    var inner = outer.children(".para_inner");
     set_caret_at_end(inner[0]);
+
+    // activate cell
+    activate_cell(outer);
+
+    // notify server
     var msg = JSON.stringify({"cmd": "create", "content": {"newid": newid, "prev": prev, "next": next}});
     console.log(msg);
     ws.send(msg);
+
+    // mark document modified
     elltwo_box.addClass("modified");
   };
 
+  // delete cell (para_outer)
   var delete_cell = function(cell) {
+    // snip out of linked list
     prev = cell.attr("prev");
     next = cell.attr("next");
     cprev = $(".para_outer[cid="+prev+"]");
     cnext = $(".para_outer[cid="+next+"]");
     cprev.attr("next",next);
     cnext.attr("prev",prev);
+
+    // delete from DOM
     cell.remove();
+
+    // inform server
     var cid = cell.attr("cid");
     var msg = JSON.stringify({"cmd": "delete", "content": {"cid": cid, "prev": prev, "next": next}});
     console.log(msg);
     ws.send(msg);
+
+    // mark document modified
     elltwo_box.addClass("modified");
   };
 
@@ -383,6 +413,7 @@ function initialize() {
       create_cell(outer);
     });
     del.click(function() {
+      activate_next(outer);
       delete_cell(outer);
     });
     bar.append(add);
@@ -401,6 +432,9 @@ function initialize() {
     var inner = $("<div>",{class:"para_inner"});
     outer.attr("base_text",text);
     render(inner,text,defer);
+    inner.click(function(event) {
+      activate_cell(outer);
+    });
     inner.dblclick(function(event) {
       if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
         unfreeze_cell(outer);
@@ -417,7 +451,6 @@ function initialize() {
             var tlen = get_text_length(inner[0]);
             if (cpos == tlen) {
               create_cell(outer);
-              activate_next(outer);
               return false;
             }
           }
@@ -432,8 +465,9 @@ function initialize() {
             if (prev.length > 0) {
               set_caret_at_end(prev[0]);
             }
-            activate_prev(outer);
-            delete_cell(outer);
+            if (activate_prev(outer)) {
+              delete_cell(outer);
+            }
             event.preventDefault();
           }
         }
