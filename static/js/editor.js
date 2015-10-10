@@ -32,6 +32,21 @@ function reference_marker(match, p, offset, string) {
 var reference_re = /@\[(.+)\]/g;
 
 // utilities
+function clear_selection() {
+  var sel = window.getSelection();
+  sel.removeAllRanges();
+}
+
+function set_caret_at_beg(element) {
+  var range = document.createRange();
+  range.setStart(element,0);
+  range.collapse(false);
+  var sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  element.focus();
+}
+
 function set_caret_at_end(element) {
   var range = document.createRange();
   range.selectNodeContents(element);
@@ -61,6 +76,8 @@ function get_text_length(element) {
 // bulk code
 function initialize() {
   // find outer box
+  html = $("html");
+  body = $("body");
   elltwo_box = $("#elltwo");
   outer_box = elltwo_box.children("#content");
 
@@ -123,9 +140,30 @@ function initialize() {
   });
 
   // active cell manipulation
+  var scrollSpeed = 300;
+  var scrollFudge = 100;
   var activate_cell = function(cell) {
+    // change css to new
     active.removeClass("active");
     cell.addClass("active");
+
+    // scroll cell into view
+    var cell_top = cell.offset().top;
+    var cell_bot = cell_top + cell.height();
+    var page_top = window.scrollY;
+    var page_bot = page_top + window.innerHeight;
+    if (cell_top < page_top) {
+      html.stop();
+      html.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
+    } else if (cell_bot > page_bot) {
+      html.stop();
+      html.animate({scrollTop: cell_bot - window.innerHeight + scrollFudge},scrollSpeed);
+    }
+
+    // change focus
+    cell.focus();
+
+    // update cell var
     active = cell;
   }
 
@@ -154,12 +192,22 @@ function initialize() {
     console.log(event.keyCode);
     if (elltwo_box.hasClass("editing")) {
       if (active.hasClass("editing")) {
-        //
+        // handled in cell
       } else {
         if (event.keyCode == 38) { // up
           activate_prev();
+          if (active.hasClass("editing")) {
+            var inner = active.children(".para_inner");
+            set_caret_at_end(inner[0]);
+            return false;
+          }
         } else if (event.keyCode == 40) { // down
           activate_next();
+          if (active.hasClass("editing")) {
+            var inner = active.children(".para_inner");
+            set_caret_at_beg(inner[0]);
+            return false;
+          }
         } else if (event.keyCode == 87) { // w
           unfreeze_cell(active);
           return false;
@@ -269,6 +317,7 @@ function initialize() {
       katex.render(text,span[0],{throwOnError: false});
     });
 
+    // typeset disyplay equations
     box.find(".equation").each(function () {
       var eqn = $(this);
       var src = eqn.html().replace(/\n/g," ");
@@ -315,12 +364,19 @@ function initialize() {
     }
   };
 
+  // save cell to server
   var save_cell = function(cell) {
+    // get source text
     var cid = cell.attr("cid");
     var body = cell.attr("base_text");
+
+    // send to server
     var msg = JSON.stringify({"cmd": "save", "content": {"cid":cid, "body": body}});
     console.log(msg);
     ws.send(msg);
+
+    // mark document as modified (cell not so)
+    outer.removeClass("modified");
     elltwo_box.addClass("modified");
   };
 
@@ -385,7 +441,6 @@ function initialize() {
     outer.attr("base_text",base);
     if (outer.hasClass("modified")) {
       save_cell(outer);
-      outer.removeClass("modified");
     }
     outer.removeClass("editing");
     inner.attr("contentEditable","false");
@@ -442,7 +497,7 @@ function initialize() {
     });
     inner.keydown(function(event) {
       if (outer.hasClass("editing")) {
-        if (event.keyCode == 13) {
+        if (event.keyCode == 13) { // return
           if (event.shiftKey) {
             freeze_cell(outer);
             event.preventDefault();
@@ -454,21 +509,35 @@ function initialize() {
               return false;
             }
           }
-        } else if (event.keyCode == 27) {
+        } else if (event.keyCode == 27) { // escape
           freeze_cell(outer);
           event.preventDefault();
-        } else if (event.keyCode == 8) {
+        } else if (event.keyCode == 8) { // backspace
           var tlen = get_text_length(inner[0]);
           if (tlen == 0) {
-            var pout = outer.prev(".para_outer.editing");
-            var prev = pout.children('.para_inner');
-            if (prev.length > 0) {
-              set_caret_at_end(prev[0]);
-            }
             if (activate_prev(outer)) {
+              // if (active.hasClass("editing")) {
+              //   set_caret_at_end(prev[0]);
+              // }
               delete_cell(outer);
             }
             event.preventDefault();
+          }
+        } else if (event.keyCode == 38) { // up
+          var cpos = get_caret_position(inner[0]);
+          if (cpos == 0) {
+            activate_prev(outer);
+            clear_selection();
+            return false;
+          }
+        } else if (event.keyCode == 40) { //down
+          var cpos = get_caret_position(inner[0]);
+          var tlen = get_text_length(inner[0]);
+          if (cpos == tlen) {
+            if (activate_next(outer)) {
+              clear_selection();
+              return false;
+            }
           }
         }
       }
@@ -637,7 +706,7 @@ function connect()
             outer_box.append(div);
           }
           full_render();
-          active = outer_box.children(".para_outer").last();
+          active = outer_box.children(".para_outer").first();
           active.addClass("active");
         } else if (cmd == 'html') {
           window.location.replace("/html/"+fname);
