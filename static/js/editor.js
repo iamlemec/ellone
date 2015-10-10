@@ -1,4 +1,12 @@
-// Elltwo editor
+/*
+*  Elltwo editor
+*/
+
+// globals
+html = $("html");
+body = $("body");
+elltwo_box = $("#elltwo");
+outer_box = elltwo_box.children("#content");
 
 // utils
 var max = function(arr) {
@@ -9,7 +17,7 @@ var min = function(arr) {
   return Math.min.apply(null,arr);
 };
 
-// regexs
+// regexes
 var sec_re = /^(#+)([^!].*)/;
 var img_re = /^!\[([^\]]*)\]/;
 var label_re = /^ *\[([\w-_]+)\](.*)/;
@@ -31,7 +39,40 @@ function reference_marker(match, p, offset, string) {
 }
 var reference_re = /@\[(.+)\]/g;
 
-// utilities
+// convert text (with newlines) to html (with divs) and vice versa
+function fill_tags(text) {
+  if (text.includes('\n')) {
+    return '<div>' + text.replace(/\n/g,'</div><div>') + '</div>';
+  } else {
+    return text;
+  }
+};
+
+function strip_tags(html) {
+  if (html.startsWith('<div>')) {
+    html = html.replace(/<div>/,'');
+  }
+  return html.replace(/<div ?.*?>/g,'\n')
+             .replace(/<\/div>/g,'')
+             .replace(/<br>/g,'\n')
+             .replace(/\n+/g,'\n')
+             .replace(/<span ?.*?>/g,'')
+             .replace(/<\/span>/g,'');
+};
+
+function escape_html(text) {
+  return text.replace(/</g,'&lt;')
+             .replace(/>/g,'&gt;');
+};
+
+function unescape_html(text) {
+  return text.replace(/&lt;/g,'<')
+             .replace(/&gt;/g,'>')
+             .replace(/&amp;/g,'&')
+             .replace(/&nbsp;/g,' ');
+};
+
+// selection and cursor/caret utilities
 function clear_selection() {
   var sel = window.getSelection();
   sel.removeAllRanges();
@@ -73,22 +114,480 @@ function get_text_length(element) {
   return element.textContent.length;
 }
 
-// bulk code
-function initialize() {
-  // find outer box
-  html = $("html");
-  body = $("body");
-  elltwo_box = $("#elltwo");
-  outer_box = elltwo_box.children("#content");
+// active cell manipulation
+var scrollSpeed = 300;
+var scrollFudge = 100;
+var active;
 
+function activate_cell(cell) {
+  // change css to new
+  active.removeClass("active");
+  cell.addClass("active");
+
+  // scroll cell into view
+  var cell_top = cell.offset().top;
+  var cell_bot = cell_top + cell.height();
+  var page_top = window.scrollY;
+  var page_bot = page_top + window.innerHeight;
+  if (cell_top < page_top) {
+    html.stop();
+    html.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
+  } else if (cell_bot > page_bot) {
+    html.stop();
+    html.animate({scrollTop: cell_bot - window.innerHeight + scrollFudge},scrollSpeed);
+  }
+
+  // change focus
+  cell.focus();
+
+  // update cell var
+  active = cell;
+}
+
+function activate_prev() {
+  var prev = active.prev(".para_outer");
+  if (prev.length > 0) {
+    activate_cell(prev);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function activate_next() {
+  var next = active.next(".para_outer");
+  if (next.length > 0) {
+    activate_cell(next);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// inner cell renderer
+function render(box,text,defer) {
+  defer = defer || false;
+
+  // escape carets
+  text = escape_html(text);
+
+  // classify cell type
+  if (text.startsWith('#!')) {
+    text = text.slice(2);
+    box.addClass('title');
+  } else if (ret = sec_re.exec(text)) {
+    var lvl = ret[1].length;
+    var title = ret[2];
+    box.addClass('section_title');
+    box.addClass('section_level'+lvl);
+    box.attr("sec-lvl",lvl);
+    if (ret = label_re.exec(title)) {
+      label = ret[1];
+      title = ret[2];
+      box.attr("id",label);
+      box.addClass("numbered");
+    }
+    text = title;
+    new_section = true;
+  } else if (text.startsWith('-')) {
+    var items = text.slice(1).split('\n-');
+    var list = '<ul>';
+    for (i in items) {
+      var item = items[i];
+      list += '<li>' + (item.trim().replace(/\n/g,' ') || ' ') + '</li>'
+    }
+    list += '</ul>';
+    text = list;
+  } else if (text.startsWith('+')) {
+    var items = text.slice(1).split('\n+');
+    var list = '<ol>';
+    for (i in items) {
+      var item = items[i];
+      list += '<li>' + (item.trim().replace(/\n/g,' ') || ' ') + '</li>';
+    }
+    list += '</ol>';
+    text = list;
+  } else if (ret = img_re.exec(text)) {
+    var src = ret[1];
+    box.addClass("image");
+    text = '<img src="' + src + '"/>';
+  }
+
+  // tag markers
+  text = text.replace(display_re,display_marker);
+  text = text.replace(inline_re,inline_marker);
+  text = text.replace(reference_re,reference_marker);
+  var html = fill_tags(text);
+  box.html(html);
+
+  // inline-ish elements
+  box.find(".latex").each(function() {
+    var span = $(this);
+    var text = span.text();
+    katex.render(text,span[0],{throwOnError: false});
+  });
+
+  // typeset disyplay equations
+  box.find(".equation").each(function () {
+    var eqn = $(this);
+    var src = eqn.html().replace(/\n/g," ");
+
+    var num_div = $("<div>",{class:"equation_number"});
+    var div_inner = $("<div>",{class:"equation_inner"});
+
+    var ret = label_re.exec(src);
+    var label;
+    if (ret) {
+      label = ret[1];
+      src = ret[2];
+      eqn.attr("id",label);
+      eqn.addClass("numbered");
+    }
+
+    $(src.split('\\\\')).each(function (i,txt) {
+      var row = $("<div>",{class:"equation_row"});
+      katex.render(txt,row[0],{displayMode: true, throwOnError: false});
+      div_inner.append(row);
+    });
+
+    eqn.html("");
+    eqn.append(num_div);
+    eqn.append(div_inner);
+
+    var eqn_boxes = div_inner.children(".equation_row");
+    if (eqn_boxes.length > 1) {
+      eqn.addClass("multiline");
+    }
+
+    new_equation = true;
+  });
+
+  // recalculate sections, equations, and references
+  if (!defer) {
+    if (new_section) {
+      number_sections();
+    }
+    if (new_equation) {
+      polish_equations();
+    }
+    resolve_references(box);
+  }
+}
+
+// save cell to server
+function save_cell(cell) {
+  // get source text
+  var cid = cell.attr("cid");
+  var body = cell.attr("base_text");
+
+  // send to server
+  var msg = JSON.stringify({"cmd": "save", "content": {"cid":cid, "body": body}});
+  console.log(msg);
+  ws.send(msg);
+
+  // mark document as modified (cell not so)
+  outer.removeClass("modified");
+  elltwo_box.addClass("modified");
+}
+
+// create cell (after para_outer)
+function create_cell(cell) {
+  // generate id and stitch into linked list
+  var newid = Math.max.apply(null,$(".para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
+  var prev = cell.attr("cid");
+  var next = cell.attr("next");
+  var cnext = $(".para_outer[cid="+next+"]");
+  cnext.attr("prev",newid);
+  cell.attr("next",newid);
+
+  // generate html
+  var outer = make_para("",newid,prev,next,true);
+  outer.insertAfter(cell);
+
+  // place caret inside
+  var inner = outer.children(".para_inner");
+  set_caret_at_end(inner[0]);
+
+  // activate cell
+  activate_cell(outer);
+
+  // notify server
+  var msg = JSON.stringify({"cmd": "create", "content": {"newid": newid, "prev": prev, "next": next}});
+  console.log(msg);
+  ws.send(msg);
+
+  // mark document modified
+  elltwo_box.addClass("modified");
+}
+
+// delete cell (para_outer)
+function delete_cell(cell) {
+  // snip out of linked list
+  prev = cell.attr("prev");
+  next = cell.attr("next");
+  cprev = $(".para_outer[cid="+prev+"]");
+  cnext = $(".para_outer[cid="+next+"]");
+  cprev.attr("next",next);
+  cnext.attr("prev",prev);
+
+  // delete from DOM
+  cell.remove();
+
+  // inform server
+  var cid = cell.attr("cid");
+  var msg = JSON.stringify({"cmd": "delete", "content": {"cid": cid, "prev": prev, "next": next}});
+  console.log(msg);
+  ws.send(msg);
+
+  // mark document modified
+  elltwo_box.addClass("modified");
+}
+
+function freeze_cell(outer) {
+  var inner = outer.children(".para_inner");
+  var html = inner.html();
+  var text = strip_tags(html);
+  var base = unescape_html(text);
+  outer.attr("base_text",base);
+  if (outer.hasClass("modified")) {
+    save_cell(outer);
+  }
+  outer.removeClass("editing");
+  inner.attr("contentEditable","false");
+  render(inner,text);
+}
+
+function unfreeze_cell(outer) {
+  var inner = outer.children(".para_inner");
+  outer.attr("disp_html",inner.html());
+  outer.addClass("editing");
+  inner.removeClass();
+  inner.addClass('para_inner');
+  var base = outer.attr("base_text");
+  var text = escape_html(base);
+  inner.html(text);
+  inner.attr("contentEditable","true");
+  set_caret_at_end(inner[0]);
+}
+
+function make_toolbar(outer) {
+  var bar = $("<div>",{class:"toolbar"});
+  var add = $("<span>",{class:"add_button",html:"+"});
+  var del = $("<span>",{class:"del_button",html:"x"});
+  add.click(function() {
+    create_cell(outer);
+  });
+  del.click(function() {
+    activate_next(outer);
+    delete_cell(outer);
+  });
+  bar.append(add);
+  bar.append(del);
+  return bar;
+};
+
+function make_para(text,cid,prev,next,edit,defer) {
+  edit = edit || false;
+  defer = defer || false;
+
+  var outer = $("<div>",{class:"para_outer"});
+  outer.attr("cid",cid);
+  outer.attr("prev",prev);
+  outer.attr("next",next);
+  var inner = $("<div>",{class:"para_inner"});
+  outer.attr("base_text",text);
+  render(inner,text,defer);
+  inner.click(function(event) {
+    activate_cell(outer);
+  });
+  inner.dblclick(function(event) {
+    if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
+      unfreeze_cell(outer);
+    }
+  });
+  inner.keydown(function(event) {
+    if (outer.hasClass("editing")) {
+      if (event.keyCode == 13) { // return
+        if (event.shiftKey) {
+          freeze_cell(outer);
+          event.preventDefault();
+        } else {
+          var cpos = get_caret_position(inner[0]);
+          var tlen = get_text_length(inner[0]);
+          if (cpos == tlen) {
+            create_cell(outer);
+            return false;
+          }
+        }
+      } else if (event.keyCode == 27) { // escape
+        freeze_cell(outer);
+        event.preventDefault();
+      } else if (event.keyCode == 8) { // backspace
+        var tlen = get_text_length(inner[0]);
+        if (tlen == 0) {
+          if (activate_prev(outer)) {
+            // if (active.hasClass("editing")) {
+            //   set_caret_at_end(prev[0]);
+            // }
+            delete_cell(outer);
+          }
+          event.preventDefault();
+        }
+      } else if (event.keyCode == 38) { // up
+        var cpos = get_caret_position(inner[0]);
+        if (cpos == 0) {
+          activate_prev(outer);
+          clear_selection();
+          return false;
+        }
+      } else if (event.keyCode == 40) { //down
+        var cpos = get_caret_position(inner[0]);
+        var tlen = get_text_length(inner[0]);
+        if (cpos == tlen) {
+          if (activate_next(outer)) {
+            clear_selection();
+            return false;
+          }
+        }
+      }
+    }
+  });
+  inner.bind("input", function() {
+    outer.addClass("modified");
+  });
+
+  if (edit) {
+    outer.attr("disp_html",inner.html());
+    outer.addClass("editing");
+    inner.html(outer.attr("base_html"));
+    inner.attr("contentEditable","true");
+  }
+  outer.append(inner);
+  outer.append(make_toolbar(outer));
+  return outer;
+}
+
+function number_sections() {
+  console.log('numbering sections');
+  var sec_num = Array();
+  sec_num[0] = "";
+  sec_num[1] = 0;
+  $(".section_title").each(function() {
+    var sec = $(this);
+    var lvl = parseInt(sec.attr("sec-lvl"));
+    sec_num[lvl]++;
+    sec_num[lvl+1] = 0;
+    var lab = sec_num.slice(1,lvl+1).join('.');
+    sec.attr("sec_num",lab);
+  });
+}
+
+function polish_equations() {
+  console.log('polishing equations');
+
+  eqn_num = 1;
+  $(".equation.numbered").each(function() {
+    var eqn = $(this);
+    var num = eqn.children(".equation_number");
+    eqn.attr("eqn_num",eqn_num);
+    num.html(eqn_num);
+    eqn_num++;
+  });
+
+  $(".equation.multiline").each(function() {
+    var eqn = $(this);
+    var div_inner = eqn.children(".equation_inner")
+    var eqn_boxes = div_inner.children(".equation_row");
+    if (eqn_boxes.length > 1) {
+      var leftlist = [];
+      var rightlist = [];
+      var offlist = [];
+      eqn_boxes.each(function () {
+        var eqn = $(this);
+        var rwidth = eqn.width();
+        var ktx = eqn.children(".katex");
+        var kwidth = ktx.width();
+        var anchor = ktx.find(".align");
+        var leftpos;
+        var rightpos;
+        if (anchor.length) {
+          leftpos = (anchor.offset().left+anchor.width()/2) - ktx.offset().left;
+          rightpos = kwidth - leftpos;
+        } else {
+          leftpos = kwidth/2;
+          rightpos = kwidth/2;
+        }
+        var myoff = rightpos - leftpos;
+        leftlist.push(leftpos);
+        rightlist.push(rightpos);
+        offlist.push(myoff);
+      });
+      var bigoff = max(leftlist) - max(rightlist);
+
+      if (eqn.attr('id') == 'debug') {
+        console.log(leftlist);
+        console.log(rightlist);
+        console.log(offlist);
+        console.log(bigoff);
+      }
+
+      eqn_boxes.each(function (i) {
+        var ktx = $(this).children(".katex");
+        ktx.css({"margin-left":bigoff+offlist[i]});
+      });
+    }
+  });
+}
+
+function resolve_references() {
+  console.log('resolving references');
+  $(".reference").each(function() {
+    var ref = $(this);
+    var label = ref.attr("target");
+    var targ = $("#"+label);
+    if (targ.hasClass("equation")) {
+      var eqn_num = targ.attr("eqn_num");
+      ref.html("<a href=\"#" + label + "\">Equation " + eqn_num + "</a>");
+      ref.removeClass("error");
+    } else if (targ.hasClass("section_title")) {
+      var sec_num = targ.attr("sec_num");
+      ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
+      ref.removeClass("error");
+    } else {
+      ref.html(label);
+      ref.addClass("error");
+    }
+  });
+}
+
+function full_render() {
+  console.log('rendering');
+  new_section = false;
+  new_equation = false;
+  $("div.par").replaceWith(function() {
+    var par = $(this);
+    return make_para(par.html(),par.attr("cid"),par.attr("prev"),par.attr("next"),false,true);
+  });
+  if (new_section) {
+    number_sections();
+  }
+  if (new_equation) {
+    polish_equations();
+  }
+  resolve_references();
+}
+
+// initialization code
+function initialize() {
   // optional marquee box
-  if (marquee=elltwo_box.children("#marquee")) {
+  var marquee = elltwo_box.children("#marquee");
+  if (marquee) {
     var span = $("<span>");
     katex.render("\\ell^2",span[0]);
     marquee.append(span);
   }
 
-  // topbar
+  // topbar button handlers
   $("#topbar_markdown").click(function() {
     window.location.replace("/markdown/"+fname);
   });
@@ -139,54 +638,6 @@ function initialize() {
     elltwo_box.toggleClass("editing");
   });
 
-  // active cell manipulation
-  var scrollSpeed = 300;
-  var scrollFudge = 100;
-  var activate_cell = function(cell) {
-    // change css to new
-    active.removeClass("active");
-    cell.addClass("active");
-
-    // scroll cell into view
-    var cell_top = cell.offset().top;
-    var cell_bot = cell_top + cell.height();
-    var page_top = window.scrollY;
-    var page_bot = page_top + window.innerHeight;
-    if (cell_top < page_top) {
-      html.stop();
-      html.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
-    } else if (cell_bot > page_bot) {
-      html.stop();
-      html.animate({scrollTop: cell_bot - window.innerHeight + scrollFudge},scrollSpeed);
-    }
-
-    // change focus
-    cell.focus();
-
-    // update cell var
-    active = cell;
-  }
-
-  var activate_prev = function() {
-    var prev = active.prev(".para_outer");
-    if (prev.length > 0) {
-      activate_cell(prev);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  var activate_next = function() {
-    var next = active.next(".para_outer");
-    if (next.length > 0) {
-      activate_cell(next);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   // vim-like controls :)
   $(window).keydown(function(event) {
     console.log(event.keyCode);
@@ -217,456 +668,10 @@ function initialize() {
         }
       }
     } else {
-      //
+      // nothing to do in frozen mode
     }
   });
-
-  // convert text (with newlines) to html (with divs) and vice versa
-  var fill_tags = function(text) {
-    if (text.includes('\n')) {
-      return '<div>' + text.replace(/\n/g,'</div><div>') + '</div>';
-    } else {
-      return text;
-    }
-  };
-
-  var strip_tags = function(html) {
-    if (html.startsWith('<div>')) {
-      html = html.replace(/<div>/,'');
-    }
-    return html.replace(/<div ?.*?>/g,'\n')
-               .replace(/<\/div>/g,'')
-               .replace(/<br>/g,'\n')
-               .replace(/\n+/g,'\n')
-               .replace(/<span ?.*?>/g,'')
-               .replace(/<\/span>/g,'');
-  };
-
-  var escape_html = function(text) {
-    return text.replace(/</g,'&lt;')
-               .replace(/>/g,'&gt;');
-  };
-
-  var unescape_html = function(text) {
-    return text.replace(/&lt;/g,'<')
-               .replace(/&gt;/g,'>')
-               .replace(/&amp;/g,'&')
-               .replace(/&nbsp;/g,' ');
-  };
-
-  // core renderer
-  var render = function(box,text,defer) {
-    defer = defer || false;
-
-    // escape carets
-    text = escape_html(text);
-
-    // classify cell type
-    if (text.startsWith('#!')) {
-      text = text.slice(2);
-      box.addClass('title');
-    } else if (ret = sec_re.exec(text)) {
-      var lvl = ret[1].length;
-      var title = ret[2];
-      box.addClass('section_title');
-      box.addClass('section_level'+lvl);
-      box.attr("sec-lvl",lvl);
-      if (ret = label_re.exec(title)) {
-        label = ret[1];
-        title = ret[2];
-        box.attr("id",label);
-        box.addClass("numbered");
-      }
-      text = title;
-      new_section = true;
-    } else if (text.startsWith('-')) {
-      var items = text.slice(1).split('\n-');
-      var list = '<ul>';
-      for (i in items) {
-        var item = items[i];
-        list += '<li>' + (item.trim().replace(/\n/g,' ') || ' ') + '</li>'
-      }
-      list += '</ul>';
-      text = list;
-    } else if (text.startsWith('+')) {
-      var items = text.slice(1).split('\n+');
-      var list = '<ol>';
-      for (i in items) {
-        var item = items[i];
-        list += '<li>' + (item.trim().replace(/\n/g,' ') || ' ') + '</li>';
-      }
-      list += '</ol>';
-      text = list;
-    } else if (ret = img_re.exec(text)) {
-      var src = ret[1];
-      box.addClass("image");
-      text = '<img src="' + src + '"/>';
-    }
-
-    // tag markers
-    text = text.replace(display_re,display_marker);
-    text = text.replace(inline_re,inline_marker);
-    text = text.replace(reference_re,reference_marker);
-    var html = fill_tags(text);
-    box.html(html);
-
-    // inline-ish elements
-    box.find(".latex").each(function() {
-      var span = $(this);
-      var text = span.text();
-      katex.render(text,span[0],{throwOnError: false});
-    });
-
-    // typeset disyplay equations
-    box.find(".equation").each(function () {
-      var eqn = $(this);
-      var src = eqn.html().replace(/\n/g," ");
-
-      var num_div = $("<div>",{class:"equation_number"});
-      var div_inner = $("<div>",{class:"equation_inner"});
-
-      var ret = label_re.exec(src);
-      var label;
-      if (ret) {
-        label = ret[1];
-        src = ret[2];
-        eqn.attr("id",label);
-        eqn.addClass("numbered");
-      }
-
-      $(src.split('\\\\')).each(function (i,txt) {
-        var row = $("<div>",{class:"equation_row"});
-        katex.render(txt,row[0],{displayMode: true, throwOnError: false});
-        div_inner.append(row);
-      });
-
-      eqn.html("");
-      eqn.append(num_div);
-      eqn.append(div_inner);
-
-      var eqn_boxes = div_inner.children(".equation_row");
-      if (eqn_boxes.length > 1) {
-        eqn.addClass("multiline");
-      }
-
-      new_equation = true;
-    });
-
-    // recalculate sections, equations, and references
-    if (!defer) {
-      if (new_section) {
-        number_sections();
-      }
-      if (new_equation) {
-        polish_equations();
-      }
-      resolve_references(box);
-    }
-  };
-
-  // save cell to server
-  var save_cell = function(cell) {
-    // get source text
-    var cid = cell.attr("cid");
-    var body = cell.attr("base_text");
-
-    // send to server
-    var msg = JSON.stringify({"cmd": "save", "content": {"cid":cid, "body": body}});
-    console.log(msg);
-    ws.send(msg);
-
-    // mark document as modified (cell not so)
-    outer.removeClass("modified");
-    elltwo_box.addClass("modified");
-  };
-
-  // create cell (after para_outer)
-  var create_cell = function(cell) {
-    // generate id and stitch into linked list
-    var newid = Math.max.apply(null,$(".para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
-    var prev = cell.attr("cid");
-    var next = cell.attr("next");
-    var cnext = $(".para_outer[cid="+next+"]");
-    cnext.attr("prev",newid);
-    cell.attr("next",newid);
-
-    // generate html
-    var outer = make_para("",newid,prev,next,true);
-    outer.insertAfter(cell);
-
-    // place caret inside
-    var inner = outer.children(".para_inner");
-    set_caret_at_end(inner[0]);
-
-    // activate cell
-    activate_cell(outer);
-
-    // notify server
-    var msg = JSON.stringify({"cmd": "create", "content": {"newid": newid, "prev": prev, "next": next}});
-    console.log(msg);
-    ws.send(msg);
-
-    // mark document modified
-    elltwo_box.addClass("modified");
-  };
-
-  // delete cell (para_outer)
-  var delete_cell = function(cell) {
-    // snip out of linked list
-    prev = cell.attr("prev");
-    next = cell.attr("next");
-    cprev = $(".para_outer[cid="+prev+"]");
-    cnext = $(".para_outer[cid="+next+"]");
-    cprev.attr("next",next);
-    cnext.attr("prev",prev);
-
-    // delete from DOM
-    cell.remove();
-
-    // inform server
-    var cid = cell.attr("cid");
-    var msg = JSON.stringify({"cmd": "delete", "content": {"cid": cid, "prev": prev, "next": next}});
-    console.log(msg);
-    ws.send(msg);
-
-    // mark document modified
-    elltwo_box.addClass("modified");
-  };
-
-  var freeze_cell = function(outer) {
-    var inner = outer.children(".para_inner");
-    var html = inner.html();
-    var text = strip_tags(html);
-    var base = unescape_html(text);
-    outer.attr("base_text",base);
-    if (outer.hasClass("modified")) {
-      save_cell(outer);
-    }
-    outer.removeClass("editing");
-    inner.attr("contentEditable","false");
-    render(inner,text);
-  }
-
-  var unfreeze_cell = function(outer) {
-    var inner = outer.children(".para_inner");
-    outer.attr("disp_html",inner.html());
-    outer.addClass("editing");
-    inner.removeClass();
-    inner.addClass('para_inner');
-    var base = outer.attr("base_text");
-    var text = escape_html(base);
-    inner.html(text);
-    inner.attr("contentEditable","true");
-    set_caret_at_end(inner[0]);
-  }
-
-  var make_toolbar = function(outer) {
-    var bar = $("<div>",{class:"toolbar"});
-    var add = $("<span>",{class:"add_button",html:"+"});
-    var del = $("<span>",{class:"del_button",html:"x"});
-    add.click(function() {
-      create_cell(outer);
-    });
-    del.click(function() {
-      activate_next(outer);
-      delete_cell(outer);
-    });
-    bar.append(add);
-    bar.append(del);
-    return bar;
-  };
-
-  var make_para = function(text,cid,prev,next,edit,defer) {
-    edit = edit || false;
-    defer = defer || false;
-
-    var outer = $("<div>",{class:"para_outer"});
-    outer.attr("cid",cid);
-    outer.attr("prev",prev);
-    outer.attr("next",next);
-    var inner = $("<div>",{class:"para_inner"});
-    outer.attr("base_text",text);
-    render(inner,text,defer);
-    inner.click(function(event) {
-      activate_cell(outer);
-    });
-    inner.dblclick(function(event) {
-      if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
-        unfreeze_cell(outer);
-      }
-    });
-    inner.keydown(function(event) {
-      if (outer.hasClass("editing")) {
-        if (event.keyCode == 13) { // return
-          if (event.shiftKey) {
-            freeze_cell(outer);
-            event.preventDefault();
-          } else {
-            var cpos = get_caret_position(inner[0]);
-            var tlen = get_text_length(inner[0]);
-            if (cpos == tlen) {
-              create_cell(outer);
-              return false;
-            }
-          }
-        } else if (event.keyCode == 27) { // escape
-          freeze_cell(outer);
-          event.preventDefault();
-        } else if (event.keyCode == 8) { // backspace
-          var tlen = get_text_length(inner[0]);
-          if (tlen == 0) {
-            if (activate_prev(outer)) {
-              // if (active.hasClass("editing")) {
-              //   set_caret_at_end(prev[0]);
-              // }
-              delete_cell(outer);
-            }
-            event.preventDefault();
-          }
-        } else if (event.keyCode == 38) { // up
-          var cpos = get_caret_position(inner[0]);
-          if (cpos == 0) {
-            activate_prev(outer);
-            clear_selection();
-            return false;
-          }
-        } else if (event.keyCode == 40) { //down
-          var cpos = get_caret_position(inner[0]);
-          var tlen = get_text_length(inner[0]);
-          if (cpos == tlen) {
-            if (activate_next(outer)) {
-              clear_selection();
-              return false;
-            }
-          }
-        }
-      }
-    });
-    inner.bind("input", function() {
-      outer.addClass("modified");
-    });
-
-    if (edit) {
-      outer.attr("disp_html",inner.html());
-      outer.addClass("editing");
-      inner.html(outer.attr("base_html"));
-      inner.attr("contentEditable","true");
-    }
-    outer.append(inner);
-    outer.append(make_toolbar(outer));
-    return outer;
-  };
-
-  var number_sections = function() {
-    console.log('numbering sections');
-    var sec_num = Array();
-    sec_num[0] = "";
-    sec_num[1] = 0;
-    $(".section_title").each(function() {
-      var sec = $(this);
-      var lvl = parseInt(sec.attr("sec-lvl"));
-      sec_num[lvl]++;
-      sec_num[lvl+1] = 0;
-      var lab = sec_num.slice(1,lvl+1).join('.');
-      sec.attr("sec_num",lab);
-    });
-  };
-
-  var polish_equations = function() {
-    console.log('polishing equations');
-
-    eqn_num = 1;
-    $(".equation.numbered").each(function() {
-      var eqn = $(this);
-      var num = eqn.children(".equation_number");
-      eqn.attr("eqn_num",eqn_num);
-      num.html(eqn_num);
-      eqn_num++;
-    });
-
-    $(".equation.multiline").each(function() {
-      var eqn = $(this);
-      var div_inner = eqn.children(".equation_inner")
-      var eqn_boxes = div_inner.children(".equation_row");
-      if (eqn_boxes.length > 1) {
-        var leftlist = [];
-        var rightlist = [];
-        var offlist = [];
-        eqn_boxes.each(function () {
-          var eqn = $(this);
-          var rwidth = eqn.width();
-          var ktx = eqn.children(".katex");
-          var kwidth = ktx.width();
-          var anchor = ktx.find(".align");
-          var leftpos;
-          var rightpos;
-          if (anchor.length) {
-            leftpos = (anchor.offset().left+anchor.width()/2) - ktx.offset().left;
-            rightpos = kwidth - leftpos;
-          } else {
-            leftpos = kwidth/2;
-            rightpos = kwidth/2;
-          }
-          var myoff = rightpos - leftpos;
-          leftlist.push(leftpos);
-          rightlist.push(rightpos);
-          offlist.push(myoff);
-        });
-        var bigoff = max(leftlist) - max(rightlist);
-
-        if (eqn.attr('id') == 'debug') {
-          console.log(leftlist);
-          console.log(rightlist);
-          console.log(offlist);
-          console.log(bigoff);
-        }
-
-        eqn_boxes.each(function (i) {
-          var ktx = $(this).children(".katex");
-          ktx.css({"margin-left":bigoff+offlist[i]});
-        });
-      }
-    });
-  }
-
-  var resolve_references = function() {
-    console.log('resolving references');
-    $(".reference").each(function() {
-      var ref = $(this);
-      var label = ref.attr("target");
-      var targ = $("#"+label);
-      if (targ.hasClass("equation")) {
-        var eqn_num = targ.attr("eqn_num");
-        ref.html("<a href=\"#" + label + "\">Equation " + eqn_num + "</a>");
-        ref.removeClass("error");
-      } else if (targ.hasClass("section_title")) {
-        var sec_num = targ.attr("sec_num");
-        ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
-        ref.removeClass("error");
-      } else {
-        ref.html(label);
-        ref.addClass("error");
-      }
-    });
-  };
-
-  full_render = function() {
-    console.log('rendering');
-    new_section = false;
-    new_equation = false;
-    $("div.par").replaceWith(function() {
-      var par = $(this);
-      return make_para(par.html(),par.attr("cid"),par.attr("prev"),par.attr("next"),false,true);
-    });
-    if (new_section) {
-      number_sections();
-    }
-    if (new_equation) {
-      polish_equations();
-    }
-    resolve_references();
-  };
-};
+}
 
 // websockets
 function connect()
