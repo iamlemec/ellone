@@ -74,7 +74,11 @@ function unescape_html(text) {
 
 // cell utils
 function get_inner(outer) {
-  return outer.children(".para_inner");
+  return outer.children(".para_inner")[0];
+}
+
+function is_editing(outer) {
+  return outer.hasClass("editing");
 }
 
 // selection and cursor/caret utilities
@@ -83,50 +87,50 @@ function clear_selection() {
   sel.removeAllRanges();
 }
 
-function set_caret_at_beg(element) {
+function set_caret_at_beg(outer) {
+  var inner = get_inner(outer);
   var range = document.createRange();
-  range.setStart(element,0);
+  range.setStart(inner,0);
   range.collapse(false);
   var sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-  element.focus();
+  inner.focus();
 }
 
-function set_caret_at_end(element) {
+function set_caret_at_end(outer) {
+  var inner = get_inner(outer);
   var range = document.createRange();
-  range.selectNodeContents(element);
+  range.selectNodeContents(inner);
   range.collapse(false);
   var sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-  element.focus();
+  inner.focus();
 }
 
-function get_caret_position(element) {
+function get_caret_position(inner) {
   sel = window.getSelection();
   if (sel.rangeCount > 0) {
     var range = window.getSelection().getRangeAt(0);
     var preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(element);
+    preCaretRange.selectNodeContents(inner);
     preCaretRange.setEnd(range.endContainer, range.endOffset);
     caretOffset = preCaretRange.toString().length;
   }
   return caretOffset;
 }
 
-function get_text_length(element) {
-  return element.textContent.length;
-}
-
-function get_caret_at_beg(element) {
-  var cpos = get_caret_position(element);
+function get_caret_at_beg(outer) {
+  var inner = get_inner(outer);
+  var cpos = get_caret_position(inner);
   return (cpos == 0);
 }
 
-function get_caret_at_end(element) {
-  var cpos = get_caret_position(element);
-  var tlen = get_text_length(element);
+function get_caret_at_end(outer) {
+  var inner = get_inner(outer);
+  var cpos = get_caret_position(inner);
+  var tlen = inner.textContent.length;
   return (cpos == tlen);
 }
 
@@ -320,12 +324,11 @@ function create_cell(cell) {
   var outer = make_para("",newid,prev,next,true);
   outer.insertAfter(cell);
 
-  // place caret inside
-  var inner = outer.children(".para_inner");
-  set_caret_at_end(inner[0]);
-
   // activate cell
   activate_cell(outer);
+
+  // place caret inside
+  set_caret_at_end(outer);
 
   // notify server
   var msg = JSON.stringify({"cmd": "create", "content": {"newid": newid, "prev": prev, "next": next}});
@@ -384,7 +387,7 @@ function unfreeze_cell(outer) {
   var text = escape_html(base);
   inner.html(text);
   inner.attr("contentEditable","true");
-  set_caret_at_end(inner[0]);
+  set_caret_at_end(outer);
 }
 
 function make_toolbar(outer) {
@@ -615,12 +618,16 @@ function initialize() {
   // vim-like controls :)
   $(window).keydown(function(event) {
     console.log(event.keyCode);
-    if (elltwo_box.hasClass("editing")) {
-      if (event.keyCode == 38) { // up
+
+    var keyCode = event.keyCode;
+    var docEdit = is_editing(elltwo_box);
+    var actEdit = is_editing(active);
+
+    if (docEdit) {
+      if (keyCode == 38) { // up
         var oldEdit = false;
-        if (active.hasClass("editing")) {
-          var inner = get_inner(active);
-          if (!get_caret_at_beg(inner[0])) {
+        if (actEdit) {
+          if (!get_caret_at_beg(active)) {
             return true;
           } else {
             oldEdit = true;
@@ -630,17 +637,15 @@ function initialize() {
           if (oldEdit) {
             clear_selection();
           }
-          if (active.hasClass("editing")) {
-            var inner = get_inner(active);
-            set_caret_at_end(inner[0]);
+          if (is_editing(active)) {
+            set_caret_at_end(active);
           }
           return false;
         }
-      } else if (event.keyCode == 40) { // down
+      } else if (keyCode == 40) { // down
         var oldEdit = false;
-        if (active.hasClass("editing")) {
-          var inner = get_inner(active);
-          if (!get_caret_at_end(inner[0])) {
+        if (actEdit) {
+          if (!get_caret_at_end(active)) {
             return;
           } else {
             oldEdit = true;
@@ -650,51 +655,47 @@ function initialize() {
           if (oldEdit) {
             clear_selection();
           }
-          if (active.hasClass("editing")) {
-            var inner = get_inner(active);
-            set_caret_at_beg(inner[0]);
+          if (is_editing(active)) {
+            set_caret_at_beg(active);
           }
           return false;
         }
-      } else if (event.keyCode == 87) { // w
-        if (!active.hasClass("editing")) {
+      } else if (keyCode == 87) { // w
+        if (!actEdit) {
           unfreeze_cell(active);
           return false;
         }
-      } else if (event.keyCode == 27) { // escape
-        if (active.hasClass("editing")) {
+      } else if (keyCode == 27) { // escape
+        if (actEdit) {
           freeze_cell(active);
           return false;
         }
-      } else if (event.keyCode == 79) { // o
-        if (!active.hasClass("editing")) {
+      } else if (keyCode == 79) { // o
+        if (!actEdit) {
           create_cell(active);
           return false;
         }
-      } else if (event.keyCode == 13) { // return
-        if (active.hasClass("editing")) {
+      } else if (keyCode == 13) { // return
+        if (actEdit) {
           if (event.shiftKey) {
             freeze_cell(active);
             return false;
           } else {
-            var inner = get_inner(active);
-            if (get_caret_at_end(inner[0])) {
+            if (get_caret_at_end(active)) {
               clear_selection();
               create_cell(active);
               return false;
             }
           }
         }
-      } else if (event.keyCode == 8) { // backspace
-        if (active.hasClass("editing")) {
+      } else if (keyCode == 8) { // backspace
+        if (actEdit) {
           var outer = active;
-          var inner = get_inner(active);
-          if (get_caret_at_beg(inner[0])) {
+          if (get_caret_at_beg(active)) {
             if (activate_prev()) {
               delete_cell(outer);
-              if (active.hasClass("editing")) {
-                var inner = get_inner(active);
-                set_caret_at_end(inner[0]);
+              if (is_editing(active)) {
+                set_caret_at_end(active);
               }
             }
             return false;
