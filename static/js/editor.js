@@ -9,11 +9,11 @@ elltwo_box = $("#elltwo");
 outer_box = elltwo_box.children("#content");
 
 // utils
-var max = function(arr) {
+function max(arr) {
   return Math.max.apply(null,arr);
 };
 
-var min = function(arr) {
+function min(arr) {
   return Math.min.apply(null,arr);
 };
 
@@ -72,6 +72,11 @@ function unescape_html(text) {
              .replace(/&nbsp;/g,' ');
 };
 
+// cell utils
+function get_inner(outer) {
+  return outer.children(".para_inner");
+}
+
 // selection and cursor/caret utilities
 function clear_selection() {
   var sel = window.getSelection();
@@ -112,6 +117,17 @@ function get_caret_position(element) {
 
 function get_text_length(element) {
   return element.textContent.length;
+}
+
+function get_caret_at_beg(element) {
+  var cpos = get_caret_position(element);
+  return (cpos == 0);
+}
+
+function get_caret_at_end(element) {
+  var cpos = get_caret_position(element);
+  var tlen = get_text_length(element);
+  return (cpos == tlen);
 }
 
 // active cell manipulation
@@ -286,7 +302,7 @@ function save_cell(cell) {
   ws.send(msg);
 
   // mark document as modified (cell not so)
-  outer.removeClass("modified");
+  cell.removeClass("modified");
   elltwo_box.addClass("modified");
 }
 
@@ -344,6 +360,7 @@ function delete_cell(cell) {
 }
 
 function freeze_cell(outer) {
+  clear_selection();
   var inner = outer.children(".para_inner");
   var html = inner.html();
   var text = strip_tags(html);
@@ -390,80 +407,37 @@ function make_para(text,cid,prev,next,edit,defer) {
   edit = edit || false;
   defer = defer || false;
 
+  // insert into list
   var outer = $("<div>",{class:"para_outer"});
   outer.attr("cid",cid);
   outer.attr("prev",prev);
   outer.attr("next",next);
+
+  // render inner paragraph
   var inner = $("<div>",{class:"para_inner"});
   outer.attr("base_text",text);
   render(inner,text,defer);
+
+  // event handlers
   inner.click(function(event) {
     activate_cell(outer);
-  });
-  inner.dblclick(function(event) {
-    if (!outer.hasClass("editing") && elltwo_box.hasClass("editing")) {
-      unfreeze_cell(outer);
-    }
-  });
-  inner.keydown(function(event) {
-    if (outer.hasClass("editing")) {
-      if (event.keyCode == 13) { // return
-        if (event.shiftKey) {
-          freeze_cell(outer);
-          event.preventDefault();
-        } else {
-          var cpos = get_caret_position(inner[0]);
-          var tlen = get_text_length(inner[0]);
-          if (cpos == tlen) {
-            create_cell(outer);
-            return false;
-          }
-        }
-      } else if (event.keyCode == 27) { // escape
-        freeze_cell(outer);
-        event.preventDefault();
-      } else if (event.keyCode == 8) { // backspace
-        var tlen = get_text_length(inner[0]);
-        if (tlen == 0) {
-          if (activate_prev(outer)) {
-            // if (active.hasClass("editing")) {
-            //   set_caret_at_end(prev[0]);
-            // }
-            delete_cell(outer);
-          }
-          event.preventDefault();
-        }
-      } else if (event.keyCode == 38) { // up
-        var cpos = get_caret_position(inner[0]);
-        if (cpos == 0) {
-          activate_prev(outer);
-          clear_selection();
-          return false;
-        }
-      } else if (event.keyCode == 40) { //down
-        var cpos = get_caret_position(inner[0]);
-        var tlen = get_text_length(inner[0]);
-        if (cpos == tlen) {
-          if (activate_next(outer)) {
-            clear_selection();
-            return false;
-          }
-        }
-      }
-    }
   });
   inner.bind("input", function() {
     outer.addClass("modified");
   });
 
+  // start out editing?
   if (edit) {
     outer.attr("disp_html",inner.html());
     outer.addClass("editing");
     inner.html(outer.attr("base_html"));
     inner.attr("contentEditable","true");
   }
+
+  // insert into DOM
   outer.append(inner);
   outer.append(make_toolbar(outer));
+
   return outer;
 }
 
@@ -642,33 +616,93 @@ function initialize() {
   $(window).keydown(function(event) {
     console.log(event.keyCode);
     if (elltwo_box.hasClass("editing")) {
-      if (active.hasClass("editing")) {
-        // handled in cell
-      } else {
-        if (event.keyCode == 38) { // up
-          activate_prev();
+      if (event.keyCode == 38) { // up
+        var oldEdit = false;
+        if (active.hasClass("editing")) {
+          var inner = get_inner(active);
+          if (!get_caret_at_beg(inner[0])) {
+            return true;
+          } else {
+            oldEdit = true;
+          }
+        }
+        if (activate_prev()) {
+          if (oldEdit) {
+            clear_selection();
+          }
           if (active.hasClass("editing")) {
-            var inner = active.children(".para_inner");
+            var inner = get_inner(active);
             set_caret_at_end(inner[0]);
-            return false;
           }
-        } else if (event.keyCode == 40) { // down
-          activate_next();
+          return false;
+        }
+      } else if (event.keyCode == 40) { // down
+        var oldEdit = false;
+        if (active.hasClass("editing")) {
+          var inner = get_inner(active);
+          if (!get_caret_at_end(inner[0])) {
+            return;
+          } else {
+            oldEdit = true;
+          }
+        }
+        if (activate_next()) {
+          if (oldEdit) {
+            clear_selection();
+          }
           if (active.hasClass("editing")) {
-            var inner = active.children(".para_inner");
+            var inner = get_inner(active);
             set_caret_at_beg(inner[0]);
-            return false;
           }
-        } else if (event.keyCode == 87) { // w
+          return false;
+        }
+      } else if (event.keyCode == 87) { // w
+        if (!active.hasClass("editing")) {
           unfreeze_cell(active);
           return false;
-        } else if (event.keyCode == 79) { // o
+        }
+      } else if (event.keyCode == 27) { // escape
+        if (active.hasClass("editing")) {
+          freeze_cell(active);
+          return false;
+        }
+      } else if (event.keyCode == 79) { // o
+        if (!active.hasClass("editing")) {
           create_cell(active);
           return false;
         }
+      } else if (event.keyCode == 13) { // return
+        if (active.hasClass("editing")) {
+          if (event.shiftKey) {
+            freeze_cell(active);
+            return false;
+          } else {
+            var inner = get_inner(active);
+            if (get_caret_at_end(inner[0])) {
+              clear_selection();
+              create_cell(active);
+              return false;
+            }
+          }
+        }
+      } else if (event.keyCode == 8) { // backspace
+        if (active.hasClass("editing")) {
+          var outer = active;
+          var inner = get_inner(active);
+          if (get_caret_at_beg(inner[0])) {
+            if (activate_prev()) {
+              delete_cell(outer);
+              if (active.hasClass("editing")) {
+                var inner = get_inner(active);
+                set_caret_at_end(inner[0]);
+              }
+            }
+            return false;
+          }
+        }
       }
     } else {
-      // nothing to do in frozen mode
+      // nothing to do in document frozen mode
     }
   });
 }

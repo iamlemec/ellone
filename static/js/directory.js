@@ -1,13 +1,5 @@
 // Elltwo editor
 
-function select_all(elem) {
-  var selection = window.getSelection();
-  var range = document.createRange();
-  range.selectNodeContents(elem);
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-
 function connect()
 {
   if ('MozWebSocket' in window) {
@@ -47,20 +39,20 @@ function initialize() {
   var create = $(".directory .create");
   create.click(function() {
     var entry = $("<div>",{class: "entry"});
-    var text = $("<p>",{"contentEditable": "true"});
-    text.keydown(function(event) {
+    var input = $("<input>");
+    input.keydown(function(event) {
       if (event.keyCode == 13) {
-        var name = text.text();
+        var name = input.val();
         var link = $("<a>",{href:"/editor/"+name,html:name});
-        text.replaceWith(link);
-        select_all(link[0]);
+        input.replaceWith(link);
         var msg = JSON.stringify({"cmd": "create", "content": name});
         ws.send(msg);
       }
     });
-    entry.append(text);
+    entry.append(input);
     entry.insertBefore(create);
-  });  
+    input.focus();
+  });
 }
 
 $(document).ready(function() {

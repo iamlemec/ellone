@@ -13,6 +13,7 @@ html {
   width: 400px;
   border: 1px solid #CCC;
   border-radius: 5px;
+  margin-bottom: 100px;
 }
 
 .directory .entry {
@@ -57,13 +58,15 @@ html {
   background-color: #EEE;
 }
 
-.directory .entry p {
+.directory .entry input {
+  padding: 0px;
+  border: 0px;
+  margin: 0px;
   outline: 0px;
   text-decoration: none;
   font-size: 20px;
   padding-left: 20px;
   padding-right: 20px;
-  margin: 0px;
   line-height: 300%;
-
+  font-family: proxima-nova;
 }
