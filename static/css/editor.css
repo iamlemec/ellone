@@ -140,6 +140,7 @@ ul {
 
 .section_title {
   font-weight: 600;
+  margin-top: 30px;
 }
 
 .section_title:before {
@@ -194,15 +195,28 @@ ul {
   float: right;
 }
 
-#topbar_export1 {
-  float: right;
+#topbar_export {
+  cursor: default;
+  font-size: 15px;
+  background-color: rgb(53, 122, 232);
+  color: white;
+  border-radius: 2px;
+  padding: 0px 6px 0px 6px;
 }
 
-#topbar_export2 {
-  float: right;
+#topbar_export.expanded {
+  background-color: #666;
+}
+
+#topbar_slide {
+  display: none;
+  margin-top: 2px;
 }
 
 #topbar_markdown {
+  float: right;
+  text-align: right;
+  width: 54px;
   cursor: default;
   font-size: 15px;
   background-color: rgb(53, 122, 232);
@@ -212,6 +226,9 @@ ul {
 }
 
 #topbar_html {
+  float: right;
+  text-align: right;
+  width: 54px;
   cursor: default;
   font-size: 15px;
   background-color: rgb(53, 122, 232);
@@ -221,6 +238,9 @@ ul {
 }
 
 #topbar_latex {
+  float: right;
+  text-align: right;
+  width: 54px;
   cursor: default;
   font-size: 15px;
   background-color: rgb(53, 122, 232);
@@ -230,6 +250,9 @@ ul {
 }
 
 #topbar_pdf {
+  float: right;
+  text-align: right;
+  width: 54px;
   cursor: default;
   font-size: 15px;
   background-color: rgb(53, 122, 232);
@@ -269,7 +292,6 @@ ul {
 #topbar_editing {
   cursor: default;
   font-size: 15px;
-  color: #BBB !important;
   background-color: #666;
   color: white;
   border-radius: 2px;

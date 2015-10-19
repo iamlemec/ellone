@@ -396,6 +396,13 @@ function unfreeze_cell(outer) {
   set_caret_at_end(outer);
 }
 
+function save_document() {
+  var msg = JSON.stringify({"cmd": "write", "content": ""});
+  console.log(msg);
+  ws.send(msg);
+  elltwo_box.removeClass("modified");
+}
+
 function make_toolbar(outer) {
   var bar = $("<div>",{class:"toolbar"});
   var add = $("<span>",{class:"add_button",html:"+"});
@@ -434,7 +441,9 @@ function make_para(text,cid,prev,next,edit,defer) {
 
   // event handlers
   inner.click(function(event) {
-    activate_cell(outer);
+    if (is_editing(elltwo_box)) {
+      activate_cell(outer);
+    }
   });
   inner.bind("input", function() {
     outer.addClass("modified");
@@ -576,6 +585,11 @@ function initialize() {
   }
 
   // topbar button handlers
+  $("#topbar_export").click(function() {
+    $("#topbar_slide").slideToggle("fast");
+    $(this).toggleClass("expanded");
+  });
+
   $("#topbar_markdown").click(function() {
     window.location.replace("/markdown/"+fname);
   });
@@ -604,10 +618,7 @@ function initialize() {
   });
 
   $("#topbar_save").click(function() {
-    var msg = JSON.stringify({"cmd": "write", "content": ""});
-    console.log(msg);
-    ws.send(msg);
-    elltwo_box.removeClass("modified");
+    save_document();
   });
 
   $("#topbar_revert").click(function() {
@@ -707,8 +718,11 @@ function initialize() {
             return false;
           }
         }
+        if (!$(event.target).hasClass("para_inner")) {
+          event.preventDefault();
+        }
       } else if (keyCode == 68) { // d
-        if (event.shiftKey) {
+        if (event.shiftKey && !is_editing(active)) {
           outer = active;
           if (!activate_next()) {
             activate_prev();
@@ -717,6 +731,11 @@ function initialize() {
           if (is_editing(active)) {
             set_caret_at_end(active);
           }
+        }
+      } else if (keyCode == 83) { // s
+        if (event.ctrlKey) {
+          save_document();
+          return false;
         }
       }
     } else {

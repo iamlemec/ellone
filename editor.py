@@ -44,8 +44,7 @@ latex_template = """\\documentclass{article}
 \\usepackage{amsmath}
 \\usepackage{amssymb}
 \\usepackage[utf8]{inputenc}
-
-\\setlength\\parindent{0pt}
+\\usepackage{parskip}
 
 \\begin{document}
 
@@ -86,13 +85,19 @@ def gen_latex(cells):
 def construct_latex(text):
   text = re.sub(r'\"(.*?)\"','``\\1\'\'',text)
   text = re.sub(r'\&','\\&',text)
+  text = re.sub(r'_','\\_',text)
   text = re.sub(r'\\align','&',text)
   text = re.sub(r'\$\$([^\$]*)\$\$','\\\\begin{align*}\n\\1\n\\\\end{align*}',text)
-  print(text)
+
   cells = filter(len,map(str.strip,text.split('\n\n')))
+
   tex = '\n\n'.join(gen_latex(cells))
+  tex = re.sub(r'#','\\#',tex)
+  tex = re.sub(r'%','\\%',tex)
+
   latex = latex_template % tex
   print(latex)
+
   return latex
 
 # initialize/open database
