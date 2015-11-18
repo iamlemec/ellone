@@ -7,6 +7,7 @@ import traceback
 from operator import itemgetter
 from collections import namedtuple
 import codecs
+import random
 
 import tornado.ioloop
 import tornado.web
@@ -185,6 +186,15 @@ class DirectoryHandler(tornado.web.RequestHandler):
     def get(self):
         files = sorted(os.listdir(args.path))
         self.render("directory.html",files=files)
+
+class DemoHandler(tornado.web.RequestHandler):
+    def get(self):
+        randf = 'demo_%s.md' % hex(random.getrandbits(128))[2:]
+        fullpath = os.path.join(args.path,randf)
+        fid = open(fullpath,'w+')
+        fid.write('#! Title\n\nBody text.')
+        fid.close()
+        self.redirect('/editor/%s' % randf)
 
 class EditorHandler(tornado.web.RequestHandler):
     def get(self,fname):
@@ -400,6 +410,7 @@ class Application(tornado.web.Application):
             (r"/auth/login/?", AuthLoginHandler),
             (r"/auth/logout/?", AuthLogoutHandler),
             (r"/editor/([^/]+)", EditorHandler),
+            (r"/demo/?", DemoHandler),
             (r"/markdown/([^/]+)", MarkdownHandler),
             (r"/html/([^/]+)", HtmlHandler),
             (r"/latex/([^/]+)", LatexHandler),
