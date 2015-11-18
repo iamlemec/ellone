@@ -6,6 +6,7 @@ import argparse
 import traceback
 from operator import itemgetter
 from collections import namedtuple
+from itertools import compress
 import codecs
 import random
 
@@ -86,7 +87,7 @@ def gen_latex(cells):
 def construct_latex(text):
   text = re.sub(r'\"(.*?)\"','``\\1\'\'',text)
   text = re.sub(r'\&','\\&',text)
-  text = re.sub(r'_','\\_',text)
+  #text = re.sub(r'_','\\_',text)
   text = re.sub(r'\\align','&',text)
   text = re.sub(r'\$\$([^\$]*)\$\$','\\\\begin{align*}\n\\1\n\\\\end{align*}',text)
 
@@ -181,11 +182,25 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
         self.clear_cookie("user")
         self.redirect(self.get_argument("next","/"))
 
-class DirectoryHandler(tornado.web.RequestHandler):
+class BrowseHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self):
-        files = sorted(os.listdir(args.path))
-        self.render("directory.html",files=files)
+        base = args.path
+        files = sorted(os.listdir(base))
+        dtype = [os.path.isdir(os.path.join(base,f)) for f in files]
+        dirs = [f for (f,t) in zip(files,dtype) if t]
+        docs = [f for (f,t) in zip(files,dtype) if not t]
+        self.render("directory.html",dirname='',pardir='',dirs=dirs,docs=docs)
+
+class DirectoryHandler(tornado.web.RequestHandler):
+    def get(self,targ):
+        curdir = os.path.join(args.path,targ)
+        (pardir,dirname) = os.path.split(targ)
+        files = sorted(os.listdir(curdir))
+        dtype = [os.path.isdir(os.path.join(curdir,f)) for f in files]
+        dirs = [f for (f,t) in zip(files,dtype) if t]
+        docs = [f for (f,t) in zip(files,dtype) if not t]
+        self.render("directory.html",dirname=dirname,pardir=pardir,dirs=dirs,docs=docs)
 
 class DemoHandler(tornado.web.RequestHandler):
     def get(self):
@@ -291,12 +306,12 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
     def allow_draft76(self):
         return True
 
-    def open(self,fname):
-        print("connection received: %s" % fname)
-        self.fname = fname
-        self.basename = get_base_name(fname)
-        self.temppath = os.path.join(tmpdir,fname)
-        self.fullpath = os.path.join(args.path,fname)
+    def open(self,path):
+        print("connection received: %s" % path)
+        (self.fname,self.dirname) = os.path.split(path)
+        self.basename = get_base_name(self.fname)
+        self.temppath = os.path.join(tmpdir,self.fname)
+        self.fullpath = os.path.join(args.path,path)
 
     def on_close(self):
         print("connection closing")
@@ -368,8 +383,9 @@ class FileHandler(tornado.websocket.WebSocketHandler):
     def allow_draft76(self):
         return True
 
-    def open(self):
+    def open(self,dirname):
         print("connection received")
+        self.dirname = dirname
 
     def on_close(self):
         print("connection closing")
@@ -389,7 +405,7 @@ class FileHandler(tornado.websocket.WebSocketHandler):
         data = json.loads(msg)
         (cmd,cont) = (data['cmd'],data['content'])
         if cmd == 'create':
-          fullpath = os.path.join(args.path,cont)
+          fullpath = os.path.join(args.path,self.dirname,cont)
           exists = True
           try:
             os.stat(fullpath)
@@ -406,17 +422,18 @@ class FileHandler(tornado.websocket.WebSocketHandler):
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r"/?", DirectoryHandler),
+            (r"/?", BrowseHandler),
+            (r"/directory/(.*)", DirectoryHandler),
             (r"/auth/login/?", AuthLoginHandler),
             (r"/auth/logout/?", AuthLogoutHandler),
-            (r"/editor/([^/]+)", EditorHandler),
             (r"/demo/?", DemoHandler),
-            (r"/markdown/([^/]+)", MarkdownHandler),
-            (r"/html/([^/]+)", HtmlHandler),
-            (r"/latex/([^/]+)", LatexHandler),
-            (r"/pdf/([^/]+)", PdfHandler),
-            (r"/elledit/([^/]*)", ContentHandler),
-            (r"/diredit/?", FileHandler)
+            (r"/editor/(.+)", EditorHandler),
+            (r"/markdown/(.+)", MarkdownHandler),
+            (r"/html/(.+)", HtmlHandler),
+            (r"/latex/(.+)", LatexHandler),
+            (r"/pdf/(.+)", PdfHandler),
+            (r"/elledit/(.*)", ContentHandler),
+            (r"/diredit/(.*)", FileHandler)
         ]
         settings = dict(
             app_name=u"Elltwo Editor",

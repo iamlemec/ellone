@@ -130,10 +130,28 @@
   height: auto;
 }
 
+.caption {
+  text-align: center;
+  font-style: italic;
+  margin-top: 0px;
+}
+
 /* lists */
 
 ul {
   margin-top: 0px;
+  margin-bottom: 7px;
+}
+
+ol {
+  margin-top: 0px;
+  margin-bottom: 7px;
+}
+
+/* code */
+
+code {
+  font-family: Courier;
 }
 
 /* sections */
@@ -321,6 +339,16 @@ ul {
 #marquee {
   color: #333;
   position: fixed;
+  cursor: default;
+}
+
+#help {
+  color: #333;
+  position: fixed;
+  top: 30px;
+  cursor: default;
+  font-size: 10px;
+  display: none;
 }
 
 .title {
