@@ -18,8 +18,9 @@ function min(arr) {
 };
 
 // regexes
+var esc_re = /\\([\[\]\(\)@])/g;
 var sec_re = /^(#+)([^!].*)/;
-var img_re = /^!\[([^\]]*)\]/;
+var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
 var label_re = /^ *\[([\w-_]+)\](.*)/;
 var ulist_re = /[\-](.*)/;
 var olist_re = /[\+](.*)/;
@@ -38,6 +39,18 @@ function reference_marker(match, p, offset, string) {
   return '<span class=\"reference\" target=\"' + p + '\"></span>';
 }
 var reference_re = /@\[(.+)\]/g;
+
+function link_marker(match, p1, p2, offset, string) {
+  return '<a href=\"' + p2 + '\">' + p1 + '</a>';
+}
+var link_re = /\[([^\]]*)\]\(([^\)]*)\)/g;
+
+function code_marker(match, p, offset, string) {
+  return '<code>' + p + '</code>';
+}
+var code_re = /`([^`]*)`/g;
+
+// escaping
 
 // convert text (with newlines) to html (with divs) and vice versa
 function fill_tags(text) {
@@ -235,14 +248,26 @@ function render(box,text,defer) {
     text = list;
   } else if (ret = img_re.exec(text)) {
     var src = ret[1];
+    var cap = ret[2];
+    console.log(cap);
     box.addClass("image");
     text = '<img src="' + src + '"/>';
+    if (cap.length > 0) {
+      text += '<p class="caption">' + cap + '</p>';
+    }
   }
 
   // tag markers
   text = text.replace(display_re,display_marker);
   text = text.replace(inline_re,inline_marker);
   text = text.replace(reference_re,reference_marker);
+  text = text.replace(link_re,link_marker);
+  text = text.replace(code_re,code_marker);
+
+  // unescape special chars
+  text = text.replace(esc_re,'$1');
+
+  // convert to html
   var html = fill_tags(text);
   box.html(html);
 
@@ -368,6 +393,7 @@ function delete_cell(cell) {
   elltwo_box.addClass("modified");
 }
 
+// go into static mode
 function freeze_cell(outer) {
   clear_selection();
   var inner = outer.children(".para_inner");
@@ -383,6 +409,7 @@ function freeze_cell(outer) {
   render(inner,text);
 }
 
+// start editing cell
 function unfreeze_cell(outer) {
   var inner = outer.children(".para_inner");
   outer.attr("disp_html",inner.html());
@@ -396,6 +423,7 @@ function unfreeze_cell(outer) {
   set_caret_at_end(outer);
 }
 
+// send to the server for storage
 function save_document() {
   var msg = JSON.stringify({"cmd": "write", "content": ""});
   console.log(msg);
@@ -403,6 +431,7 @@ function save_document() {
   elltwo_box.removeClass("modified");
 }
 
+// create mouseover toolbar for cell
 function make_toolbar(outer) {
   var bar = $("<div>",{class:"toolbar"});
   var add = $("<span>",{class:"add_button",html:"+"});
@@ -424,6 +453,7 @@ function make_toolbar(outer) {
   return bar;
 };
 
+// make paragraph for cell
 function make_para(text,cid,prev,next,edit,defer) {
   edit = edit || false;
   defer = defer || false;
@@ -502,7 +532,7 @@ function polish_equations() {
       eqn_boxes.each(function () {
         var eqn = $(this);
         var rwidth = eqn.width();
-        var ktx = eqn.children(".katex");
+        var ktx = eqn.find(".katex");
         var kwidth = ktx.width();
         var anchor = ktx.find(".align");
         var leftpos;
@@ -529,7 +559,7 @@ function polish_equations() {
       }
 
       eqn_boxes.each(function (i) {
-        var ktx = $(this).children(".katex");
+        var ktx = $(this).find(".katex");
         ktx.css({"margin-left":bigoff+offlist[i]});
       });
     }
@@ -576,13 +606,15 @@ function full_render() {
 
 // initialization code
 function initialize() {
-  // optional marquee box
+  // marquee box
   var marquee = elltwo_box.children("#marquee");
-  if (marquee) {
-    var span = $("<span>");
-    katex.render("\\ell^2",span[0]);
-    marquee.append(span);
-  }
+  var help = $('#help');
+  var span = $("<span>");
+  katex.render("\\ell^2",span[0]);
+  span.click(function() {
+    help.slideToggle('fast');
+  });
+  marquee.append(span);
 
   // topbar button handlers
   $("#topbar_export").click(function() {
@@ -697,12 +729,6 @@ function initialize() {
             freeze_cell(active);
             create_cell(active);
             return false;
-          } else {
-            if (get_caret_at_end(active)) {
-              clear_selection();
-              create_cell(active);
-              return false;
-            }
           }
         }
       } else if (keyCode == 8) { // backspace
@@ -733,7 +759,7 @@ function initialize() {
           }
         }
       } else if (keyCode == 83) { // s
-        if (event.ctrlKey) {
+        if (event.ctrlKey || event.metaKey) {
           save_document();
           return false;
         }

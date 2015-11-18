@@ -6,7 +6,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Elltwo Editor</title>
+<title>Elltwo - {{ fname }}</title>
 
 <link href="{{ static_url('css/proxima-nova.css') }}" type="text/css" rel="stylesheet"/>
 <link href="{{ static_url('katex/katex.min.css') }}" type="text/css" rel="stylesheet"/>
@@ -18,6 +18,13 @@
 
 <div id="elltwo" class="editing">
 <div id="marquee"></div>
+<div id="help">
+<pre><code>
+heading: #'s
+image: !(url)[caption]
+math: $...$ or $$...$$
+</code></pre>
+</div>
 <div id="topbar">
 <div id="topbar_control">
 <span id="topbar_save">Save</span>

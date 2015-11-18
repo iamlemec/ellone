@@ -6,7 +6,7 @@ function connect()
     WebSocket = MozWebSocket;
   }
   if ('WebSocket' in window) {
-    var ws_con = "ws://" + window.location.host + "/diredit";
+    var ws_con = "ws://" + window.location.host + "/diredit/" + dirname;
     console.log(ws_con);
 
     ws = new WebSocket(ws_con);
