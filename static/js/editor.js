@@ -17,39 +17,6 @@ function min(arr) {
   return Math.min.apply(null,arr);
 };
 
-// regexes
-var esc_re = /\\([\[\]\(\)@])/g;
-var sec_re = /^(#+)([^!].*)/;
-var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
-var label_re = /^ *\[([\w-_]+)\](.*)/;
-var ulist_re = /[\-](.*)/;
-var olist_re = /[\+](.*)/;
-
-function inline_marker(match, p, offset, string) {
-  return '<span class=\"latex\">' + p + '</span>';
-}
-var inline_re = /\$([^\$]*)\$/g;
-
-function display_marker(match, p, offset, string) {
-  return '<div class=\"equation\">' + p.replace(/\n/g,' ') + '</div>';
-}
-var display_re = /\$\$([^\$]*)\$\$/g;
-
-function reference_marker(match, p, offset, string) {
-  return '<span class=\"reference\" target=\"' + p + '\"></span>';
-}
-var reference_re = /@\[(.+)\]/g;
-
-function link_marker(match, p1, p2, offset, string) {
-  return '<a href=\"' + p2 + '\">' + p1 + '</a>';
-}
-var link_re = /\[([^\]]*)\]\(([^\)]*)\)/g;
-
-function code_marker(match, p, offset, string) {
-  return '<code>' + p + '</code>';
-}
-var code_re = /`([^`]*)`/g;
-
 // escaping
 
 // convert text (with newlines) to html (with divs) and vice versa
@@ -204,6 +171,49 @@ function activate_next() {
 }
 
 // inner cell renderer
+var esc_re = /\\([\[\]\(\)@])/g;
+var sec_re = /^(#+)([^!].*)/;
+var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
+var label_re = /^ *\[([\w-_]+)\](.*)/;
+var ulist_re = /[\-](.*)/;
+var olist_re = /[\+](.*)/;
+
+function resolve_url(url) {
+  if (url.search('(^|:)//') == -1) {
+    if (url[0] != '/') {
+      url = "/" + curdir + url;
+    }
+    url = "/local" + url;
+  }
+  return url;
+}
+
+function inline_marker(match, p, offset, string) {
+  return '<span class=\"latex\">' + p + '</span>';
+}
+var inline_re = /\$([^\$]*)\$/g;
+
+function display_marker(match, p, offset, string) {
+  return '<div class=\"equation\">' + p.replace(/\n/g,' ') + '</div>';
+}
+var display_re = /\$\$([^\$]*)\$\$/g;
+
+function reference_marker(match, p, offset, string) {
+  return '<span class=\"reference\" target=\"' + p + '\"></span>';
+}
+var reference_re = /@\[(.+)\]/g;
+
+function link_marker(match, p1, p2, offset, string) {
+  var href = resolve_url(p2);
+  return '<a href=\"' + href + '\">' + p1 + '</a>';
+}
+var link_re = /\[([^\]]*)\]\(([^\)]*)\)/g;
+
+function code_marker(match, p, offset, string) {
+  return '<code>' + p + '</code>';
+}
+var code_re = /`([^`]*)`/g;
+
 function render(box,text,defer) {
   defer = defer || false;
 
@@ -249,13 +259,7 @@ function render(box,text,defer) {
   } else if (ret = img_re.exec(text)) {
     var src = ret[1];
     var cap = ret[2];
-    if (src.indexOf('//') == -1) {
-      if (src[0] != '/') {
-        src = "/" + curdir + src;
-      }
-      src = "/local" + src;
-    }
-    console.log(cap);
+    src = resolve_url(src);
     box.addClass("image");
     text = '<img src="' + src + '"/>';
     if (cap.length > 0) {
