@@ -249,6 +249,12 @@ function render(box,text,defer) {
   } else if (ret = img_re.exec(text)) {
     var src = ret[1];
     var cap = ret[2];
+    if (src.indexOf('//') == -1) {
+      if (src[0] != '/') {
+        src = "/" + curdir + src;
+      }
+      src = "/local" + src;
+    }
     console.log(cap);
     box.addClass("image");
     text = '<img src="' + src + '"/>';
@@ -623,7 +629,7 @@ function initialize() {
   });
 
   $("#topbar_markdown").click(function() {
-    window.location.replace("/markdown/"+fname);
+    window.location.replace("/markdown/"+path);
   });
 
   $("#topbar_html").click(function() {
@@ -642,11 +648,11 @@ function initialize() {
   });
 
   $("#topbar_latex").click(function() {
-    window.location.replace("/latex/"+fname);
+    window.location.replace("/latex/"+path);
   });
 
   $("#topbar_pdf").click(function() {
-    window.location.replace("/pdf/"+fname);
+    window.location.replace("/pdf/"+path);
   });
 
   $("#topbar_save").click(function() {
@@ -777,7 +783,7 @@ function connect()
     WebSocket = MozWebSocket;
   }
   if ('WebSocket' in window) {
-    var ws_con = "ws://" + window.location.host + "/elledit/" + fname;
+    var ws_con = "ws://" + window.location.host + "/elledit/" + path;
     console.log(ws_con);
 
     ws = new WebSocket(ws_con);
@@ -811,7 +817,7 @@ function connect()
           active = outer_box.children(".para_outer").first();
           active.addClass("active");
         } else if (cmd == 'html') {
-          window.location.replace("/html/"+fname);
+          window.location.replace("/html/"+path);
         }
       }
     };
@@ -836,7 +842,7 @@ function disconnect()
 
 // when ready
 $(document).ready(function() {
-  console.log(fname);
+  console.log(path);
   initialize();
   connect();
 });

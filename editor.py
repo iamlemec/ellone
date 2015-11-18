@@ -16,7 +16,7 @@ import tornado.websocket
 
 # parse input arguments
 parser = argparse.ArgumentParser(description='Elltwo Server.')
-parser.add_argument('--path', type=str, default='.', help='path for files')
+parser.add_argument('--path', type=str, default='.', help='path for markdown files')
 parser.add_argument('--port', type=int, default=8500, help='port to serve on')
 args = parser.parse_args()
 
@@ -189,7 +189,7 @@ class BrowseHandler(tornado.web.RequestHandler):
         files = sorted(os.listdir(base))
         dtype = [os.path.isdir(os.path.join(base,f)) for f in files]
         dirs = [f for (f,t) in zip(files,dtype) if t]
-        docs = [f for (f,t) in zip(files,dtype) if not t]
+        docs = [f for (f,t) in zip(files,dtype) if not t and f.endswith('.md')]
         self.render("directory.html",dirname='',pardir='',dirs=dirs,docs=docs)
 
 class DirectoryHandler(tornado.web.RequestHandler):
@@ -199,7 +199,7 @@ class DirectoryHandler(tornado.web.RequestHandler):
         files = sorted(os.listdir(curdir))
         dtype = [os.path.isdir(os.path.join(curdir,f)) for f in files]
         dirs = [f for (f,t) in zip(files,dtype) if t]
-        docs = [f for (f,t) in zip(files,dtype) if not t]
+        docs = [f for (f,t) in zip(files,dtype) if not t and f.endswith('.md')]
         self.render("directory.html",dirname=dirname,pardir=pardir,dirs=dirs,docs=docs)
 
 class DemoHandler(tornado.web.RequestHandler):
@@ -212,8 +212,9 @@ class DemoHandler(tornado.web.RequestHandler):
         self.redirect('/editor/%s' % randf)
 
 class EditorHandler(tornado.web.RequestHandler):
-    def get(self,fname):
-        self.render("editor.html",fname=fname)
+    def get(self,path):
+        (curdir,fname) = os.path.split(path)
+        self.render("editor.html",path=path,curdir=curdir,fname=fname)
 
 class MarkdownHandler(tornado.web.RequestHandler):
     def post(self,fname):
@@ -308,7 +309,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 
     def open(self,path):
         print("connection received: %s" % path)
-        (self.fname,self.dirname) = os.path.split(path)
+        (self.dirname,self.fname) = os.path.split(path)
         self.basename = get_base_name(self.fname)
         self.temppath = os.path.join(tmpdir,self.fname)
         self.fullpath = os.path.join(args.path,path)
@@ -433,7 +434,8 @@ class Application(tornado.web.Application):
             (r"/latex/(.+)", LatexHandler),
             (r"/pdf/(.+)", PdfHandler),
             (r"/elledit/(.*)", ContentHandler),
-            (r"/diredit/(.*)", FileHandler)
+            (r"/diredit/(.*)", FileHandler),
+            (r"/local/(.*)", tornado.web.StaticFileHandler, {"path": args.path}),
         ]
         settings = dict(
             app_name=u"Elltwo Editor",
