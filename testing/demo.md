@@ -14,7 +14,7 @@ Here is a list of the keyboard common keyboard commands:
 - `D`: delete cell
 - `ctrl+s`: save document
 
-As in the above, unordered lists can be created with consecutive lines in a cell starting with `-`, while ordered lists use `+`.
+As in the above, unordered lists can be created with consecutive lines in a cell starting with `-`, while ordered lists use `+`. Click on the logo in the top left for a command cheat sheet.
 
 # Cell Directives
 
@@ -34,7 +34,7 @@ This makes debugging equation errors considerably easier. On top of that, KaTeX 
 
 $$x^2 = \frac{y^2 + \sqrt{\elm^3}}{2}$$
 
-Equations can be numbered with semi-arbitrary labels as in `\[eq1\]`, and referenced similarly with `\@\[eq1\]`, for example @[eq1].
+Equations can be numbered with semi-arbitrary labels as in `\[eq1\]`, and referenced similarly with `\@\[eq1\]`, for example @[eq1]. There will be a hover preview of the contents of the referenced equation.
 
 # Exporting
 
