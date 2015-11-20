@@ -43,7 +43,7 @@ function initialize() {
     input.keydown(function(event) {
       if (event.keyCode == 13) {
         var name = input.val();
-        var link = $("<a>",{href:"/editor/"+name,html:name});
+        var link = $("<a>",{href:"/editor/"+dirname+"/"+name,html:name});
         input.replaceWith(link);
         var msg = JSON.stringify({"cmd": "create", "content": name});
         ws.send(msg);
