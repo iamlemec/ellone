@@ -170,14 +170,11 @@ function activate_next() {
   }
 }
 
-// inner cell renderer
-var esc_re = /\\([\[\]\(\)@])/g;
-var sec_re = /^(#+)([^!].*)/;
-var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
-var label_re = /^ *\[([\w-_]+)\](.*)/;
-var ulist_re = /[\-](.*)/;
-var olist_re = /[\+](.*)/;
+/*
+ * inner cell renderer
+ */
 
+// urls
 function resolve_url(url) {
   if (url.search('(^|:)//') == -1) {
     if (url[0] != '/') {
@@ -187,6 +184,15 @@ function resolve_url(url) {
   }
   return url;
 }
+
+// regex
+var esc_re = /\\([\[\]\(\)@])/g;
+var sec_re = /^(#+)([^!].*)/;
+var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
+var label_re = /^ *\[([\w-_]+)\](.*)/;
+var ulist_re = /[\-](.*)/;
+var olist_re = /[\+](.*)/;
+
 
 function inline_marker(match, p, offset, string) {
   return '<span class=\"latex\">' + p + '</span>';
@@ -214,6 +220,7 @@ function code_marker(match, p, offset, string) {
 }
 var code_re = /`([^`]*)`/g;
 
+// main render
 function render(box,text,defer) {
   defer = defer || false;
 
@@ -318,6 +325,7 @@ function render(box,text,defer) {
     var eqn_boxes = div_inner.children(".equation_row");
     if (eqn_boxes.length > 1) {
       eqn.addClass("multiline");
+      align_equation(eqn);
     }
 
     new_equation = true;
@@ -329,7 +337,7 @@ function render(box,text,defer) {
       number_sections();
     }
     if (new_equation) {
-      polish_equations();
+      number_equations();
     }
     resolve_references(box);
   }
@@ -519,8 +527,8 @@ function number_sections() {
   });
 }
 
-function polish_equations() {
-  console.log('polishing equations');
+function number_equations() {
+  console.log('numbering equations');
 
   eqn_num = 1;
   $(".equation.numbered").each(function() {
@@ -530,54 +538,65 @@ function polish_equations() {
     num.html(eqn_num);
     eqn_num++;
   });
+}
+
+function align_equation(eqn) {
+  var div_inner = eqn.children(".equation_inner")
+  var eqn_boxes = div_inner.children(".equation_row");
+  if (eqn_boxes.length > 1) {
+    var leftlist = [];
+    var rightlist = [];
+    var offlist = [];
+    eqn_boxes.each(function () {
+      var eqn = $(this);
+      var disp = eqn.find(".katex-display");
+      var ktx = eqn.find(".katex");
+      var anchor = ktx.find(".align");
+      var dwidth = disp.width();
+      var kwidth = Math.min(ktx.width(),dwidth);
+      var leftpos;
+      var rightpos;
+      if (anchor.length) {
+        leftpos = (anchor.offset().left+anchor.width()/2) - ktx.offset().left;
+        rightpos = kwidth - leftpos;
+      } else {
+        leftpos = kwidth/2;
+        rightpos = kwidth/2;
+      }
+      var myoff = rightpos - leftpos;
+      leftlist.push(leftpos);
+      rightlist.push(rightpos);
+      offlist.push(myoff);
+    });
+    var bigoff = max(leftlist) - max(rightlist);
+
+    if (eqn.attr('id') == 'debug') {
+      console.log(leftlist);
+      console.log(rightlist);
+      console.log(offlist);
+      console.log(bigoff);
+    }
+
+    eqn_boxes.each(function (i) {
+      var eqn = $(this)
+      var ktx = eqn.find(".katex");
+      console.log(bigoff+offlist[i]);
+      ktx.css({"margin-left":bigoff+offlist[i]});
+    });
+  }
+}
+
+function align_equations() {
+  console.log('aligning equations');
 
   $(".equation.multiline").each(function() {
     var eqn = $(this);
-    var div_inner = eqn.children(".equation_inner")
-    var eqn_boxes = div_inner.children(".equation_row");
-    if (eqn_boxes.length > 1) {
-      var leftlist = [];
-      var rightlist = [];
-      var offlist = [];
-      eqn_boxes.each(function () {
-        var eqn = $(this);
-        var rwidth = eqn.width();
-        var ktx = eqn.find(".katex");
-        var kwidth = ktx.width();
-        var anchor = ktx.find(".align");
-        var leftpos;
-        var rightpos;
-        if (anchor.length) {
-          leftpos = (anchor.offset().left+anchor.width()/2) - ktx.offset().left;
-          rightpos = kwidth - leftpos;
-        } else {
-          leftpos = kwidth/2;
-          rightpos = kwidth/2;
-        }
-        var myoff = rightpos - leftpos;
-        leftlist.push(leftpos);
-        rightlist.push(rightpos);
-        offlist.push(myoff);
-      });
-      var bigoff = max(leftlist) - max(rightlist);
-
-      if (eqn.attr('id') == 'debug') {
-        console.log(leftlist);
-        console.log(rightlist);
-        console.log(offlist);
-        console.log(bigoff);
-      }
-
-      eqn_boxes.each(function (i) {
-        var ktx = $(this).find(".katex");
-        ktx.css({"margin-left":bigoff+offlist[i]});
-      });
-    }
+    align_equation(eqn);
   });
 }
 
 // for a hover event and scale factor (of the realized object), generate appropriate css
-var get_offset = function(parent,popup,event) {
+function get_offset(parent,popup,event) {
   var rects = parent[0].getClientRects();
   var mouseX = event.clientX;
   var mouseY = event.clientY;
@@ -663,7 +682,8 @@ function full_render() {
     number_sections();
   }
   if (new_equation) {
-    polish_equations();
+    number_equations();
+    align_equations(); // why is this necessary?
   }
   resolve_references();
 }
