@@ -20,7 +20,7 @@ As in the above, unordered lists can be created with consecutive lines in a cell
 
 Text cells can be typed in verbatim. Create heading cells by prefacing them with any appropriate number of `#`'s. Image cells must be separate but otherwise use the same syntax as regular markdown: `!\[url\]\(caption\)`
 
-![https://upload.wikimedia.org/wikipedia/commons/7/74/Jahnke_gamma_function.png](Ye Olde Gamma Function)
+![Jahnke_gamma_function.png](Ye Olde Gamma Function)
 
 Clicking on a cell, makes it the active cell. One can also move to the previous or next cell with the arrow keys. Creation and deletion of cells can also be accomplished with the mouse hover buttons.
 
