@@ -495,7 +495,7 @@ function make_para(text,cid,prev,next,edit,defer) {
 
   // insert into DOM
   outer.append(inner);
-  outer.append(make_toolbar(outer));
+  //outer.append(make_toolbar(outer));
 
   return outer;
 }
@@ -572,6 +572,56 @@ function polish_equations() {
   });
 }
 
+// for a hover event and scale factor (of the realized object), generate appropriate css
+var get_offset = function(parent,popup,event) {
+  var rects = parent[0].getClientRects();
+  var mouseX = event.clientX;
+  var mouseY = event.clientY;
+
+  var rect;
+  for (var i in rects) {
+    rect = rects[i];
+    if ((mouseX >= rect.left) && (mouseX <= rect.right) && (mouseY >= rect.top) && (mouseY <= rect.bottom)) {
+      break;
+    }
+  }
+
+  var elem_width = rect.width;
+  var elem_height = rect.height;
+
+  var pop_width = popup.outerWidth();
+  var pop_height = popup.outerHeight();
+
+  var pos_x = 0.5*(elem_width-pop_width);
+  var pos_y = -pop_height;
+
+  return {x:pos_x,y:pos_y};
+};
+
+// attach a popup to parent
+function attach_popup(parent,popup) {
+  var pop_out = $("<div>",{class:"popup_outer"});
+  pop_out.append(popup);
+  parent.append(pop_out);
+  pop_out.attr("shown","false");
+  parent.hover(function(event) {
+    if (pop_out.attr("shown")=="false") {
+      pop_out.attr("shown","true");
+      var offset = get_offset(parent,pop_out,event);
+      pop_out.css("left",offset.x).css("top",offset.y);
+      pop_out.fadeIn(150);
+    }
+  }, function() {
+    var tid = window.setTimeout(function() {
+      pop_out.fadeOut(150);
+      pop_out.attr("shown","false");
+    },150);
+    parent.mouseenter(function(event) {
+      window.clearTimeout(tid);
+    });
+  });
+}
+
 function resolve_references() {
   console.log('resolving references');
   $(".reference").each(function() {
@@ -582,10 +632,14 @@ function resolve_references() {
       var eqn_num = targ.attr("eqn_num");
       ref.html("<a href=\"#" + label + "\">Equation " + eqn_num + "</a>");
       ref.removeClass("error");
+      var popup = $("<div>",{class:"popup eqn_popup",html:targ.children(".equation_inner").html()});
+      attach_popup(ref,popup);
     } else if (targ.hasClass("section_title")) {
       var sec_num = targ.attr("sec_num");
       ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
       ref.removeClass("error");
+      var popup = $("<div>",{class:"popup sec_popup",html:targ.html()});
+      attach_popup(ref,popup);
     } else {
       ref.html(label);
       ref.addClass("error");
