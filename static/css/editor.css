@@ -28,20 +28,22 @@
   text-decoration: none;
 }
 
-#content a:focus {
+#content *:focus {
+  outline: 0;
+}
+
+/* links */
+
+a:focus {
   outline: 0px;
 }
 
-#content a {
+a {
   color: blue;
 }
 
-#content a:visited {
+a:visited {
   color: blue;
-}
-
-#content *:focus {
-  outline: 0;
 }
 
 /* paragraph cells */
@@ -216,6 +218,37 @@ code {
   max-width: none;
   padding-top: 5px;
   padding-bottom: 5px;
+}
+
+/* footnotes */
+
+.footnote {
+  background-color: rgba(53, 122, 232, 0.8);
+  color: white;
+  border-radius: 2px;
+  cursor: default;
+  line-height: 1.5;
+  font-size: 14px;
+  /*font-weight: bold;*/
+  padding-bottom: 3px;
+  display: inline-block;
+  text-align: center;
+  width: 17px;
+  height: 19px;
+  position: relative;
+}
+
+.footnote:hover {
+  background-color: rgb(53, 122, 232);
+}
+
+.footnote_popup {
+  text-align: center;
+  width: 200px;
+}
+
+.footnote_popup:after {
+  left: 96px;
 }
 
 /* hover toolbar */
@@ -428,8 +461,11 @@ code {
 }
 
 .reference {
-  color: blue;
   position: relative;
+}
+
+.popup .reference a {
+  color: rgb(53, 122, 232);
 }
 
 .error {

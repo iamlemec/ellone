@@ -193,7 +193,6 @@ var label_re = /^ *\[([\w-_]+)\](.*)/;
 var ulist_re = /[\-](.*)/;
 var olist_re = /[\+](.*)/;
 
-
 function inline_marker(match, p, offset, string) {
   return '<span class=\"latex\">' + p + '</span>';
 }
@@ -207,13 +206,18 @@ var display_re = /\$\$([^\$]*)\$\$/g;
 function reference_marker(match, p, offset, string) {
   return '<span class=\"reference\" target=\"' + p + '\"></span>';
 }
-var reference_re = /@\[(.+)\]/g;
+var reference_re = /@\[([^\]]+)\]/g;
 
 function link_marker(match, p1, p2, offset, string) {
   var href = resolve_url(p2);
   return '<a href=\"' + href + '\">' + p1 + '</a>';
 }
 var link_re = /\[([^\]]*)\]\(([^\)]*)\)/g;
+
+function fnote_marker(match, p, offset, string) {
+  return '<span class=\"footnote\">' + p + '</span>';
+}
+var fnote_re = /\^\[([^\]]*)\]/g;
 
 function code_marker(match, p, offset, string) {
   return '<code>' + p + '</code>';
@@ -223,6 +227,10 @@ var code_re = /`([^`]*)`/g;
 // main render
 function render(box,text,defer) {
   defer = defer || false;
+
+  var new_section = false;
+  var new_equation = false;
+  var new_footnote = false;
 
   // escape carets
   text = escape_html(text);
@@ -280,6 +288,7 @@ function render(box,text,defer) {
   text = text.replace(reference_re,reference_marker);
   text = text.replace(link_re,link_marker);
   text = text.replace(code_re,code_marker);
+  text = text.replace(fnote_re,fnote_marker);
 
   // unescape special chars
   text = text.replace(esc_re,'$1');
@@ -287,6 +296,17 @@ function render(box,text,defer) {
   // convert to html
   var html = fill_tags(text);
   box.html(html);
+
+  // handle footnotes
+  box.find('.footnote').each(function() {
+    var fnote = $(this);
+    var text = fnote.html();
+    fnote.html("<span class=\"number\"></span>");
+    var popup = $("<div>",{class:"popup footnote_popup",html:text});
+    attach_popup(fnote,popup);
+
+    new_footnote = true;
+  });
 
   // inline-ish elements
   box.find(".latex").each(function() {
@@ -338,6 +358,9 @@ function render(box,text,defer) {
     }
     if (new_equation) {
       number_equations();
+    }
+    if (new_footnote) {
+      number_footnotes();
     }
     resolve_references(box);
   }
@@ -615,6 +638,8 @@ function get_offset(parent,popup,event) {
   var pop_width = popup.outerWidth();
   var pop_height = popup.outerHeight();
 
+  console.log(elem_width,pop_width);
+
   var pos_x = 0.5*(elem_width-pop_width);
   var pos_y = -pop_height;
 
@@ -670,21 +695,28 @@ function resolve_references() {
   });
 }
 
+// renumber footnotes
+function number_footnotes() {
+  console.log('numbering footnotes');
+  var n_footnotes = 0;
+  $(".footnote").each(function () {
+    var fnote = $(this);
+    var num = fnote.children('.number');
+    var foot_num = ++n_footnotes;
+    num.text(foot_num);
+  });
+}
+
 function full_render() {
   console.log('rendering');
-  new_section = false;
-  new_equation = false;
   $("div.par").replaceWith(function() {
     var par = $(this);
     return make_para(par.html(),par.attr("cid"),par.attr("prev"),par.attr("next"),false,true);
   });
-  if (new_section) {
-    number_sections();
-  }
-  if (new_equation) {
-    number_equations();
-    align_equations(); // why is this necessary?
-  }
+  number_sections();
+  number_equations();
+  number_footnotes();
+  align_equations(); // why is this necessary?
   resolve_references();
 }
 
