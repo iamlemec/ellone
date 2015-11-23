@@ -24,6 +24,8 @@ Text cells can be typed in verbatim. Create heading cells by prefacing them with
 
 Clicking on a cell, makes it the active cell. One can also move to the previous or next cell with the arrow keys. Creation and deletion of cells can also be accomplished with the mouse hover buttons.
 
+Footnotes can be created with a caret and text in square brackets, as in `^\[footnote text\]`. Their text will be displayed in a hover over and they will be automatically numbered from 1. For example, this is a footnote ^[The proof is left as an exercise to the reader. 😄]. And here is another ^[And my $\sin(x^2)$ axe! Yes, you can put math and even references @[eq1] in footnotes.].
+
 # Math
 
 Math is rendered using KaTeX and supports much of TeX style syntax. It can be displayed inline, as in $x \in \{1,2,\ldots\}$ or in display style
