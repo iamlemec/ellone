@@ -36,6 +36,7 @@ function disconnect()
 }
 
 function initialize() {
+  console.log(dirname);
   var create = $(".directory .create");
   create.click(function() {
     var entry = $("<div>",{class: "entry"});
@@ -43,7 +44,13 @@ function initialize() {
     input.keydown(function(event) {
       if (event.keyCode == 13) {
         var name = input.val();
-        var link = $("<a>",{href:"/editor/"+dirname+"/"+name,html:name});
+        var href;
+        if (dirname.length > 0) {
+          href = "/editor/"+dirname+"/"+name;
+        } else {
+          href = "/editor/"+name;
+        }
+        var link = $("<a>",{href:href,html:name});
         input.replaceWith(link);
         var msg = JSON.stringify({"cmd": "create", "content": name});
         ws.send(msg);

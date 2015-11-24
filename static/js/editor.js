@@ -186,22 +186,21 @@ function resolve_url(url) {
 }
 
 // regex
-var esc_re = /\\([\[\]\(\)@])/g;
+var esc_re = /\\([\[\]\(\)@$])/g;
 var sec_re = /^(#+)([^!].*)/;
 var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
 var label_re = /^ *\[([\w-_]+)\](.*)/;
 var ulist_re = /[\-](.*)/;
 var olist_re = /[\+](.*)/;
 
-function inline_marker(match, p, offset, string) {
-  return '<span class=\"latex\">' + p + '</span>';
+function inline_marker(match, p1, p2, offset, string) {
+  return p1 + '<span class=\"latex\">' + p2 + '</span>';
 }
-var inline_re = /\$([^\$]*)\$/g;
+var inline_re = /([^\\])\$([^\$]*)\$/g;
 
 function display_marker(match, p, offset, string) {
-  return '<div class=\"equation\">' + p.replace(/\n/g,' ') + '</div>';
+  return ;
 }
-var display_re = /\$\$([^\$]*)\$\$/g;
 
 function reference_marker(match, p, offset, string) {
   return '<span class=\"reference\" target=\"' + p + '\"></span>';
@@ -280,10 +279,13 @@ function render(box,text,defer) {
     if (cap.length > 0) {
       text += '<p class="caption">' + cap + '</p>';
     }
+  } else if (text.startsWith('$$')) {
+    text = '<div class=\"equation\">' + text.slice(2) + '</div>';
+  } else {
+    text = fill_tags(text);
   }
 
   // tag markers
-  text = text.replace(display_re,display_marker);
   text = text.replace(inline_re,inline_marker);
   text = text.replace(reference_re,reference_marker);
   text = text.replace(link_re,link_marker);
@@ -294,8 +296,7 @@ function render(box,text,defer) {
   text = text.replace(esc_re,'$1');
 
   // convert to html
-  var html = fill_tags(text);
-  box.html(html);
+  box.html(text);
 
   // handle footnotes
   box.find('.footnote').each(function() {

@@ -66,36 +66,71 @@ enum_template = """\\begin{enumerate}
 %s
 \\end{enumerate}"""
 
-def gen_latex(cells):
-  for cell in cells:
+item_template = """\\begin{itemize}
+%s
+\\end{itemize}"""
+
+display_template = """\\begin{align*}
+%s
+\\end{align*}"""
+
+def math_escape(inp):
+  inp = re.sub(r'\\align','&',inp)
+  return inp
+
+def text_escape(inp):
+  inp = re.sub(r'\"(.*?)\"','``\\1\'\'',inp)
+  inp = re.sub(r'\&','\\&',inp)
+  inp = re.sub(r'_','\\_',inp)
+  inp = re.sub(r'#','\\#',inp)
+  inp = re.sub(r'%','\\%',inp)
+  return inp
+
+def gen_latex(cell):
+  # block level operations
+  if cell.startswith('#'):
     if cell.startswith('#!'):
-      yield title_template % cell[2:].strip()
-      continue
-    ret = re.match(r'(#+) ?(.*)',cell)
-    if ret:
-      (pound,title) = ret.groups()
-      level = len(pound)
-      yield section_template % ('sub'*(level-1),title)
-      continue
-    if cell.startswith('+'):
-      items = cell[1:].split('\n+')
-      text = '\n'.join(['\\item %s\n' % item for item in items])
-      yield enum_template % text
-      continue
-    yield cell
+      text = title_template % cell[2:].strip()
+    else:
+      ret = re.match(r'(#+) ?(.*)',cell)
+      if ret:
+        (pound,title) = ret.groups()
+        level = len(pound)
+        text = section_template % ('sub'*(level-1),title)
+      else:
+        text = cell
+  elif cell.startswith('+'):
+    items = cell[1:].split('\n+')
+    text = enum_template % '\n'.join(['\\item %s\n' % item for item in items])
+  elif cell.startswith('-'):
+    items = cell[1:].split('\n-')
+    text = item_template % '\n'.join(['\\item %s\n' % item for item in items])
+  elif cell.startswith('$$'):
+    text = display_template % cell[2:]
+    return math_escape(text)
+  else:
+    text = cell
+
+  # differential escaping
+  def mathchunks(inp):
+    start = 0
+    math = False
+    for ret in re.finditer(r'(?<!\\)\$',inp):
+      end = ret.start()
+      yield (math,inp[start:end])
+      start = end + 1
+      math = not math
+    end = len(inp)
+    yield (math,inp[start:end])
+
+  final = '$'.join([math_escape(chunk) if math else text_escape(chunk) for (math,chunk) in mathchunks(text)])
+
+  # return finalized
+  return final
 
 def construct_latex(text):
-  text = re.sub(r'\"(.*?)\"','``\\1\'\'',text)
-  text = re.sub(r'\&','\\&',text)
-  #text = re.sub(r'_','\\_',text)
-  text = re.sub(r'\\align','&',text)
-  text = re.sub(r'\$\$([^\$]*)\$\$','\\\\begin{align*}\n\\1\n\\\\end{align*}',text)
-
   cells = filter(len,map(str.strip,text.split('\n\n')))
-
-  tex = '\n\n'.join(gen_latex(cells))
-  tex = re.sub(r'#','\\#',tex)
-  tex = re.sub(r'%','\\%',tex)
+  tex = '\n\n'.join([gen_latex(cell) for cell in cells])
 
   latex = latex_template % tex
   print(latex)
