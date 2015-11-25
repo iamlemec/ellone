@@ -225,7 +225,8 @@ class BrowseHandler(tornado.web.RequestHandler):
         dtype = [os.path.isdir(os.path.join(base,f)) for f in files]
         dirs = [f for (f,t) in zip(files,dtype) if t]
         docs = [f for (f,t) in zip(files,dtype) if not t and f.endswith('.md')]
-        self.render("directory.html",dirname='',pardir='',dirs=dirs,docs=docs)
+        misc = [f for (f,t) in zip(files,dtype) if not t and not f.endswith('.md')]
+        self.render("directory.html",dirname='',pardir='',dirs=dirs,docs=docs,misc=misc)
 
 class DirectoryHandler(tornado.web.RequestHandler):
     def get(self,targ):
@@ -235,7 +236,8 @@ class DirectoryHandler(tornado.web.RequestHandler):
         dtype = [os.path.isdir(os.path.join(curdir,f)) for f in files]
         dirs = [f for (f,t) in zip(files,dtype) if t]
         docs = [f for (f,t) in zip(files,dtype) if not t and f.endswith('.md')]
-        self.render("directory.html",dirname=dirname,pardir=pardir,dirs=dirs,docs=docs)
+        misc = [f for (f,t) in zip(files,dtype) if not t and not f.endswith('.md')]
+        self.render("directory.html",dirname=dirname,pardir=pardir,dirs=dirs,docs=docs,misc=misc)
 
 class DemoHandler(tornado.web.RequestHandler):
     def get(self):

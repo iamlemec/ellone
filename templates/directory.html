@@ -28,8 +28,13 @@
   </div>
 {% end %}
 {% for f in docs %}
-  <div class="entry">
+  <div class="entry doc">
     <a href="{{ join("/editor",dirname,f) }}">{{ f }}</a>
+  </div>
+{% end %}
+{% for f in misc %}
+  <div class="entry misc">
+    <a href="{{ join("/local",dirname,f) }}">{{ f }}</a>
   </div>
 {% end %}
 <div class="entry create">+</div>

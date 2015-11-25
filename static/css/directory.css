@@ -59,6 +59,10 @@ html {
   color: rgb(232, 50, 90);
 }
 
+.directory .entry.misc a {
+  color: rgba(153, 122, 232, 1.0);
+}
+
 .directory .entry.name {
   text-align: center;
   font-weight: bold;
