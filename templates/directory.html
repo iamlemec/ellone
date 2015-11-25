@@ -2,14 +2,14 @@
 <html>
 
 <head>
-<title>Elltwo Editor</title>
+<title>Elltwo Browser</title>
 <link href="{{ static_url('css/proxima-nova.css') }}" type="text/css" rel="stylesheet"/>
 <link href="{{ static_url('css/directory.css') }}" type="text/css" rel="stylesheet"/>
 </head>
 
 <body>
 
-<h1 class="title">Elltwo Documents</h1>
+<h1 class="title">Elltwo</h1>
 
 {% from os.path import join %}
 
@@ -32,7 +32,7 @@
     <a href="{{ join("/editor",dirname,f) }}">{{ f }}</a>
   </div>
 {% end %}
-<div class="create">+</div>
+<div class="entry create">+</div>
 </div>
 
 <script type="text/javascript">dirname = '{{ dirname }}';</script>
