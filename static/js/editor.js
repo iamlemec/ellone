@@ -235,6 +235,7 @@ function render(box,text,defer) {
   text = escape_html(text);
 
   // classify cell type
+  var inline = true;
   if (text.startsWith('#!')) {
     text = text.slice(2);
     box.addClass('title');
@@ -281,12 +282,15 @@ function render(box,text,defer) {
     }
   } else if (text.startsWith('$$')) {
     text = '<div class=\"equation\">' + text.slice(2) + '</div>';
+    inline = false;
   } else {
     text = fill_tags(text);
   }
 
   // tag markers
-  text = text.replace(inline_re,inline_marker);
+  if (inline) {
+    text = text.replace(inline_re,inline_marker);
+  }
   text = text.replace(reference_re,reference_marker);
   text = text.replace(link_re,link_marker);
   text = text.replace(code_re,code_marker);

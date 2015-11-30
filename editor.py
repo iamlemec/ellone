@@ -74,16 +74,26 @@ display_template = """\\begin{align*}
 %s
 \\end{align*}"""
 
+numbered_template = """\\begin{align} \\label{%s}
+%s
+\\end{align}"""
+
 def math_escape(inp):
   inp = re.sub(r'\\align','&',inp)
   return inp
 
 def text_escape(inp):
-  inp = re.sub(r'\"(.*?)\"','``\\1\'\'',inp)
-  inp = re.sub(r'\&','\\&',inp)
-  inp = re.sub(r'_','\\_',inp)
-  inp = re.sub(r'#','\\#',inp)
-  inp = re.sub(r'%','\\%',inp)
+  # inline
+  inp = re.sub(r'\^\[([^\]]*)\]',r'\\footnote{\1}',inp)
+  inp = re.sub(r'\@\[([^\]]*)\]',r'\\ref{\1}',inp)
+
+  # escaping
+  inp = re.sub(r'\"([^\)]*)\"',r"``\1''",inp)
+  inp = re.sub(r'\&',r'\\&',inp)
+  inp = re.sub(r'_',r'\\_',inp)
+  inp = re.sub(r'#',r'\\#',inp)
+  inp = re.sub(r'%',r'\\%',inp)
+
   return inp
 
 def gen_latex(cell):
@@ -106,7 +116,14 @@ def gen_latex(cell):
     items = cell[1:].split('\n-')
     text = item_template % '\n'.join(['\\item %s\n' % item for item in items])
   elif cell.startswith('$$'):
-    text = display_template % cell[2:]
+    math = cell[2:].strip()
+    ret = re.match(r'\[([^\]]*)\]',math)
+    if ret:
+      label = ret.groups()[0]
+      math = math[ret.end():]
+      text = numbered_template % (label,math)
+    else:
+      text = display_template % math
     return math_escape(text)
   else:
     text = cell
