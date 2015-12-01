@@ -78,8 +78,13 @@ numbered_template = """\\begin{align} \\label{%s}
 %s
 \\end{align}"""
 
+image_template = """\\includegraphics{%s}"""
+
+# differential escaping
 def math_escape(inp):
   inp = re.sub(r'\\align','&',inp)
+  inp = re.sub(r'\\gt','>',inp)
+  inp = re.sub(r'\\lt','<',inp)
   return inp
 
 def text_escape(inp):
@@ -96,63 +101,69 @@ def text_escape(inp):
 
   return inp
 
-def gen_latex(cell):
-  # block level operations
-  if cell.startswith('#'):
-    if cell.startswith('#!'):
-      text = title_template % cell[2:].strip()
-    else:
-      ret = re.match(r'(#+) ?(.*)',cell)
-      if ret:
-        (pound,title) = ret.groups()
-        level = len(pound)
-        text = section_template % ('sub'*(level-1),title)
-      else:
-        text = cell
-  elif cell.startswith('+'):
-    items = cell[1:].split('\n+')
-    text = enum_template % '\n'.join(['\\item %s\n' % item for item in items])
-  elif cell.startswith('-'):
-    items = cell[1:].split('\n-')
-    text = item_template % '\n'.join(['\\item %s\n' % item for item in items])
-  elif cell.startswith('$$'):
-    math = cell[2:].strip()
-    ret = re.match(r'\[([^\]]*)\]',math)
-    if ret:
-      label = ret.groups()[0]
-      math = math[ret.end():]
-      text = numbered_template % (label,math)
-    else:
-      text = display_template % math
-    return math_escape(text)
-  else:
-    text = cell
-
-  # differential escaping
-  def mathchunks(inp):
-    start = 0
-    math = False
-    for ret in re.finditer(r'(?<!\\)\$',inp):
-      end = ret.start()
-      yield (math,inp[start:end])
-      start = end + 1
-      math = not math
-    end = len(inp)
+def mathchunks(inp):
+  start = 0
+  math = False
+  for ret in re.finditer(r'(?<!\\)\$',inp):
+    end = ret.start()
     yield (math,inp[start:end])
+    start = end + 1
+    math = not math
+  end = len(inp)
+  yield (math,inp[start:end])
 
-  final = '$'.join([math_escape(chunk) if math else text_escape(chunk) for (math,chunk) in mathchunks(text)])
-
-  # return finalized
-  return final
+def gen_escape(inp):
+  return '$'.join([math_escape(chunk) if math else text_escape(chunk) for (math,chunk) in mathchunks(inp)])
 
 def construct_latex(text):
+  images = []
+  def gen_latex(cell):
+    # block level operations
+    if cell.startswith('#'):
+      if cell.startswith('#!'):
+        text = title_template % gen_escape(cell[2:].strip())
+      else:
+        ret = re.match(r'(#+) ?(.*)',cell)
+        if ret:
+          (pound,title) = ret.groups()
+          level = len(pound)
+          text = section_template % ('sub'*(level-1),gen_escape(title))
+        else:
+          text = gen_escape(cell) # should never get here
+    elif cell.startswith('+'):
+      items = cell[1:].split('\n+')
+      text = enum_template % '\n'.join(['\\item %s\n' % gen_escape(item) for item in items])
+    elif cell.startswith('-'):
+      items = cell[1:].split('\n-')
+      text = item_template % '\n'.join(['\\item %s\n' % gen_escape(item) for item in items])
+    elif cell.startswith('!'):
+      ret = re.match(r'\[([^\]]*)\](.*)',cell[1:])
+      (url,cap) = ret.groups()
+      images.append(url)
+      if len(cap) > 0:
+        cap = gen_escape(cap[1:-1])
+      text = image_template % (url,)
+    elif cell.startswith('$$'):
+      math = cell[2:].strip()
+      ret = re.match(r'\[([^\]]*)\]',math)
+      if ret:
+        (label,) = ret.groups()
+        math = math[ret.end():]
+        text = numbered_template % (label,math_escape(math))
+      else:
+        text = display_template % math_escape(math)
+    else:
+      text = gen_escape(cell)
+
+    return text
+
   cells = filter(len,map(str.strip,text.split('\n\n')))
   tex = '\n\n'.join([gen_latex(cell) for cell in cells])
 
   latex = latex_template % tex
   print(latex)
 
-  return latex
+  return (latex,images)
 
 # initialize/open database
 def read_cells(fname):
@@ -308,7 +319,7 @@ class LatexHandler(tornado.web.RequestHandler):
         fullpath = os.path.join(args.path,fname)
         fid = open(fullpath,'r')
         text = fid.read()
-        latex = construct_latex(text)
+        (latex,images) = construct_latex(text)
 
         ret = re.match(r'(.*)\.md',fname)
         if ret:
@@ -326,7 +337,7 @@ class PdfHandler(tornado.web.RequestHandler):
         fullpath = os.path.join(args.path,fname)
         fid = open(fullpath,'r')
         text = fid.read()
-        latex = construct_latex(text)
+        (latex,images) = construct_latex(text)
 
         ret = re.match(r'(.*)\.md',fname)
         if ret:
