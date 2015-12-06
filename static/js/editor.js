@@ -223,6 +223,16 @@ function code_marker(match, p, offset, string) {
 }
 var code_re = /`([^`]*)`/g;
 
+function bold_marker(match, p, offset, string) {
+  return '<b>' + p + '</b>';
+}
+var bold_re = /\*\*([^\*]*)\*\*/g;
+
+function ital_marker(match, p, offset, string) {
+  return '<i>' + p + '</i>';
+}
+var ital_re = /\*([^\*]*)\*/g;
+
 // main render
 function render(box,text,defer) {
   defer = defer || false;
@@ -294,6 +304,8 @@ function render(box,text,defer) {
   text = text.replace(reference_re,reference_marker);
   text = text.replace(link_re,link_marker);
   text = text.replace(code_re,code_marker);
+  text = text.replace(bold_re,bold_marker);
+  text = text.replace(ital_re,ital_marker);
   text = text.replace(fnote_re,fnote_marker);
 
   // unescape special chars

@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import re
 import json
@@ -47,6 +48,11 @@ latex_template = """\\documentclass{article}
 \\usepackage{amssymb}
 \\usepackage[utf8]{inputenc}
 \\usepackage{parskip}
+\\usepackage{graphicx}
+\\usepackage[colorlinks,linkcolor=blue]{hyperref}
+\\usepackage{cleveref}
+
+\\Crefformat{equation}{#2Equation~#1#3}
 
 \\begin{document}
 
@@ -78,7 +84,11 @@ numbered_template = """\\begin{align} \\label{%s}
 %s
 \\end{align}"""
 
-image_template = """\\includegraphics{%s}"""
+caption_template = """\\caption{%s}
+"""
+image_template = """\\begin{figure}
+\\includegraphics[width=\\textwidth]{%s}
+%s\\end{figure}"""
 
 # differential escaping
 def math_escape(inp):
@@ -88,32 +98,57 @@ def math_escape(inp):
   return inp
 
 def text_escape(inp):
-  # inline
-  inp = re.sub(r'\^\[([^\]]*)\]',r'\\footnote{\1}',inp)
-  inp = re.sub(r'\@\[([^\]]*)\]',r'\\ref{\1}',inp)
-
-  # escaping
-  inp = re.sub(r'\"([^\)]*)\"',r"``\1''",inp)
-  inp = re.sub(r'\&',r'\\&',inp)
-  inp = re.sub(r'_',r'\\_',inp)
-  inp = re.sub(r'#',r'\\#',inp)
-  inp = re.sub(r'%',r'\\%',inp)
-
+  inp = re.sub(r'([\&_^#%])',r'\\\1',inp) # escaping
+  inp = re.sub(r'\\([\*\"\`\[\@\[\]\(\)])',r'\1',inp) # unescaping
+  inp = re.sub(r'\\\^',r'\\textasciicircum',inp)
   return inp
 
-def mathchunks(inp):
-  start = 0
-  math = False
-  for ret in re.finditer(r'(?<!\\)\$',inp):
-    end = ret.start()
-    yield (math,inp[start:end])
-    start = end + 1
-    math = not math
-  end = len(inp)
-  yield (math,inp[start:end])
+# markdown lexer-parser
+ops = r'(?<!\\)(\$|\*\*|\*|\"|\`|\^\[|\@\[|\])'
+ops_re = re.compile(ops)
 
-def gen_escape(inp):
-  return '$'.join([math_escape(chunk) if math else text_escape(chunk) for (math,chunk) in mathchunks(inp)])
+starts = ['$','*','**','\"','`','[','^[','@[']
+ends = ['$','*','**','\"','`',')',']',']']
+static = ['$']
+endof = dict(zip(starts,ends))
+reduce = {
+  '$' : lambda s: '$%s$' % math_escape(s),
+  '*' : lambda s: '\\textit{%s}' % s,
+  '**': lambda s: '\\textbf{%s}' % s,
+  '`' : lambda s: '\\texttt{%s}' % s,
+  '\"': lambda s: '``%s\'\'' % s,
+  '[' : lambda s: '\\url{%s}{%s}' % tuple(s.split('](')),
+  '^[': lambda s: '\\footnote{%s}' % s,
+  '@[': lambda s: '\\Cref{%s}' % s
+}
+
+# well this got complicated
+def parse_markdown(text):
+  stack = []
+  buffs = ['']
+  pos = 0
+  for ret in ops_re.finditer(text):
+    op = ret.group()
+    (beg,end) = ret.span()
+    liter = len(stack) and stack[-1] in static
+    term = len(stack) and op == endof[stack[-1]]
+    if liter:
+      if term:
+        buffs[-1] += text[pos:beg]
+      else:
+        buffs[-1] += text[pos:end]
+    else:
+      buffs[-1] += text_escape(text[pos:beg])
+    if term:
+      proc = buffs.pop()
+      dop = stack.pop()
+      buffs[-1] += reduce[dop](proc)
+    elif op in starts and not liter:
+      stack.append(op)
+      buffs.append('')
+    pos = end
+  buffs[0] += text_escape(text[pos:])
+  return buffs[0]
 
 def construct_latex(text):
   images = []
@@ -121,28 +156,33 @@ def construct_latex(text):
     # block level operations
     if cell.startswith('#'):
       if cell.startswith('#!'):
-        text = title_template % gen_escape(cell[2:].strip())
+        text = cell[2:].strip()
+        text = title_template % parse_markdown(text)
       else:
         ret = re.match(r'(#+) ?(.*)',cell)
-        if ret:
-          (pound,title) = ret.groups()
-          level = len(pound)
-          text = section_template % ('sub'*(level-1),gen_escape(title))
-        else:
-          text = gen_escape(cell) # should never get here
+        (pound,title) = ret.groups()
+        level = len(pound)
+        text = section_template % ('sub'*(level-1),parse_markdown(title))
     elif cell.startswith('+'):
       items = cell[1:].split('\n+')
-      text = enum_template % '\n'.join(['\\item %s\n' % gen_escape(item) for item in items])
+      text = enum_template % '\n'.join(['\\item %s\n' % parse_markdown(item) for item in items])
     elif cell.startswith('-'):
       items = cell[1:].split('\n-')
-      text = item_template % '\n'.join(['\\item %s\n' % gen_escape(item) for item in items])
+      text = item_template % '\n'.join(['\\item %s\n' % parse_markdown(item) for item in items])
     elif cell.startswith('!'):
       ret = re.match(r'\[([^\]]*)\](.*)',cell[1:])
       (url,cap) = ret.groups()
       images.append(url)
       if len(cap) > 0:
-        cap = gen_escape(cap[1:-1])
-      text = image_template % (url,)
+        cap = parse_markdown(cap[1:-1])
+        ctxt = caption_template % cap
+      ret = re.search(r'(^|:)//(.*)',url)
+      if ret:
+        (rpath,) = ret.groups()
+      else:
+        rpath = url
+      (_,fname) = os.path.split(rpath)
+      text = image_template % (fname,ctxt)
     elif cell.startswith('$$'):
       math = cell[2:].strip()
       ret = re.match(r'\[([^\]]*)\]',math)
@@ -153,7 +193,7 @@ def construct_latex(text):
       else:
         text = display_template % math_escape(math)
     else:
-      text = gen_escape(cell)
+      text = parse_markdown(cell)
 
     return text
 
@@ -333,11 +373,28 @@ class LatexHandler(tornado.web.RequestHandler):
     get = post
 
 class PdfHandler(tornado.web.RequestHandler):
-    def post(self,fname):
-        fullpath = os.path.join(args.path,fname)
+    def post(self,rpath):
+        (rdir,fname) = os.path.split(rpath)
+        fullpath = os.path.join(args.path,rpath)
+
+        # generate latex
         fid = open(fullpath,'r')
         text = fid.read()
         (latex,images) = construct_latex(text)
+
+        # copy over images
+        for img in images:
+          ret = re.search(r'(^|:)//(.*)',img)
+          if ret:
+            (rloc,) = ret.groups()
+            (_,rname) = os.path.split(rloc)
+            urllib.urlretrieve(url,os.path.join(tmpdir,rname))
+          else:
+            if img[0] == '/':
+              ipath = img[1:]
+            else:
+              ipath = os.path.join(rdir,img)
+            shutil.copy(os.path.join(args.path,ipath),tmpdir)
 
         ret = re.match(r'(.*)\.md',fname)
         if ret:
@@ -351,8 +408,10 @@ class PdfHandler(tornado.web.RequestHandler):
         ftex.close()
 
         cwd = os.getcwd()
+        cmd = 'pdflatex -interaction=nonstopmode %s' % fname_tex
         os.chdir(tmpdir)
-        os.system('pdflatex %s' % fname_tex)
+        os.system(cmd)
+        os.system(cmd) # to resolve references
         os.chdir(cwd)
 
         fname_pdf = '%s.pdf' % fname_new
