@@ -178,7 +178,7 @@ function activate_next() {
 function resolve_url(url) {
   if (url.search('(^|:)//') == -1) {
     if (url[0] != '/') {
-      url = "/" + curdir + url;
+      url = "/" + curdir + "/" + url;
     }
     url = "/local" + url;
   }

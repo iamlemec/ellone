@@ -13,7 +13,7 @@
 /* content */
 
 #content {
-  width: 650px !important;
+  width: 700px !important;
   margin: 0px auto;
   padding-top: 80px;
   padding-bottom: 200px;
@@ -121,6 +121,10 @@ a:visited {
 }
 
 /* images */
+
+.para_inner.image {
+  text-align: center;
+}
 
 .image {
   margin-top: 10px;
