@@ -19,7 +19,7 @@ import tornado.websocket
 parser = argparse.ArgumentParser(description='Elltwo Server.')
 parser.add_argument('--path', type=str, default='testing', help='path for markdown files')
 parser.add_argument('--port', type=int, default=8500, help='port to serve on')
-# parser.add_argument('--demo', action='store_true', help='run in demo mode')
+parser.add_argument('--demo', action='store_true', help='run in demo mode')
 args = parser.parse_args()
 
 # authentication
@@ -29,15 +29,19 @@ cookie_secret = auth['cookie_secret']
 username_true = auth['username']
 password_true = auth['password']
 
-def authenticated(get0):
-  def get1(self):
-    current_user = self.get_secure_cookie("user")
-    print(current_user)
-    if not current_user:
-      self.redirect("/auth/login/")
-      return
-    get0(self)
-  return get1
+if args.demo:
+  def authenticated(get0):
+    return get0
+else:
+  def authenticated(get0):
+    def get1(self,*args):
+      current_user = self.get_secure_cookie("user")
+      print(current_user)
+      if not current_user:
+        self.redirect("/auth/login/")
+        return
+      get0(self,*args)
+    return get1
 
 # utils
 tmpdir = './temp'
@@ -298,6 +302,7 @@ class BrowseHandler(tornado.web.RequestHandler):
     self.render("directory.html",dirname='',pardir='',dirs=dirs,docs=docs,misc=misc)
 
 class DirectoryHandler(tornado.web.RequestHandler):
+  @authenticated
   def get(self,targ):
     curdir = os.path.join(args.path,targ)
     (pardir,dirname) = os.path.split(targ)
@@ -309,20 +314,23 @@ class DirectoryHandler(tornado.web.RequestHandler):
     self.render("directory.html",dirname=dirname,pardir=pardir,dirs=dirs,docs=docs,misc=misc)
 
 class DemoHandler(tornado.web.RequestHandler):
-  def get(self,path):
-    randf = 'demo_%s.md' % hex(random.getrandbits(128))[2:]
-    fullpath = os.path.join(args.path,randf)
-    fid = open(fullpath,'w+')
-    fid.write('#! Title\n\nBody text.')
-    fid.close()
-    self.redirect('/editor/%s' % randf)
+  @authenticated
+  def get(self):
+    drand = '%s' % hex(random.getrandbits(128))[2:]
+    fullpath = os.path.join(args.path,drand)
+    os.mkdir(fullpath)
+    shutil.copy(os.path.join('testing','demo.md'),fullpath)
+    shutil.copy(os.path.join('testing','Jahnke_gamma_function.png'),fullpath)
+    self.redirect('/directory/%s' % drand)
 
 class EditorHandler(tornado.web.RequestHandler):
+  @authenticated
   def get(self,path):
     (curdir,fname) = os.path.split(path)
     self.render("editor.html",path=path,curdir=curdir,fname=fname)
 
 class MarkdownHandler(tornado.web.RequestHandler):
+  @authenticated
   def post(self,fname):
     fullpath = os.path.join(args.path,fname)
     fid = open(fullpath,'r')
@@ -334,6 +342,7 @@ class MarkdownHandler(tornado.web.RequestHandler):
   get = post
 
 # class HtmlHandler(tornado.web.RequestHandler):
+#   @authenticated
 #   def post(self,fname):
 #     fname_base = get_base_name(fname)
 #     fname_html = '%s.html' % fname_base
@@ -356,6 +365,7 @@ class MarkdownHandler(tornado.web.RequestHandler):
 #   get = post
 
 class LatexHandler(tornado.web.RequestHandler):
+  @authenticated
   def post(self,fname):
     fullpath = os.path.join(args.path,fname)
     fid = open(fullpath,'r')
@@ -374,6 +384,7 @@ class LatexHandler(tornado.web.RequestHandler):
   get = post
 
 class PdfHandler(tornado.web.RequestHandler):
+  @authenticated
   def post(self,rpath):
     (rdir,fname) = os.path.split(rpath)
     fullpath = os.path.join(args.path,rpath)
@@ -547,12 +558,15 @@ class FileHandler(tornado.websocket.WebSocketHandler):
 # tornado content handlers
 class Application(tornado.web.Application):
   def __init__(self):
-    handlers = [
-      (r"/?", BrowseHandler),
+    if args.demo:
+      handlers = [(r"/?", DemoHandler)]
+    else:
+      handlers = [(r"/?", BrowseHandler)]
+
+    handlers += [
       (r"/directory/(.*)", DirectoryHandler),
       (r"/auth/login/?", AuthLoginHandler),
       (r"/auth/logout/?", AuthLogoutHandler),
-      (r"/demo/?", DemoHandler),
       (r"/editor/(.+)", EditorHandler),
       (r"/markdown/(.+)", MarkdownHandler),
       # (r"/html/(.+)", HtmlHandler),

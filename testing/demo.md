@@ -20,7 +20,7 @@ As in the above, unordered lists can be created with consecutive lines in a cell
 
 Text cells can be typed in verbatim. Create heading cells by prefacing them with any appropriate number of `#`'s. Image cells must be separate but otherwise use the same syntax as regular markdown: `!\[url\]\(caption\)`
 
-![graphics/Jahnke_gamma_function.png](Ye Olde Gamma Function)
+![Jahnke_gamma_function.png](Ye Olde Gamma Function)
 
 Clicking on a cell, makes it the active cell. One can also move to the previous or next cell with the arrow keys. Creation and deletion of cells can also be accomplished with the mouse hover buttons.
 
@@ -34,7 +34,7 @@ $$ [eq1] \int_0^{\infty} \exp(-x^2)\ dx = \frac{\sqrt{\pi}}{2}
 
 This makes debugging equation errors considerably easier. On top of that, KaTeX now even supports subexpression error display
 
-$$x^2 = \frac{y^2 + \sqrt{\elm^3}}{2}
+$$ x^2 = \frac{y^2 + \sqrt{\elm^3}}{2}
 
 Equations can be numbered with semi-arbitrary labels as in `\[eq1\]`, and referenced similarly with `\@\[eq1\]`, for example @[eq1]. There will be a hover preview of the contents of the referenced equation.
 
