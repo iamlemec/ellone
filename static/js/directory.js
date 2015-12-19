@@ -38,6 +38,7 @@ function disconnect()
 function initialize() {
   console.log(dirname);
   var create = $(".directory .create");
+  var tools = $(".directory .tools");
   create.click(function() {
     var entry = $("<div>",{class: "entry"});
     var input = $("<input>");
@@ -57,7 +58,7 @@ function initialize() {
       }
     });
     entry.append(input);
-    entry.insertBefore(create);
+    entry.insertBefore(tools);
     input.focus();
   });
 }

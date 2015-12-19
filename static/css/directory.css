@@ -74,11 +74,41 @@ html {
   border: 1px solid rgb(53, 122, 232);
 }
 
+.directory .entry.tools {
+  display: table;
+  width: 94.5%;
+  height: 35px;
+}
+
+.directory .entry.tools:hover {
+  background-color: white;
+}
+
 .directory .create {
+  display: table-cell;
+  vertical-align: middle;
+  width: 50%;
   cursor: default;
-  border-top: 1px solid #CCC;
   text-align: center;
   font-size: 20px;
+  border-right: 1px solid #CCC;
+}
+
+.directory .create:hover {
+  background-color: #FBFBFB;
+}
+
+.directory .upload {
+  display: table-cell;
+  vertical-align: middle;
+  cursor: default;
+  text-align: center;
+  font-size: 20px;
+  width: 50%;
+}
+
+.directory .upload:hover {
+  background-color: #FBFBFB;
 }
 
 .directory .entry input {
