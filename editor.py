@@ -293,25 +293,25 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
 class BrowseHandler(tornado.web.RequestHandler):
   @authenticated
   def get(self):
-    base = args.path
-    files = sorted(os.listdir(base))
-    dtype = [os.path.isdir(os.path.join(base,f)) for f in files]
-    dirs = [f for (f,t) in zip(files,dtype) if t]
-    docs = [f for (f,t) in zip(files,dtype) if not t and f.endswith('.md')]
-    misc = [f for (f,t) in zip(files,dtype) if not t and not f.endswith('.md')]
-    self.render("directory.html",dirname='',pardir='',dirs=dirs,docs=docs,misc=misc)
+    self.render("directory.html",relpath='',dirname='',pardir='',demo=args.demo)
 
 class DirectoryHandler(tornado.web.RequestHandler):
   @authenticated
   def get(self,targ):
-    curdir = os.path.join(args.path,targ)
     (pardir,dirname) = os.path.split(targ)
-    files = sorted(os.listdir(curdir))
-    dtype = [os.path.isdir(os.path.join(curdir,f)) for f in files]
-    dirs = [f for (f,t) in zip(files,dtype) if t]
-    docs = [f for (f,t) in zip(files,dtype) if not t and f.endswith('.md')]
-    misc = [f for (f,t) in zip(files,dtype) if not t and not f.endswith('.md')]
-    self.render("directory.html",dirname=dirname,pardir=pardir,dirs=dirs,docs=docs,misc=misc)
+    self.render("directory.html",relpath=targ,dirname=dirname,pardir=pardir,demo=args.demo)
+
+class UploadHandler(tornado.web.RequestHandler):
+  @authenticated
+  def post(self,rpath):
+    file = self.request.files['payload'][0]
+    fname = file['filename']
+    plocal = os.path.join(args.path,rpath,fname)
+    if os.path.isdir(plocal):
+      print('Directory exists!')
+      return
+    out = open(plocal,'wb')
+    out.write(file['body'])
 
 class DemoHandler(tornado.web.RequestHandler):
   @authenticated
@@ -449,6 +449,8 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
     self.basename = get_base_name(self.fname)
     self.temppath = os.path.join(tmpdir,self.fname)
     self.fullpath = os.path.join(args.path,path)
+    print(path)
+    print(self.fullpath)
 
   def on_close(self):
     print("connection closing")
@@ -520,9 +522,11 @@ class FileHandler(tornado.websocket.WebSocketHandler):
   def allow_draft76(self):
     return True
 
-  def open(self,dirname):
+  def open(self,relpath):
     print("connection received")
-    self.dirname = dirname
+    self.relpath = relpath
+    self.curdir = os.path.join(args.path,self.relpath)
+    (self.pardir,self.dirname) = os.path.split(self.curdir)
 
   def on_close(self):
     print("connection closing")
@@ -541,32 +545,55 @@ class FileHandler(tornado.websocket.WebSocketHandler):
       print(e)
     data = json.loads(msg)
     (cmd,cont) = (data['cmd'],data['content'])
+    if cmd == 'list':
+      if args.demo and self.relpath == '':
+        print('Not so fast!')
+        return
     if cmd == 'create':
-      fullpath = os.path.join(args.path,self.dirname,cont)
-      exists = True
-      try:
-        os.stat(fullpath)
-      except:
-        exists = False
-      if exists:
+      fullpath = os.path.join(self.curdir,cont)
+      if os.path.exists(fullpath):
         print('File exists!')
         return
-      fid = open(fullpath,'w+')
-      fid.write('#! Title\n\nBody text.')
-      fid.close()
+      if cont.endswith('/'):
+        os.mkdir(fullpath)
+      else:
+        fid = open(fullpath,'w+')
+        fid.write('#! Title\n\nBody text.')
+        fid.close()
+    if cmd == 'delete':
+      fullpath = os.path.join(self.curdir,cont)
+      if os.path.isdir(fullpath):
+        shutil.rmtree(fullpath)
+      else:
+        os.remove(fullpath)
+
+    # list always
+    files = sorted(os.listdir(self.curdir))
+    dtype = [os.path.isdir(os.path.join(self.curdir,f)) for f in files]
+    dirs = [f for (f,t) in zip(files,dtype) if t]
+    docs = [f for (f,t) in zip(files,dtype) if not t and f.endswith('.md')]
+    misc = [f for (f,t) in zip(files,dtype) if not t and not f.endswith('.md')]
+    cont = {'dirs': dirs, 'docs': docs, 'misc': misc}
+    self.write_message(json.dumps({'cmd': 'results', 'content': cont}))
 
 # tornado content handlers
 class Application(tornado.web.Application):
   def __init__(self):
     if args.demo:
-      handlers = [(r"/?", DemoHandler)]
+      handlers = [
+        (r"/?", DemoHandler),
+        (r"/directory/(.+)", DirectoryHandler)
+      ]
     else:
-      handlers = [(r"/?", BrowseHandler)]
+      handlers = [
+        (r"/?", BrowseHandler),
+        (r"/directory/(.*)", DirectoryHandler)
+      ]
 
     handlers += [
-      (r"/directory/(.*)", DirectoryHandler),
       (r"/auth/login/?", AuthLoginHandler),
       (r"/auth/logout/?", AuthLogoutHandler),
+      (r"/upload/(.*)", UploadHandler),
       (r"/editor/(.+)", EditorHandler),
       (r"/markdown/(.+)", MarkdownHandler),
       # (r"/html/(.+)", HtmlHandler),
