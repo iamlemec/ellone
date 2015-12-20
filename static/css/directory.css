@@ -142,7 +142,7 @@ html {
   border-radius: 3px;
   background-color: rgba(256,0,0,0.5);
   color: white;
-  padding: 2px 0px 0px 2px;
+  padding: 2px 0px 0px 3px;
   font-size: 13px !important;
   line-height: 100%;
   cursor: default;
@@ -153,5 +153,6 @@ html {
 }
 
 .entry:hover .delbox {
-  /*display: block;*/
+  display: block;
 }
+
