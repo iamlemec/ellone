@@ -907,8 +907,19 @@ function initialize() {
   });
 }
 
+freq = 5000;
+function keep_alive() {
+  //console.log('heartbeet');
+  if (ws.readyState == ws.CLOSED) {
+    $('#canary').text('connecting');
+    delete(ws);
+    connect(false);
+  }
+  timeoutID = window.setTimeout(keep_alive,[freq]);
+}
+
 // websockets
-function connect()
+function connect(query)
 {
   if ('MozWebSocket' in window) {
     WebSocket = MozWebSocket;
@@ -921,8 +932,12 @@ function connect()
 
     ws.onopen = function() {
       console.log('websocket connected!');
-      var msg = JSON.stringify({"cmd": "query", "content": ""});
-      ws.send(msg);
+      $('#canary').text('connected');
+      if (query) {
+        var msg = JSON.stringify({"cmd": "query", "content": ""});
+        ws.send(msg);
+      }
+      timeoutID = window.setTimeout(keep_alive,[freq]);
     };
 
     ws.onmessage = function (evt) {
@@ -952,13 +967,6 @@ function connect()
         }
       }
     };
-
-    ws.onclose = function() {
-      console.log('websocket closed, trying to reestablish');
-      window.setTimeout(function() {
-        ws = new WebSocket(ws_con);
-      }, 1);
-    };
   } else {
     console.log('Sorry, your browser does not support websockets.');
   }
@@ -975,5 +983,5 @@ function disconnect()
 $(document).ready(function() {
   console.log(path);
   initialize();
-  connect();
+  connect(true);
 });

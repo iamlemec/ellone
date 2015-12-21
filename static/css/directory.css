@@ -80,9 +80,11 @@ html {
 }
 
 .directory .entry.tools {
+  box-sizing: border-box;
   display: table;
-  width: 94.5%;
+  width: 100%;
   height: 35px;
+  padding: 0px;
 }
 
 .directory .entry.tools:hover {
@@ -101,7 +103,7 @@ html {
 }
 
 .directory .create:hover {
-  background-color: #FBFBFB;
+  background-color: #DEDEDE;
 }
 
 .directory .upload {
@@ -114,7 +116,7 @@ html {
 }
 
 .directory .upload:hover {
-  background-color: #FBFBFB;
+  background-color: #DEDEDE;
 }
 
 .directory .entry input {
@@ -135,15 +137,16 @@ html {
   box-sizing: border-box;
   display: none;
   position: absolute;
-  right: 11px;
-  top: 13px;
-  width: 15px;
-  height: 15px;
+  right: 0px;
+  top: 0px;
+  width: 16px;
+  height: 16px;
   border-radius: 3px;
-  background-color: rgba(256,0,0,0.5);
+  background-color: rgba(232,50,90,0.5);
   color: white;
-  padding: 2px 0px 0px 3px;
-  font-size: 13px !important;
+  margin: 12px 12px 0px 0px;
+  padding: 3px 0px 0px 3px;
+  font-size: 12px !important;
   line-height: 100%;
   cursor: default;
 }

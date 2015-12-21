@@ -426,6 +426,16 @@ code {
   color: #333;
   position: fixed;
   cursor: default;
+  top: 5px;
+  left: 7px;
+}
+
+#canary {
+  position: fixed;
+  font-family: courier;
+  font-size: 14px;
+  left: 60px;
+  top: 12px;
 }
 
 #help {

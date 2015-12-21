@@ -47,7 +47,7 @@ else:
 tmpdir = './temp'
 
 # latex
-latex_template = """\\documentclass{article}
+latex_template = """\\documentclass[12pt]{article}
 
 \\usepackage{amsmath}
 \\usepackage{amssymb}
@@ -58,6 +58,10 @@ latex_template = """\\documentclass{article}
 \\usepackage{cleveref}
 
 \\Crefformat{equation}{#2Equation~#1#3}
+
+\\setlength{\\parindent}{0cm}
+\\setlength{\\parskip}{0.5cm}
+\\renewcommand{\\baselinestretch}{1.1}
 
 \\begin{document}
 
