@@ -3,26 +3,12 @@
 from ply import lex, yacc
 
 # structure
-class Markdown:
-    def __init__(self,lines):
-        self.lines = lines
+class Cell:
+    def __init__(self,elements):
+        self.elements = elements
 
     def __str__(self):
-        return '\n\n'.join([str(l) for l in self.lines])
-
-class Line:
-    def __init__(self,blocks):
-        self.blocks = blocks
-
-    def __str__(self):
-        return ''.join([str(b) for b in self.blocks])
-
-class Block:
-    def __init__(self,elems):
-        self.elems = elems
-
-    def __str__(self):
-        return ''.join([str(e) for e in self.elems])
+        return ''.join([str(l) for l in self.elements])
 
 class Link:
     def __init__(self,href,text):
@@ -30,93 +16,91 @@ class Link:
         self.text = text
 
     def __str__(self):
-        return 'Link(href="%s",content="%s")' % (self.href,self.text)
+        return 'Link(href=%s,content=%s)' % (self.href,self.text)
 
-class Image:
-    def __init__(self,source,text):
-        self.source = source
+class Math:
+    def __init__(self,tex):
+        self.tex = tex
+
+    def __str__(self):
+        return 'Math(tex=%s)' % self.tex
+
+class Bold:
+    def __init__(self,text):
         self.text = text
 
     def __str__(self):
-        return 'Image(source="%s",text="%s")' % (self.source,self.text)
+        return 'Bold(text=%s)' % self.text
+
+class Italics:
+    def __init__(self,text):
+        self.text = text
+
+    def __str__(self):
+        return 'Italics(text=%s)' % self.text
 
 # lexing
 class Lexer():
     tokens = (
-        "LINK_OPEN",
-        "IMAGE_OPEN",
-        "CLOSE",
+        "LEFT_BRA",
+        "RIGHT_BRA",
         "LEFT_PAR",
         "RIGHT_PAR",
-        "CR",
-        "BR",
+        "MATH_DELIM",
+        "BOLD_DELIM",
+        "ITAL_DELIM",
         "LITERAL"
     )
 
-    t_LINK_OPEN = r"\["
-    t_IMAGE_OPEN = r"!\["
-    t_CLOSE = r"\]"
+    t_LEFT_BRA = r"\["
+    t_RIGHT_BRA = r"\]"
     t_LEFT_PAR = r"\("
     t_RIGHT_PAR = r"\)"
-    t_CR = r"\n"
-    t_BR = r"\n\n"
-    t_LITERAL = r"[0-9A-Za-z_,\-\.:/ ]+"
+    t_MATH_DELIM = r"(?<!\\)\$"
+    t_BOLD_DELIM = r"\*\*"
+    t_ITAL_DELIM = r"\*(?!\*)"
+    t_LITERAL = r"([0-9A-Za-z_,\-\.:/\^\+ \n]|(?<=\\)(\$|\[|\]))+"
 
     def t_error(self,t):
         print("Illegal character '%s'" % t.value[0])
         t.lexer.skip(1)
-
-    def build(self):
-        return lex.lex(module=self)
 
 # parsing
 class Yaccer():
     def __init__(self,lexmod):
         self.tokens = lexmod.tokens
 
-    def p_lines(self,p):
-        "lines : lines lines"
+    def p_elements(self,p):
+        "elements : elements elements"
         p[0] = p[1] + p[2]
 
-    def p_line(self,p):
-        "lines : blocks BR"
-        p[0] = [Line(p[1])]
-
-    def p_single_line(self,p):
-        "lines : blocks"
-        p[0] = [Line(p[1])]
-
-    def p_blocks(self,p):
-        "blocks : blocks blocks"
-        p[0] = p[1] + p[2]
-
-    def p_block_element(self,p):
-        "blocks : element"
+    def p_element(self,p):
+        """elements : decor
+                    | math
+                    | link"""
         p[0] = [p[1]]
 
-    def p_block_link(self,p):
-        "blocks : link"
-        p[0] = [p[1]]
-
-    def p_block_cr(self,p):
-        "blocks : CR"
-        p[0] = [p[1]]
+    def p_math(self,p):
+        "math : MATH_DELIM LITERAL MATH_DELIM"
+        p[0] = Math(p[2])
 
     def p_link(self,p):
-        "link : LINK_OPEN element CLOSE LEFT_PAR LITERAL RIGHT_PAR"
+        "link : LEFT_BRA decor RIGHT_BRA LEFT_PAR LITERAL RIGHT_PAR"
         p[0] = Link(p[5],p[2])
 
-    def p_element_image(self,p):
-        "element : image"
-        p[0] = p[1]
+    def p_bold(self,p):
+        "bold : BOLD_DELIM LITERAL BOLD_DELIM"
+        p[0] = Bold(p[2])
 
-    def p_element_literal(self,p):
-        "element : LITERAL"
-        p[0] = p[1]
+    def p_ital(self,p):
+        "ital : ITAL_DELIM LITERAL ITAL_DELIM"
+        p[0] = Italics(p[2])
 
-    def p_image(self,p):
-        "image : IMAGE_OPEN LITERAL CLOSE LEFT_PAR LITERAL RIGHT_PAR"
-        p[0] = Image(p[5],p[2])
+    def p_decor(self,p):
+        """decor : bold
+                 | ital
+                 | LITERAL"""
+        p[0] = p[1]
 
     def p_error(self,p):
         print("Syntax error at '%s'" % p)
@@ -129,4 +113,4 @@ yaccmod = Yaccer(lexmod)
 yaccer = yacc.yacc(module=yaccmod,outputdir='parser')
 
 def parse(s):
-    return Markdown(yaccer.parse(s,lexer=lexer))
+    return Cell(yaccer.parse(s,lexer=lexer))
