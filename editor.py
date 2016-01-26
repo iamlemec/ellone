@@ -159,6 +159,9 @@ def parse_markdown(text):
   buffs[0] += text_escape(text[pos:])
   return buffs[0]
 
+import markdown
+parse_markdown = lambda md: markdown.parse(md).tex()
+
 def construct_latex(text):
   images = []
   def gen_latex(cell):
