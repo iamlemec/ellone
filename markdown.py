@@ -1,5 +1,7 @@
 # https://github.com/toshiya/my-markdown-parser
 
+import os
+import re
 from ply import lex, yacc
 
 def html(x):
@@ -8,8 +10,14 @@ def html(x):
 def tex(x):
     return x if type(x) is str else x.tex()
 
-# structure
-class Cell:
+def md(x):
+    return x if type(x) is str else x.md()
+
+#
+# block elements
+#
+
+class ElementList:
     def __init__(self,elements):
         self.elements = elements
 
@@ -22,19 +30,140 @@ class Cell:
     def tex(self):
         return ''.join([tex(l) for l in self.elements])
 
+    def md(self):
+        return ''.join([md(l) for l in self.elements])
+
+class Title:
+    def __init__(self,elements):
+        self.elements = elements
+
+    def __str__(self):
+        return 'Title(text=%s)' % str(self.elements)
+
+    def html(self):
+        return '<header>\n<h1 class="title">%s</h1>\n</header>' % html(self.elements)
+
+    def tex(self):
+        return '\\begin{center}\n{\LARGE \\bf %s}\n\\end{center}' % tex(self.elements)
+
+    def md(self):
+        return '#! %s' % md(self.elements)
+
+class Header:
+    def __init__(self,elements,level):
+        self.elements = elements
+        self.level = level
+
+    def __str__(self):
+        return 'Header(level=%d,text=%s)' % (self.level,str(self.elements))
+
+    def html(self):
+        return '<h%d class="title">%s</h2>' % (self.level,html(self.elements))
+
+    def tex(self):
+        return '\\%ssection{%s}' % ('sub'*(self.level-1),tex(self.elements))
+
+    def md(self):
+        return '%s %s' % (self.level*'#',md(self.elements))
+
+class OrderedList:
+    def __init__(self,rows):
+        self.rows = rows
+
+    def __str__(self):
+        return 'OrderedList(items=[%s])' % ','.join(['%s' % str(r) for r in self.rows])
+
+    def html(self):
+        return '<ol>\n%s\n</ol>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
+
+    def tex(self):
+        return '\\begin{enumerate}\n%s\n\\end{enumerate}' % '\n'.join(['\\item %s' % tex(r) for r in self.rows])
+
+    def md(self):
+        return '\n'.join(['+ %s' % md(row) for row in self.rows])
+
+class UnorderedList:
+    def __init__(self,rows):
+        self.rows = rows
+
+    def __str__(self):
+        return 'UnorderedList(items=[%s])' % ','.join(['%s' % str(r) for r in self.rows])
+
+    def html(self):
+        return '<ul>\n%s\n</ul>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
+
+    def tex(self):
+        return '\\begin{itemize}\n%s\n\\end{itemize}' % '\n'.join(['\\item %s' % tex(r) for r in self.rows])
+
+    def md(self):
+        return '\n'.join(['- %s' % md(row) for row in self.rows])
+
+class Image:
+    def __init__(self,src,cap=None):
+        self.src = src
+        self.cap = cap
+
+    def __str__(self):
+        return 'Image(src=%s,caption=%s)' % (self.src,str(self.cap) if self.cap is not None else '')
+
+    def html(self):
+        if self.cap is None:
+            return '<figure class="image">\n<img src=%s>\n</figure>' % self.src
+        else:
+            return '<figure class="image">\n<img src=%s>\n<figcaption>%s</figcaption>\n</figure>' % (self.src,self.cap)
+
+    def tex(self):
+        return '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n%s\\end{figure}' % (self.src,'\\caption{%s}\n' % tex(self.cap) if self.cap is not None else '')
+
+    def md(self):
+        return '![%s](%s)' % (self.src,md(self.cap) if self.cap is not None else '')
+
+class Equation:
+    def __init__(self,math,label=None):
+        self.math = math
+        self.label = label
+
+    def __str__(self):
+        return 'Equation(tex=%s,label=%s)' % (self.math,self.label if self.label is not None else '')
+
+    def html(self):
+        if self.label is None:
+            return '<equation>\n%s\n</equation>' % self.math
+        else:
+            return '<equation id="%s">\n%s\n</equation>' % (self.label,self.math)
+
+    def tex(self):
+        if self.label is None:
+            return '\\begin{align*}\n%s\n\\end{align*}' % self.math
+        else:
+            return '\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,self.math)
+
+    def md(self):
+        if self.label is None:
+            return '$$ %s' % self.math
+        else:
+            return '$$ [%s] %s' % (self.math,self.label)
+
+#
+# inline elements
+#
+
 class Link:
     def __init__(self,href,text):
         self.href = href
         self.text = text
 
     def __str__(self):
-        return 'Link(href=%s,content=%s)' % (self.href,self.text)
+        return 'Link(href=%s,content=%s)' % (self.href,str(self.text))
 
     def html(self):
         return '<a href="%s">%s</a>' % (self.href,html(self.text))
 
     def tex(self):
         return '\\href{%s}{%s}' % (self.href,tex(self.text))
+
+    def md(self):
+        return '[%s](%s)' % (md(self.text),self.href)
 
 class Bold:
     def __init__(self,text):
@@ -49,6 +178,9 @@ class Bold:
     def tex(self):
         return '\\textbf{%s}' % self.text
 
+    def md(self):
+        return '**%s**' % self.text
+
 class Ital:
     def __init__(self,text):
         self.text = text
@@ -61,6 +193,9 @@ class Ital:
 
     def tex(self):
         return '\\textit{%s}' % self.text
+
+    def md(self):
+        return '*%s*' % self.text
 
 class Code:
     def __init__(self,text):
@@ -75,7 +210,29 @@ class Code:
     def tex(self):
         return '\\texttt{%s}' % self.text
 
+    def md(self):
+        return '`%s`' % self.text
+
+class Math:
+    def __init__(self,math):
+        self.math = math
+
+    def __str__(self):
+        return 'Math(tex=%s)' % self.math
+
+    def html(self):
+        return '$%s$' % self.math
+
+    def tex(self):
+        return '$%s$' % self.math
+
+    def md(self):
+        return '$%s$' % self.math
+
+#
 # lexing
+#
+
 class Lexer():
     states = (
         ('math','exclusive'),
@@ -126,7 +283,10 @@ class Lexer():
         print("Illegal character '%s'" % t.value[0])
         t.lexer.skip(1)
 
+#
 # parsing
+#
+
 class Yaccer():
     def __init__(self,lexmod):
         self.tokens = lexmod.tokens
@@ -143,7 +303,7 @@ class Yaccer():
 
     def p_mblock(self,p):
         """mblock : math TEX mend"""
-        p[0] = p[1] + p[2] + p[3]
+        p[0] = Math(p[2])
 
     def p_link(self,p):
         "link : LEFT_BRA decor RIGHT_BRA LEFT_PAR LITERAL RIGHT_PAR"
@@ -175,13 +335,61 @@ class Yaccer():
     def p_error(self,p):
         print("Syntax error at '%s'" % p)
 
+#
 # build lexer and yaccer
+#
+
 lexmod = Lexer()
 lexer = lex.lex(module=lexmod)
 
 yaccmod = Yaccer(lexmod)
 yaccer = yacc.yacc(module=yaccmod,outputdir='parser')
 
-def parse(s):
-    print(s)
-    return Cell(yaccer.parse(s,lexer=lexer))
+#
+# external interface
+#
+
+def parse_markdown(s):
+    return ElementList(yaccer.parse(s,lexer=lexer))
+
+def parse_cell(cell):
+    # block level operations
+    if cell.startswith('#'):
+        if cell.startswith('#!'):
+            text = cell[2:].strip()
+            return Title(parse_markdown(text))
+        else:
+            ret = re.match(r'(#+) ?(.*)',cell)
+            (pound,title) = ret.groups()
+            level = len(pound)
+            return Header(parse_markdown(title),level)
+    elif cell.startswith('+'):
+        items = [item.strip() for item in cell[1:].split('\n+')]
+        return OrderedList([parse_markdown(item) for item in items])
+    elif cell.startswith('-'):
+        items = [item.strip() for item in cell[1:].split('\n-')]
+        return UnorderedList([parse_markdown(item) for item in items])
+    elif cell.startswith('!'):
+        ret = re.match(r'\[([^\]]*)\]\((.*)\)$',cell[1:].strip())
+        (url,cap) = ret.groups()
+        if len(cap) > 0:
+            cap = parse_markdown(cap)
+        else:
+            cap = None
+        ret = re.search(r'(^|:)//(.*)',url)
+        if ret:
+            (rpath,) = ret.groups()
+        else:
+            rpath = url
+        (_,fname) = os.path.split(rpath)
+        return Image(fname,cap)
+    elif cell.startswith('$$'):
+        math = cell[2:].strip()
+        ret = re.match(r'\[([^\]]*)\](.*)',math)
+        if ret:
+            (label,tex) = ret.groups()
+        else:
+            (label,tex) = (None,math)
+        return Equation(tex.strip(),label)
+    else:
+        return parse_markdown(cell)
