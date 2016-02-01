@@ -229,6 +229,38 @@ class Math:
     def md(self):
         return '$%s$' % self.math
 
+class Reference:
+    def __init__(self,targ):
+        self.targ = targ
+
+    def __str__(self):
+        return 'Reference(targ=%s)' % self.targ
+
+    def html(self):
+        return '<ref target="%s"></ref>' % self.targ
+
+    def tex(self):
+        return '\\Cref{%s}' % self.targ
+
+    def md(self):
+        return '@[%s]' % self.targ
+
+class Footnote:
+    def __init__(self,text):
+        self.text = text
+
+    def __str__(self):
+        return 'Footnote(text=%s)' % str(self.text)
+
+    def html(self):
+        return '<footnote>%s</footnote>' % html(self.text)
+
+    def tex(self):
+        return '\\footnote{%s}' % tex(self.text)
+
+    def md(self):
+        return '^[%s]' % md(self.text)
+
 #
 # lexing
 #
@@ -240,6 +272,8 @@ class Lexer():
 
     tokens = (
         "LEFT_BRA",
+        "REF_BRA",
+        "FOOT_BRA",
         "RIGHT_BRA",
         "LEFT_PAR",
         "RIGHT_PAR",
@@ -252,14 +286,16 @@ class Lexer():
         "TEX"
     )
 
-    t_LEFT_BRA = r"\["
+    t_LEFT_BRA = r"(?<![@\^])\["
+    t_REF_BRA = r"@\["
+    t_FOOT_BRA = r"\^\["
     t_RIGHT_BRA = r"\]"
     t_LEFT_PAR = r"\("
     t_RIGHT_PAR = r"\)"
     t_BOLD_DELIM = r"\*\*"
     t_ITAL_DELIM = r"\*(?!\*)"
     t_CODE_DELIM = r"`"
-    t_LITERAL = r"([^\[\]\(\)\*\$`]|(?<=\\)[\[\]\(\)\*\$`])+"
+    t_LITERAL = r"([^\[\]\(\)\*\$`@\^]|(?<=\\)[\[\]\(\)\*\$`]|[@\^](?!\[))+"
 
     def t_math(self,t):
         r"(?<!\\)\$"
@@ -291,27 +327,57 @@ class Yaccer():
     def __init__(self,lexmod):
         self.tokens = lexmod.tokens
 
-    def p_elements(self,p):
-        "elements : elements elements"
-        p[0] = p[1] + p[2]
+    def p_elements1(self,p):
+        """elements : element"""
+        p[0] = [p[1]]
+
+    def p_elements2(self,p):
+        """elements : element elements"""
+        p[0] = [p[1]] + p[2]
 
     def p_element(self,p):
-        """elements : decor
-                    | mblock
-                    | link"""
-        p[0] = [p[1]]
+        """element : decor
+                   | mblock
+                   | link
+                   | reference
+                   | footnote"""
+        p[0] = p[1]
 
     def p_mblock(self,p):
         """mblock : math TEX mend"""
         p[0] = Math(p[2])
 
-    def p_link(self,p):
-        "link : LEFT_BRA decor RIGHT_BRA LEFT_PAR LITERAL RIGHT_PAR"
-        p[0] = Link(p[5],p[2])
-
     def p_elements_paren(self,p):
         "elements : LEFT_PAR elements RIGHT_PAR"
         p[0] = [p[1]] + p[2] + [p[3]]
+
+    def p_elements_paren_empty(self,p):
+        "elements : LEFT_PAR RIGHT_PAR"
+        p[0] = [p[1],p[2]]
+
+    def p_bracket_pair1(self,p):
+        "elements : LEFT_BRA elements RIGHT_BRA"
+        p[0] = [p[1]] + p[2] + [p[3]]
+
+    def p_bracket_pair2(self,p):
+        "elements : LEFT_BRA decor RIGHT_BRA"
+        p[0] = [p[1]] + [p[2]] + [p[3]]
+
+    def p_elements_brack_empty(self,p):
+        "elements : LEFT_BRA RIGHT_BRA"
+        p[0] = [p[1],p[2]]
+
+    def p_reference(self,p):
+        "reference : REF_BRA LITERAL RIGHT_BRA"
+        p[0] = Reference(p[2])
+
+    def p_footnote(self,p):
+        "footnote : FOOT_BRA elements RIGHT_BRA"
+        p[0] = Footnote(ElementList(p[2]))
+
+    def p_link(self,p):
+        "link : LEFT_BRA decor RIGHT_BRA LEFT_PAR LITERAL RIGHT_PAR"
+        p[0] = Link(p[5],p[2])
 
     def p_bold(self,p):
         "bold : BOLD_DELIM LITERAL BOLD_DELIM"
@@ -350,7 +416,7 @@ yaccer = yacc.yacc(module=yaccmod,outputdir='parser')
 #
 
 def parse_markdown(s):
-    return ElementList(yaccer.parse(s,lexer=lexer))
+    return ElementList(yaccer.parse(s))
 
 def parse_cell(cell):
     # block level operations
