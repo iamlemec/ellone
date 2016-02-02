@@ -108,12 +108,15 @@ class Image:
 
     def html(self):
         if self.cap is None:
-            return '<figure class="image">\n<img src=%s>\n</figure>' % self.src
+            return '<figure class="image">\n<img src="%s">\n</figure>' % self.src
         else:
-            return '<figure class="image">\n<img src=%s>\n<figcaption>%s</figcaption>\n</figure>' % (self.src,self.cap)
+            return '<figure class="image">\n<img src="%s">\n<figcaption>%s</figcaption>\n</figure>' % (self.src,html(self.cap))
 
     def tex(self):
-        return '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n%s\\end{figure}' % (self.src,'\\caption{%s}\n' % tex(self.cap) if self.cap is not None else '')
+        if self.cap is None:
+            return '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n\\end{figure}' % self.src
+        else:
+            return '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n\\caption{%s}\n\\end{figure}' % (self.src,tex(self.cap))
 
     def md(self):
         return '![%s](%s)' % (self.src,md(self.cap) if self.cap is not None else '')
@@ -437,7 +440,7 @@ def parse_cell(cell):
         return UnorderedList([parse_markdown(item) for item in items])
     elif cell.startswith('!'):
         ret = re.match(r'\[([^\]]*)\]\((.*)\)$',cell[1:].strip())
-        (url,cap) = ret.groups()
+        (cap,url) = ret.groups()
         if len(cap) > 0:
             cap = parse_markdown(cap)
         else:
