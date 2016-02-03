@@ -169,8 +169,9 @@ class EditorHandler(tornado.web.RequestHandler):
 
 class MarkdownHandler(tornado.web.RequestHandler):
   @authenticated
-  def post(self,fname):
-    fullpath = os.path.join(args.path,fname)
+  def post(self,rpath):
+    (curdir,fname) = os.path.split(rpath)
+    fullpath = os.path.join(args.path,rpath)
     fid = open(fullpath,'r')
     text = fid.read()
 
@@ -181,8 +182,9 @@ class MarkdownHandler(tornado.web.RequestHandler):
 
 class HtmlHandler(tornado.web.RequestHandler):
   @authenticated
-  def post(self,fname):
-    fullpath = os.path.join(args.path,fname)
+  def post(self,rpath):
+    (curdir,fname) = os.path.split(rpath)
+    fullpath = os.path.join(args.path,rpath)
     fid = open(fullpath,'r')
     text = fid.read()
     html = markdown.convert_html(text)
@@ -200,8 +202,9 @@ class HtmlHandler(tornado.web.RequestHandler):
 
 class LatexHandler(tornado.web.RequestHandler):
   @authenticated
-  def post(self,fname):
-    fullpath = os.path.join(args.path,fname)
+  def post(self,rpath):
+    (curdir,fname) = os.path.split(rpath)
+    fullpath = os.path.join(args.path,rpath)
     fid = open(fullpath,'r')
     text = fid.read()
     (latex,images) = markdown.convert_latex(text)
