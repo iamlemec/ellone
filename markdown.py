@@ -53,6 +53,22 @@ class Paragraph:
     def md(self):
         return ''.join([md(l) for l in self.elements])
 
+class Error:
+    def __init__(self,text):
+        self.text = text
+
+    def __str__(self):
+        return 'Error(text=%s)' % self.text
+
+    def html(self):
+        return '<span style="color: red">%s</span>' % self.text
+
+    def tex(self):
+        return '{\\color{red} %s}' % self.text
+
+    def md(self):
+        return self.text
+
 class Title:
     def __init__(self,elements):
         self.elements = elements
@@ -375,36 +391,25 @@ class Yaccer():
         p[0] = [p[1]] + p[2]
 
     def p_element(self,p):
-        """element : decor
+        """element : ital
+                   | bold
+                   | code
                    | mblock
-                   | link
                    | reference
-                   | footnote"""
+                   | footnote
+                   | link
+                   | LEFT_PAR
+                   | RIGHT_PAR
+                   | LITERAL"""
         p[0] = p[1]
 
     def p_mblock(self,p):
         """mblock : math TEX mend"""
         p[0] = Math(p[2])
 
-    def p_elements_paren(self,p):
-        "elements : LEFT_PAR elements RIGHT_PAR"
-        p[0] = [p[1]] + p[2] + [p[3]]
-
-    def p_elements_paren_empty(self,p):
-        "elements : LEFT_PAR RIGHT_PAR"
-        p[0] = [p[1],p[2]]
-
-    def p_bracket_pair1(self,p):
-        "elements : LEFT_BRA elements RIGHT_BRA"
-        p[0] = [p[1]] + p[2] + [p[3]]
-
-    def p_bracket_pair2(self,p):
-        "elements : LEFT_BRA decor RIGHT_BRA"
-        p[0] = [p[1]] + [p[2]] + [p[3]]
-
-    def p_elements_brack_empty(self,p):
-        "elements : LEFT_BRA RIGHT_BRA"
-        p[0] = [p[1],p[2]]
+    def p_mblock_empty(self,p):
+        """mblock : math mend"""
+        p[0] = Math('')
 
     def p_reference(self,p):
         "reference : REF_BRA LITERAL RIGHT_BRA"
@@ -415,7 +420,7 @@ class Yaccer():
         p[0] = Footnote(ElementList(p[2]))
 
     def p_link(self,p):
-        "link : LEFT_BRA decor RIGHT_BRA LEFT_PAR LITERAL RIGHT_PAR"
+        "link : LEFT_BRA LITERAL RIGHT_BRA LEFT_PAR LITERAL RIGHT_PAR"
         p[0] = Link(p[5],p[2])
 
     def p_bold(self,p):
@@ -430,15 +435,10 @@ class Yaccer():
         "code : CODE_DELIM LITERAL CODE_DELIM"
         p[0] = Code(p[2])
 
-    def p_decor(self,p):
-        """decor : bold
-                 | ital
-                 | code
-                 | LITERAL"""
-        p[0] = p[1]
-
     def p_error(self,p):
-        print("Syntax error at '%s'" % p)
+        err = "Syntax error at '%s'" % p
+        print(err)
+        raise Exception(err)
 
 #
 # build lexer and yaccer
@@ -458,46 +458,48 @@ def parse_markdown(s):
     return ElementList(yaccer.parse(s))
 
 def parse_cell(cell):
-    # block level operations
-    if cell.startswith('#'):
-        if cell.startswith('#!'):
-            text = cell[2:].strip()
-            return Title(parse_markdown(text))
+    try:
+        if cell.startswith('#'):
+            if cell.startswith('#!'):
+                text = cell[2:].strip()
+                return Title(parse_markdown(text))
+            else:
+                ret = re.match(r'(#+) ?(.*)',cell)
+                (pound,title) = ret.groups()
+                level = len(pound)
+                return Header(parse_markdown(title),level)
+        elif cell.startswith('+'):
+            items = [item.strip() for item in cell[1:].split('\n+')]
+            return OrderedList([parse_markdown(item) for item in items])
+        elif cell.startswith('-'):
+            items = [item.strip() for item in cell[1:].split('\n-')]
+            return UnorderedList([parse_markdown(item) for item in items])
+        elif cell.startswith('!'):
+            ret = re.match(r'\[([^\]]*)\]\((.*)\)$',cell[1:].strip())
+            (cap,url) = ret.groups()
+            if len(cap) > 0:
+                cap = parse_markdown(cap)
+            else:
+                cap = None
+            ret = re.search(r'(^|:)//(.*)',url)
+            if ret:
+                (rpath,) = ret.groups()
+            else:
+                rpath = url
+            (_,fname) = os.path.split(rpath)
+            return Image(fname,cap)
+        elif cell.startswith('$$'):
+            math = cell[2:].strip()
+            ret = re.match(r'\[([^\]]*)\](.*)',math)
+            if ret:
+                (label,tex) = ret.groups()
+            else:
+                (label,tex) = (None,math)
+            return Equation(tex.strip(),label)
         else:
-            ret = re.match(r'(#+) ?(.*)',cell)
-            (pound,title) = ret.groups()
-            level = len(pound)
-            return Header(parse_markdown(title),level)
-    elif cell.startswith('+'):
-        items = [item.strip() for item in cell[1:].split('\n+')]
-        return OrderedList([parse_markdown(item) for item in items])
-    elif cell.startswith('-'):
-        items = [item.strip() for item in cell[1:].split('\n-')]
-        return UnorderedList([parse_markdown(item) for item in items])
-    elif cell.startswith('!'):
-        ret = re.match(r'\[([^\]]*)\]\((.*)\)$',cell[1:].strip())
-        (cap,url) = ret.groups()
-        if len(cap) > 0:
-            cap = parse_markdown(cap)
-        else:
-            cap = None
-        ret = re.search(r'(^|:)//(.*)',url)
-        if ret:
-            (rpath,) = ret.groups()
-        else:
-            rpath = url
-        (_,fname) = os.path.split(rpath)
-        return Image(fname,cap)
-    elif cell.startswith('$$'):
-        math = cell[2:].strip()
-        ret = re.match(r'\[([^\]]*)\](.*)',math)
-        if ret:
-            (label,tex) = ret.groups()
-        else:
-            (label,tex) = (None,math)
-        return Equation(tex.strip(),label)
-    else:
-        return Paragraph(parse_markdown(cell).elements)
+            return Paragraph(parse_markdown(cell).elements)
+    except:
+        return Error(cell)
 
 def parse_doc(text):
     cells = [c.strip() for c in text.split('\n\n')]
