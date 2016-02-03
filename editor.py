@@ -430,7 +430,7 @@ class Application(tornado.web.Application):
       (r"/upload/(.*)", UploadHandler),
       (r"/editor/(.+)", EditorHandler),
       (r"/markdown/(.+)", MarkdownHandler),
-      # (r"/html/(.+)", HtmlHandler),
+      (r"/html/(.+)", HtmlHandler),
       (r"/latex/(.+)", LatexHandler),
       (r"/pdf/(.+)", PdfHandler),
       (r"/elledit/(.*)", ContentHandler),
