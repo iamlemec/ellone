@@ -195,7 +195,7 @@ class HtmlHandler(tornado.web.RequestHandler):
 
     self.set_header('Content-Type','text/latex')
     self.set_header('Content-Disposition','attachment; filename=%s.html' % fname_new)
-    self.write(latex)
+    self.write(html)
   get = post
 
 class LatexHandler(tornado.web.RequestHandler):
