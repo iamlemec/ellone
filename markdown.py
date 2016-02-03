@@ -14,10 +14,30 @@ def md(x):
     return x if type(x) is str else x.md()
 
 #
+# top level elements
+#
+
+class CellList:
+    def __init__(self,elements):
+        self.elements = elements
+
+    def __str__(self):
+        return '\n\n'.join([str(l) for l in self.elements])
+
+    def html(self):
+        return '\n\n'.join([html(l) for l in self.elements])
+
+    def tex(self):
+        return '\n\n'.join([tex(l) for l in self.elements])
+
+    def md(self):
+        return '\n\n'.join([md(l) for l in self.elements])
+
+#
 # block elements
 #
 
-class ElementList:
+class Paragraph:
     def __init__(self,elements):
         self.elements = elements
 
@@ -25,7 +45,7 @@ class ElementList:
         return ''.join([str(l) for l in self.elements])
 
     def html(self):
-        return ''.join([html(l) for l in self.elements])
+        return '<p>\n%s\n</p>' % ''.join([html(l) for l in self.elements])
 
     def tex(self):
         return ''.join([tex(l) for l in self.elements])
@@ -150,6 +170,22 @@ class Equation:
 #
 # inline elements
 #
+
+class ElementList:
+    def __init__(self,elements):
+        self.elements = elements
+
+    def __str__(self):
+        return ''.join([str(l) for l in self.elements])
+
+    def html(self):
+        return ''.join([html(l) for l in self.elements])
+
+    def tex(self):
+        return ''.join([tex(l) for l in self.elements])
+
+    def md(self):
+        return ''.join([md(l) for l in self.elements])
 
 class Link:
     def __init__(self,href,text):
@@ -461,4 +497,79 @@ def parse_cell(cell):
             (label,tex) = (None,math)
         return Equation(tex.strip(),label)
     else:
-        return parse_markdown(cell)
+        return Paragraph(parse_markdown(cell).elements)
+
+def parse_doc(text):
+    cells = [c.strip() for c in text.split('\n\n')]
+    output = [parse_cell(c) for c in cells]
+    return CellList(output)
+
+#
+# document converters
+#
+
+html_template = """
+<!doctype html>
+<html>
+
+<head>
+
+<script src="ellsworth/js/elltwo_load.js" type="text/javascript"></script>
+<script type="text/javascript">
+ElltwoAutoload({
+  theme: "shakirm"
+});
+</script>
+
+</head>
+
+<body class="elltwo">
+
+<div class="content">
+
+%s
+
+</div>
+
+</body>
+</html>
+""".strip()
+
+latex_template = """
+\\documentclass[12pt]{article}
+
+\\usepackage{amsmath}
+\\usepackage{amssymb}
+\\usepackage[utf8]{inputenc}
+\\usepackage{parskip}
+\\usepackage{graphicx}
+\\usepackage[colorlinks,linkcolor=blue]{hyperref}
+\\usepackage{cleveref}
+
+\\Crefformat{equation}{#2Equation~#1#3}
+
+\\setlength{\\parindent}{0cm}
+\\setlength{\\parskip}{0.5cm}
+\\renewcommand{\\baselinestretch}{1.1}
+
+\\begin{document}
+
+%s
+
+\\end{document}
+""".strip()
+
+def convert_html(text):
+    cells = parse_doc(text)
+    ret = html_template % html(cells)
+    return ret
+
+def convert_markdown(text):
+    cells = parse_doc(text)
+    ret = md(cells)
+    return ret
+
+def convert_latex(text):
+    cells = parse_doc(text)
+    ret = latex_template % tex(cells)
+    return ret

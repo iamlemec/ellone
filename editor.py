@@ -15,6 +15,8 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
+import markdown
+
 # parse input arguments
 parser = argparse.ArgumentParser(description='Elltwo Server.')
 parser.add_argument('--path', type=str, default='testing', help='path for markdown files')
@@ -45,177 +47,6 @@ else:
 
 # utils
 tmpdir = './temp'
-
-# latex
-latex_template = """\\documentclass[12pt]{article}
-
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage[utf8]{inputenc}
-\\usepackage{parskip}
-\\usepackage{graphicx}
-\\usepackage[colorlinks,linkcolor=blue]{hyperref}
-\\usepackage{cleveref}
-
-\\Crefformat{equation}{#2Equation~#1#3}
-
-\\setlength{\\parindent}{0cm}
-\\setlength{\\parskip}{0.5cm}
-\\renewcommand{\\baselinestretch}{1.1}
-
-\\begin{document}
-
-%s
-
-\end{document}
-"""
-
-title_template = """\\begin{center}
-{\\LARGE \\bf %s}
-\\vspace{0.8cm}
-\\end{center}"""
-
-section_template = """\\%ssection{%s}"""
-
-enum_template = """\\begin{enumerate}
-%s
-\\end{enumerate}"""
-
-item_template = """\\begin{itemize}
-%s
-\\end{itemize}"""
-
-display_template = """\\begin{align*}
-%s
-\\end{align*}"""
-
-numbered_template = """\\begin{align} \\label{%s}
-%s
-\\end{align}"""
-
-caption_template = """\\caption{%s}
-"""
-image_template = """\\begin{figure}
-\\includegraphics[width=\\textwidth]{%s}
-%s\\end{figure}"""
-
-# differential escaping
-def math_escape(inp):
-  inp = re.sub(r'\\align','&',inp)
-  inp = re.sub(r'\\gt','>',inp)
-  inp = re.sub(r'\\lt','<',inp)
-  return inp
-
-def text_escape(inp):
-  inp = re.sub(r'([\&_^#%])',r'\\\1',inp) # escaping
-  inp = re.sub(r'\\([\*\"\`\[\@\[\]\(\)])',r'\1',inp) # unescaping
-  inp = re.sub(r'\\\^',r'\\textasciicircum',inp)
-  return inp
-
-# markdown lexer-parser
-ops = r'(?<!\\)(\$|\*\*|\*|\"|\`|\^\[|\@\[|\])'
-ops_re = re.compile(ops)
-
-starts = ['$','*','**','\"','`','[','^[','@[']
-ends = ['$','*','**','\"','`',')',']',']']
-static = ['$']
-endof = dict(zip(starts,ends))
-reduce = {
-  '$' : lambda s: '$%s$' % math_escape(s),
-  '*' : lambda s: '\\textit{%s}' % s,
-  '**': lambda s: '\\textbf{%s}' % s,
-  '`' : lambda s: '\\texttt{%s}' % s,
-  '\"': lambda s: '``%s\'\'' % s,
-  '[' : lambda s: '\\url{%s}{%s}' % tuple(s.split('](')),
-  '^[': lambda s: '\\footnote{%s}' % s,
-  '@[': lambda s: '\\Cref{%s}' % s
-}
-
-# well this got complicated
-def parse_markdown(text):
-  stack = []
-  buffs = ['']
-  pos = 0
-  for ret in ops_re.finditer(text):
-    op = ret.group()
-    (beg,end) = ret.span()
-    liter = len(stack) and stack[-1] in static
-    term = len(stack) and op == endof[stack[-1]]
-    if liter:
-      if term:
-        buffs[-1] += text[pos:beg]
-      else:
-        buffs[-1] += text[pos:end]
-    else:
-      buffs[-1] += text_escape(text[pos:beg])
-    if term:
-      proc = buffs.pop()
-      dop = stack.pop()
-      buffs[-1] += reduce[dop](proc)
-    elif op in starts and not liter:
-      stack.append(op)
-      buffs.append('')
-    pos = end
-  buffs[0] += text_escape(text[pos:])
-  return buffs[0]
-
-import markdown
-parse_markdown = lambda md: markdown.parse(md).tex()
-
-def construct_latex(text):
-  images = []
-  def gen_latex(cell):
-    # block level operations
-    if cell.startswith('#'):
-      if cell.startswith('#!'):
-        text = cell[2:].strip()
-        text = title_template % parse_markdown(text)
-      else:
-        ret = re.match(r'(#+) ?(.*)',cell)
-        (pound,title) = ret.groups()
-        level = len(pound)
-        text = section_template % ('sub'*(level-1),parse_markdown(title))
-    elif cell.startswith('+'):
-      items = cell[1:].split('\n+')
-      text = enum_template % '\n'.join(['\\item %s\n' % parse_markdown(item) for item in items])
-    elif cell.startswith('-'):
-      items = cell[1:].split('\n-')
-      text = item_template % '\n'.join(['\\item %s\n' % parse_markdown(item) for item in items])
-    elif cell.startswith('!'):
-      ret = re.match(r'\[([^\]]*)\](.*)',cell[1:])
-      (url,cap) = ret.groups()
-      images.append(url)
-      if len(cap) > 0:
-        cap = parse_markdown(cap[1:-1])
-        ctxt = caption_template % cap
-      ret = re.search(r'(^|:)//(.*)',url)
-      if ret:
-        (rpath,) = ret.groups()
-      else:
-        rpath = url
-      (_,fname) = os.path.split(rpath)
-      text = image_template % (fname,ctxt)
-    elif cell.startswith('$$'):
-      math = cell[2:].strip()
-      ret = re.match(r'\[([^\]]*)\]',math)
-      if ret:
-        (label,) = ret.groups()
-        math = math[ret.end():]
-        text = numbered_template % (label,math_escape(math))
-      else:
-        text = display_template % math_escape(math)
-    else:
-      text = parse_markdown(cell)
-
-    return text
-
-  cells = filter(len,map(str.strip,text.split('\n\n')))
-  tex = '\n\n'.join([gen_latex(cell) for cell in cells])
-
-  latex = latex_template % tex
-  print(latex)
-
-  return (latex,images)
 
 # initialize/open database
 def read_cells(fname):
@@ -348,28 +179,24 @@ class MarkdownHandler(tornado.web.RequestHandler):
     self.write(text)
   get = post
 
-# class HtmlHandler(tornado.web.RequestHandler):
-#   @authenticated
-#   def post(self,fname):
-#     fname_base = get_base_name(fname)
-#     fname_html = '%s.html' % fname_base
-#     path_html = os.path.join(tmpdir,fname_html)
-#     data = open(path_html).read()
-#
-#     # generate html
-#     css_extern = '<link href="http://dohan.dyndns.org/local/ellsworth/katex/katex.min.css" type="text/css" rel="stylesheet">'
-#     css_files = ['css/proxima-nova.css','css/editor.css']
-#     css_inline = ''
-#     for css_file in css_files:
-#       css_inline += open('static/%s' % css_file).read() + '\n\n'
-#     css = '%s\n\n<style>\n\n%s\n\n</style>' % (css_extern,css_inline)
-#     meta = '<meta charset="UTF-8">'
-#     html = '<!DOCTYPE html>\n<html>\n\n<head>\n\n%s\n\n%s\n\n</head>\n\n<body>\n\n%s\n\n</body>\n\n</html>\n' % (meta,css,data)
-#
-#     self.set_header('Content-Type','application/pdf')
-#     self.set_header('Content-Disposition','attachment; filename=%s' % fname_html)
-#     self.write(html)
-#   get = post
+class HtmlHandler(tornado.web.RequestHandler):
+  @authenticated
+  def post(self,fname):
+    fullpath = os.path.join(args.path,fname)
+    fid = open(fullpath,'r')
+    text = fid.read()
+    html = markdown.convert_html(text)
+
+    ret = re.match(r'(.*)\.md',fname)
+    if ret:
+      fname_new = ret.group(1)
+    else:
+      fname_new = fname
+
+    self.set_header('Content-Type','text/latex')
+    self.set_header('Content-Disposition','attachment; filename=%s.html' % fname_new)
+    self.write(latex)
+  get = post
 
 class LatexHandler(tornado.web.RequestHandler):
   @authenticated
@@ -377,7 +204,7 @@ class LatexHandler(tornado.web.RequestHandler):
     fullpath = os.path.join(args.path,fname)
     fid = open(fullpath,'r')
     text = fid.read()
-    (latex,images) = construct_latex(text)
+    (latex,images) = markdown.convert_latex(text)
 
     ret = re.match(r'(.*)\.md',fname)
     if ret:
@@ -399,7 +226,7 @@ class PdfHandler(tornado.web.RequestHandler):
     # generate latex
     fid = open(fullpath,'r')
     text = fid.read()
-    (latex,images) = construct_latex(text)
+    (latex,images) = markdown.convert_latex(text)
 
     # copy over images
     for img in images:
