@@ -207,7 +207,8 @@ class LatexHandler(tornado.web.RequestHandler):
     fullpath = os.path.join(args.path,rpath)
     fid = open(fullpath,'r')
     text = fid.read()
-    (latex,images) = markdown.convert_latex(text)
+    # (latex,images) = markdown.convert_latex(text)
+    latex = markdown.convert_latex(text)
 
     ret = re.match(r'(.*)\.md',fname)
     if ret:
@@ -229,21 +230,22 @@ class PdfHandler(tornado.web.RequestHandler):
     # generate latex
     fid = open(fullpath,'r')
     text = fid.read()
-    (latex,images) = markdown.convert_latex(text)
+    # (latex,images) = markdown.convert_latex(text)
+    latex = markdown.convert_latex(text)
 
     # copy over images
-    for img in images:
-      ret = re.search(r'(^|:)//(.*)',img)
-      if ret:
-        (rloc,) = ret.groups()
-        (_,rname) = os.path.split(rloc)
-        urllib.urlretrieve(url,os.path.join(tmpdir,rname))
-      else:
-        if img[0] == '/':
-          ipath = img[1:]
-        else:
-          ipath = os.path.join(rdir,img)
-        shutil.copy(os.path.join(args.path,ipath),tmpdir)
+    # for img in images:
+    #   ret = re.search(r'(^|:)//(.*)',img)
+    #   if ret:
+    #     (rloc,) = ret.groups()
+    #     (_,rname) = os.path.split(rloc)
+    #     urllib.urlretrieve(url,os.path.join(tmpdir,rname))
+    #   else:
+    #     if img[0] == '/':
+    #       ipath = img[1:]
+    #     else:
+    #       ipath = os.path.join(rdir,img)
+    #     shutil.copy(os.path.join(args.path,ipath),tmpdir)
 
     ret = re.match(r'(.*)\.md',fname)
     if ret:

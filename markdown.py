@@ -320,6 +320,12 @@ class Footnote:
 # lexing
 #
 
+def unescape_markdown(s):
+    return re.sub(r'(?<!\\)\\(\[|\]|\(|\)|\*|\@)',r'\1',s)
+
+def unescape_math(s):
+    return re.sub(r'\\align','&',s)
+
 class Lexer():
     states = (
         ('math','exclusive'),
@@ -350,7 +356,6 @@ class Lexer():
     t_BOLD_DELIM = r"\*\*"
     t_ITAL_DELIM = r"\*(?!\*)"
     t_CODE_DELIM = r"`"
-    t_LITERAL = r"([^\[\]\(\)\*\$`@\^]|(?<=\\)[\[\]\(\)\*\$`]|[@\^](?!\[))+"
 
     def t_math(self,t):
         r"(?<!\\)\$"
@@ -369,6 +374,11 @@ class Lexer():
     def t_math_error(self,t):
         print("Illegal math character '%s'" % t.value[0])
         t.lexer.skip(1)
+
+    def t_LITERAL(self,t):
+        r"([^\[\]\(\)\*\$`@\^]|(?<=\\)[\[\]\(\)\*\$`]|[@\^](?!\[))+"
+        t.value = unescape_markdown(t.value)
+        return t
 
     def t_error(self,t):
         print("Illegal character '%s'" % t.value[0])
@@ -516,7 +526,7 @@ html_template = """
 
 <head>
 
-<script src="ellsworth/js/elltwo_load.js" type="text/javascript"></script>
+<script src="http://doughanley.com/ellsworth/js/elltwo_load.js" type="text/javascript"></script>
 <script type="text/javascript">
 ElltwoAutoload({
   theme: "shakirm"
@@ -547,6 +557,7 @@ latex_template = """
 \\usepackage{graphicx}
 \\usepackage[colorlinks,linkcolor=blue]{hyperref}
 \\usepackage{cleveref}
+\\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
 
 \\Crefformat{equation}{#2Equation~#1#3}
 
