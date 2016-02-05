@@ -18,20 +18,20 @@ def md(x):
 #
 
 class CellList:
-    def __init__(self,elements):
-        self.elements = elements
+    def __init__(self,cells):
+        self.cells = cells
 
     def __str__(self):
-        return '\n\n'.join([str(l) for l in self.elements])
+        return '\n\n'.join([str(l) for l in self.cells])
 
     def html(self):
-        return '\n\n'.join([html(l) for l in self.elements])
+        return '\n\n'.join([html(l) for l in self.cells])
 
     def tex(self):
-        return '\n\n'.join([tex(l) for l in self.elements])
+        return '\n\n'.join([tex(l) for l in self.cells])
 
     def md(self):
-        return '\n\n'.join([md(l) for l in self.elements])
+        return '\n\n'.join([md(l) for l in self.cells])
 
 #
 # block elements
@@ -94,7 +94,7 @@ class Header:
         return 'Header(level=%d,text=%s)' % (self.level,str(self.elements))
 
     def html(self):
-        return '<h%d class="title">%s</h2>' % (self.level,html(self.elements))
+        return '<section>\n\n<h%d class="title">%s</h2>' % (self.level,html(self.elements))
 
     def tex(self):
         return '\\%ssection{%s}' % ('sub'*(self.level-1),tex(self.elements))
@@ -547,6 +547,8 @@ ElltwoAutoload({
 </html>
 """.strip()
 
+section_end = """</section>"""
+
 latex_template = """
 \\documentclass[12pt]{article}
 
@@ -573,8 +575,18 @@ latex_template = """
 """.strip()
 
 def convert_html(text):
+    body = ''
     cells = parse_doc(text)
-    ret = html_template % html(cells)
+    levels = []
+    for cell in cells.cells:
+        if type(cell) is Header:
+            last = levels[-1] if len(levels) > 0 else 0
+            if cell.level <= last:
+                levels.pop()
+                body += section_end + '\n\n'
+            levels.append(cell.level)
+        body += html(cell) + '\n\n'
+    ret = html_template % body
     return ret
 
 def convert_markdown(text):
