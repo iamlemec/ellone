@@ -80,7 +80,7 @@ class Title:
         return '<header>\n<h1 class="title">%s</h1>\n</header>' % html(self.elements)
 
     def tex(self):
-        return '\\begin{center}\n{\LARGE \\bf %s}\n\\end{center}' % tex(self.elements)
+        return '\\begin{center}\n{\LARGE \\bf %s}\n\\vspace*{0.8cm}\n\\end{center}' % tex(self.elements)
 
     def md(self):
         return '#! %s' % md(self.elements)
@@ -173,9 +173,9 @@ class Equation:
 
     def tex(self):
         if self.label is None:
-            return '\\begin{align*}\n%s\n\\end{align*}' % self.math
+            return '\\negspace\n\\begin{align*}\n%s\n\\end{align*}' % self.math
         else:
-            return '\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,self.math)
+            return '\\negspace  \n\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,self.math)
 
     def md(self):
         if self.label is None:
@@ -566,6 +566,8 @@ latex_template = """
 \\setlength{\\parindent}{0cm}
 \\setlength{\\parskip}{0.5cm}
 \\renewcommand{\\baselinestretch}{1.1}
+
+\\newcommand{\\negspace}{\\vspace{-0.5cm}}
 
 \\begin{document}
 
