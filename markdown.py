@@ -4,11 +4,18 @@ import os
 import re
 from ply import lex, yacc
 
+# top level functions
+
+def escape_latex(s):
+    s = re.sub(r'([#])',r'\\\1',s)
+    s = re.sub(r'\^',r'\\textasciicircum',s)
+    return s
+
 def html(x):
     return x if type(x) is str else x.html()
 
 def tex(x):
-    return x if type(x) is str else x.tex()
+    return escape_latex(x) if type(x) is str else x.tex()
 
 def md(x):
     return x if type(x) is str else x.md()
@@ -172,10 +179,11 @@ class Equation:
             return '<equation id="%s">\n%s\n</equation>' % (self.label,self.math)
 
     def tex(self):
+        emath = re.sub(r'\\align','&',self.math)
         if self.label is None:
-            return '\\negspace\n\\begin{align*}\n%s\n\\end{align*}' % self.math
+            return '\\negspace\n\\begin{align*}\n%s\n\\end{align*}' % emath
         else:
-            return '\\negspace  \n\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,self.math)
+            return '\\negspace\n\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,emath)
 
     def md(self):
         if self.label is None:
@@ -231,7 +239,7 @@ class Bold:
         return '<b>%s</b>' % self.text
 
     def tex(self):
-        return '\\textbf{%s}' % self.text
+        return '\\textbf{%s}' % tex(self.text)
 
     def md(self):
         return '**%s**' % self.text
@@ -247,7 +255,7 @@ class Ital:
         return '<i>%s</i>' % self.text
 
     def tex(self):
-        return '\\textit{%s}' % self.text
+        return '\\textit{%s}' % tex(self.text)
 
     def md(self):
         return '*%s*' % self.text
@@ -263,7 +271,7 @@ class Code:
         return '<code>%s</code>' % self.text
 
     def tex(self):
-        return '\\texttt{%s}' % self.text
+        return '\\texttt{%s}' % tex(self.text)
 
     def md(self):
         return '`%s`' % self.text
@@ -322,9 +330,6 @@ class Footnote:
 
 def unescape_markdown(s):
     return re.sub(r'(?<!\\)\\(\[|\]|\(|\)|\*|\@)',r'\1',s)
-
-def unescape_math(s):
-    return re.sub(r'\\align','&',s)
 
 class Lexer():
     states = (
@@ -527,11 +532,7 @@ html_template = """
 <head>
 
 <script src="http://doughanley.com/ellsworth/js/elltwo_load.js" type="text/javascript"></script>
-<script type="text/javascript">
-ElltwoAutoload({
-  theme: "shakirm"
-});
-</script>
+<script type="text/javascript">ElltwoAutoload();</script>
 
 </head>
 
@@ -545,7 +546,7 @@ ElltwoAutoload({
 
 </body>
 </html>
-""".strip()
+"""[1:]
 
 section_end = """</section>"""
 
@@ -574,7 +575,7 @@ latex_template = """
 %s
 
 \\end{document}
-""".strip()
+"""[1:]
 
 def convert_html(text):
     body = ''
@@ -588,7 +589,7 @@ def convert_html(text):
                 body += section_end + '\n\n'
             levels.append(cell.level)
         body += html(cell) + '\n\n'
-    ret = html_template % body
+    ret = html_template % body.rstrip()
     return ret
 
 def convert_markdown(text):
@@ -597,6 +598,7 @@ def convert_markdown(text):
     return ret
 
 def convert_latex(text):
+    text = re.sub(r'([%&])',r'\\\1',text)
     cells = parse_doc(text)
     ret = latex_template % tex(cells)
     return ret

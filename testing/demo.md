@@ -43,6 +43,6 @@ Equations can be numbered with semi-arbitrary labels as in `\[eq1\]`, and refere
 Documents can be exported to a variety of formats:
 
 + Markdown (ish): simply the concatenation of all cell inputs
-+ HTML: an intermediate language that allows for portable viewing, although + uses external javascript libraries
++ HTML: an intermediate language that allows for portable viewing, although uses external javascript libraries
 + LaTeX: naturally we cannot capture all the richness of latex in this environment, but it's a start
 + PDF: auto-compiled version of the previous.
