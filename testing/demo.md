@@ -1,6 +1,6 @@
 #! Sample $\ell^2$ Document
 
-This is an example of a document written using the $\ell^2$ (ell-two) typesetting system. Basic elements of markdown syntax are supported, as are certain extensions geared toward academic writing.
+This is an example of a document written using the $\ell^2$ (ell-two) typesetting system. Basic elements of markdown syntax are supported, as are certain extensions geared toward academic writing. **Click on the logo on the top left for a command cheat sheet.**
 
 # Commands
 
@@ -14,7 +14,7 @@ Here is a list of the keyboard common keyboard commands:
 - `D`: delete cell
 - `ctrl+s`: save document
 
-As in the above, unordered lists can be created with consecutive lines in a cell starting with `-`, while ordered lists use `+`. Click on the logo in the top left for a command cheat sheet.
+As in the above, unordered lists can be created with consecutive lines in a cell starting with `-`, while ordered lists use `+`.
 
 # Cell Directives
 
