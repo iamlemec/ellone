@@ -53,8 +53,10 @@ function unescape_html(text) {
 };
 
 // cell utils
-function get_inner(outer) {
-  return outer.children(".para_inner")[0];
+function get_inner(outer,jq) {
+  var outer = outer.children(".para_inner");
+  if (!jq) { outer = outer[0]; }
+  return outer;
 }
 
 function is_editing(outer) {
@@ -286,8 +288,8 @@ function render(box,text,defer) {
     list += '</ol>';
     text = list;
   } else if (ret = img_re.exec(text)) {
-    var src = ret[1];
-    var cap = ret[2];
+    var cap = ret[1];
+    var src = ret[2];
     src = resolve_url(src);
     box.addClass("image");
     text = '<img src="' + src + '"/>';
@@ -434,6 +436,11 @@ function create_cell(cell) {
 
 // delete cell (para_outer)
 function delete_cell(cell) {
+  var inner = get_inner(cell,true);
+  var is_section = inner.hasClass('section_title');
+  var is_equation = inner.hasClass('equation');
+  var has_footnote = (inner.find('footnote').length == 0);
+
   // snip out of linked list
   prev = cell.attr("prev");
   next = cell.attr("next");
@@ -444,6 +451,11 @@ function delete_cell(cell) {
 
   // delete from DOM
   cell.remove();
+
+  // update globals
+  if (is_section) { number_sections(); }
+  if (is_equation) { number_equations(); }
+  if (has_footnote) { number_footnotes(); }
 
   // inform server
   var cid = cell.attr("cid");
@@ -458,7 +470,7 @@ function delete_cell(cell) {
 // go into static mode
 function freeze_cell(outer) {
   clear_selection();
-  var inner = outer.children(".para_inner");
+  var inner = get_inner(outer,true);
   var html = inner.html();
   var text = strip_tags(html);
   var base = unescape_html(text);
@@ -473,7 +485,7 @@ function freeze_cell(outer) {
 
 // start editing cell
 function unfreeze_cell(outer) {
-  var inner = outer.children(".para_inner");
+  var inner = get_inner(outer,true);
   outer.attr("disp_html",inner.html());
   outer.addClass("editing");
   inner.removeClass();
@@ -808,7 +820,7 @@ function initialize() {
 
   // vim-like controls :)
   $(window).keydown(function(event) {
-    console.log(event.keyCode);
+    // console.log(event.keyCode);
 
     var keyCode = event.keyCode;
     var docEdit = is_editing(elltwo_box);
