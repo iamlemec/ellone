@@ -12,6 +12,8 @@ Here is a list of the keyboard common keyboard commands:
 - `esc`: render cell contents
 - `shift+enter`: render cell and create new one (= `esc` then `o`)
 - `D`: delete cell
+- `C`: copy a cell
+- `P`: paste copied cell
 - `ctrl+s`: save document
 
 As in the above, unordered lists can be created with consecutive lines in a cell starting with `-`, while ordered lists use `+`.
