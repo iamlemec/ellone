@@ -22,10 +22,11 @@ parser = argparse.ArgumentParser(description='Elltwo Server.')
 parser.add_argument('--path', type=str, default='testing', help='path for markdown files')
 parser.add_argument('--port', type=int, default=8500, help='port to serve on')
 parser.add_argument('--demo', action='store_true', help='run in demo mode')
+parser.add_argument('--auth', type=str, default='auth.txt')
 args = parser.parse_args()
 
 # authentication
-with open('auth.txt') as fid:
+with open(args.auth) as fid:
   auth = json.load(fid)
 cookie_secret = auth['cookie_secret']
 username_true = auth['username']

@@ -192,7 +192,7 @@ function resolve_url(url) {
 }
 
 // regex
-var esc_re = /\\([\[\]\(\)@$])/g;
+var esc_re = /\\([\[\]\(\)\*@$])/g;
 var sec_re = /^(#+)([^!].*)/;
 var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
 var label_re = /^ *\[([\w-_]+)\](.*)/;
@@ -234,10 +234,10 @@ function bold_marker(match, p, offset, string) {
 }
 var bold_re = /\*\*([^\*]*)\*\*/g;
 
-function ital_marker(match, p, offset, string) {
-  return '<i>' + p + '</i>';
+function ital_marker(match, p1, p2, offset, string) {
+  return p1 + '<i>' + p2 + '</i>';
 }
-var ital_re = /\*([^\*]*)\*/g;
+var ital_re = /([^\\])\*([^\*]*)\*/g;
 
 // main render
 function render(box,text,defer) {
