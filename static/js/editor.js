@@ -406,7 +406,7 @@ function save_cell(cell) {
 }
 
 // create cell (after para_outer)
-function create_cell(cell) {
+function create_cell(cell,edit) {
   // generate id and stitch into linked list
   var newid = Math.max.apply(null,$(".para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
   var prev = cell.attr("cid");
@@ -416,7 +416,7 @@ function create_cell(cell) {
   cell.attr("next",newid);
 
   // generate html
-  var outer = make_para("",newid,prev,next,true);
+  var outer = make_para("",newid,prev,next,edit);
   outer.insertAfter(cell);
 
   // activate cell
@@ -432,6 +432,9 @@ function create_cell(cell) {
 
   // mark document modified
   elltwo_box.addClass("modified");
+
+  // return created cell
+  return outer;
 }
 
 // delete cell (para_outer)
@@ -465,6 +468,22 @@ function delete_cell(cell) {
 
   // mark document modified
   elltwo_box.addClass("modified");
+}
+
+clipboard = "";
+function copy_cell(cell) {
+  clipboard = cell.attr("base_text");
+}
+
+function paste_cell(cell) {
+  if (clipboard.length == 0) {
+    return;
+  }
+  var outer = create_cell(cell,false);
+  var inner = get_inner(outer,true);
+  outer.attr("base_text",clipboard);
+  save_cell(outer);
+  render(inner,clipboard);
 }
 
 // go into static mode
@@ -504,28 +523,6 @@ function save_document() {
   ws.send(msg);
   elltwo_box.removeClass("modified");
 }
-
-// create mouseover toolbar for cell
-function make_toolbar(outer) {
-  var bar = $("<div>",{class:"toolbar"});
-  var add = $("<span>",{class:"add_button",html:"+"});
-  var del = $("<span>",{class:"del_button",html:"x"});
-  add.click(function() {
-    create_cell(outer);
-  });
-  del.click(function() {
-    if (!activate_next()) {
-      activate_prev();
-    }
-    delete_cell(outer);
-    if (is_editing(active)) {
-      set_caret_at_end(active);
-    }
-  });
-  bar.append(add);
-  bar.append(del);
-  return bar;
-};
 
 // make paragraph for cell
 function make_para(text,cid,prev,next,edit,defer) {
@@ -869,14 +866,14 @@ function initialize() {
         }
       } else if (keyCode == 79) { // o
         if (!actEdit) {
-          create_cell(active);
+          create_cell(active,true);
           return false;
         }
       } else if (keyCode == 13) { // return
         if (actEdit) {
           if (event.shiftKey) {
             freeze_cell(active);
-            create_cell(active);
+            create_cell(active,true);
             return false;
           }
         }
@@ -906,6 +903,14 @@ function initialize() {
           if (is_editing(active)) {
             set_caret_at_end(active);
           }
+        }
+      } else if (keyCode == 67) { // c
+        if (event.shiftKey && !is_editing(active)) {
+          copy_cell(active);
+        }
+      } else if (keyCode == 80) { // c
+        if (event.shiftKey && !is_editing(active)) {
+          paste_cell(active);
         }
       } else if (keyCode == 83) { // s
         if (event.ctrlKey || event.metaKey) {
