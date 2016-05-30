@@ -899,6 +899,7 @@ function initialize() {
           if (!activate_next()) {
             activate_prev();
           }
+          copy_cell(outer);
           delete_cell(outer);
           if (is_editing(active)) {
             set_caret_at_end(active);
@@ -908,7 +909,7 @@ function initialize() {
         if (event.shiftKey && !is_editing(active)) {
           copy_cell(active);
         }
-      } else if (keyCode == 80) { // c
+      } else if (keyCode == 80) { // p
         if (event.shiftKey && !is_editing(active)) {
           paste_cell(active);
         }

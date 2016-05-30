@@ -11,6 +11,11 @@ def escape_latex(s):
     s = re.sub(r'\^',r'\\textasciicircum',s)
     return s
 
+def escape_tex(s):
+    s = re.sub(r'\\gt(?![a-z])','>',s)
+    s = re.sub(r'\\lt(?![a-z])','<',s)
+    return s
+
 def html(x):
     return x if type(x) is str else x.html()
 
@@ -179,11 +184,11 @@ class Equation:
             return '<equation id="%s">\n%s\n</equation>' % (self.label,self.math)
 
     def tex(self):
-        emath = re.sub(r'\\align','&',self.math)
+        emath = re.sub(r'\\align(?![a-z])','&',escape_tex(self.math))
         if self.label is None:
-            return '\\negspace\n\\begin{align*}\n%s\n\\end{align*}' % emath
+            return '\\begin{align*}\n%s\n\\end{align*}' % emath
         else:
-            return '\\negspace\n\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,emath)
+            return '\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,emath)
 
     def md(self):
         if self.label is None:
@@ -287,7 +292,7 @@ class Math:
         return '$%s$' % self.math
 
     def tex(self):
-        return '$%s$' % self.math
+        return '$%s$' % escape_tex(self.math)
 
     def md(self):
         return '$%s$' % self.math
@@ -568,8 +573,6 @@ latex_template = """
 \\setlength{\\parskip}{0.5cm}
 \\renewcommand{\\baselinestretch}{1.1}
 
-\\newcommand{\\negspace}{\\vspace{-0.5cm}}
-
 \\begin{document}
 
 %s
@@ -599,6 +602,18 @@ def convert_markdown(text):
 
 def convert_latex(text):
     text = re.sub(r'([%&])',r'\\\1',text)
-    cells = parse_doc(text)
-    ret = latex_template % tex(cells)
+    cells = parse_doc(text).cells
+    pt = None
+    body = ''
+    for c in cells:
+        t = type(c)
+        if pt is None:
+            pref = ''
+        elif ((t is Equation) and ((pt is Paragraph) or (pt is Equation))) or ((t is Paragraph) and (pt is Equation)):
+            pref = '\n'
+        else:
+            pref = '\n\n'
+        body += pref + tex(c)
+        pt = t
+    ret = latex_template % body
     return ret
