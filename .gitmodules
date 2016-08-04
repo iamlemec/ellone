@@ -1,3 +1,3 @@
-[submodule "static/js/katex"]
-	path = static/js/katex
+[submodule "static/katex"]
+	path = static/katex
 	url = https://github.com/Khan/KaTeX
