@@ -1,497 +1,379 @@
 @import url("montserrat.css");
 
 * {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 #elltwo {
-  font-family: Montserrat;
-  font-size: 18px;
-  font-weight: 300;
-  margin: 0px;
+    font-family: Montserrat;
+    font-size: 18px;
+    font-weight: 300;
+    margin: 0px;
 }
 
 /* content */
 
 #content {
-  width: 700px !important;
-  margin: 0px auto;
-  padding-top: 80px;
-  padding-bottom: 200px;
-  background-color: white;
-  color: #333;
-  -webkit-box-sizing: content-box;
-  -moz-box-sizing: content-box;
-  box-sizing: content-box;
+    width: 700px !important;
+    margin: 0px auto;
+    padding-top: 80px;
+    padding-bottom: 200px;
+    background-color: white;
+    color: #333;
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
 }
 
 #content * {
-  text-decoration: none;
+    text-decoration: none;
 }
 
 #content *:focus {
-  outline: 0;
+    outline: 0;
 }
 
 /* links */
 
 a:focus {
-  outline: 0px;
+    outline: 0px;
 }
 
 a {
-  color: blue;
+    color: blue;
 }
 
 a:visited {
-  color: blue;
+    color: blue;
 }
 
 /* paragraph cells */
 
 .para_inner {
-  /*margin-top: 20px;*/
-  min-height: 21px;
-  padding-left: 5px;
-  white-space: pre-wrap;
+    /*margin-top: 20px;*/
+    min-height: 21px;
+    padding-left: 5px;
+    white-space: pre-wrap;
 }
 
 .para_outer.editing {
-  border-right: 1px solid rgb(53, 122, 232) !important;
+    border-right: 1px solid rgb(53, 122, 232) !important;
 }
 
 .para_outer.modified {
-  border-right: 1px solid red !important;
+    border-right: 1px solid red !important;
 }
 
 .para_outer {
-  position: relative;
-  margin-top: 10px;
-  padding: 3px;
-  border-left: 1px solid white;
-  border-right: 1px solid white;
-  padding-right: 30px;
+    position: relative;
+    margin-top: 10px;
+    padding: 3px;
+    border-left: 1px solid white;
+    border-right: 1px solid white;
+    padding-right: 30px;
 }
 
 .para_outer.editing .para_inner {
-  text-align: left;
-  font-family: monospace;
-  font-size: 15px;
+    text-align: left;
+    font-family: monospace;
+    font-size: 15px;
 }
 
 #elltwo.editing .para_outer:hover {
-  /*border-right: 1px solid #CCC;*/
+    /*border-right: 1px solid #CCC;*/
 }
 
 #elltwo.editing .para_outer:hover > .toolbar {
-  display: block;
+    display: block;
 }
 
 #elltwo.editing .para_outer:first-child > .toolbar > .del_button {
-  display: none;
+    display: none;
 }
 
 #elltwo.editing .para_outer.active {
-  border-left: 1px solid #CCC;
+    border-left: 1px solid #CCC;
 }
 
 /* equations */
 
 .equation {
-  position: relative;
-  text-align: center;
-  margin-top: 10px;
-  margin-bottom: 10px;
+    position: relative;
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .equation_inner {
-  margin: auto;
-  text-align: center;
+    margin: auto;
+    text-align: center;
 }
 
 .equation_number {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  -webkit-transform: translateY(-50%);
-  color: #888;
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    -webkit-transform: translateY(-50%);
+    color: #888;
 }
 
 .equation_inner .equation_row:not(:first-child) {
-  margin-top: 20px;
+    margin-top: 20px;
 }
 
 /* images */
 
 .para_inner.image {
-  text-align: center;
+    text-align: center;
 }
 
 .image {
-  margin-top: 10px;
-  margin-bottom: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .image > img {
-  max-width: 100%;
-  height: auto;
+    max-width: 100%;
+    height: auto;
 }
 
 .caption {
-  text-align: center;
-  font-style: italic;
-  margin-top: 0px;
+    text-align: center;
+    font-style: italic;
+    margin-top: 0px;
 }
 
 /* lists */
 
 ul {
-  margin-top: 0px;
-  margin-bottom: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 ol {
-  margin-top: 0px;
-  margin-bottom: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 /* code */
 
 code {
-  font-family: monospace;
+    font-family: monospace;
 }
 
 /* sections */
 
 .section_title {
-  font-weight: 600;
-  margin-top: 30px;
+    font-weight: 600;
+    margin-top: 30px;
 }
 
 .section_title:before {
-  content: attr(sec_num) " ";
+    content: attr(sec_num) " ";
 }
 
 .para_outer.editing .section_title:before {
-  content: "";
+    content: "";
 }
 
 /* popups */
 
 .popup_outer {
-  display: none;
-  position: absolute;
-  z-index: 2;
-  opacity: 0.90;
-  cursor: auto;
+    display: none;
+    position: absolute;
+    z-index: 2;
+    opacity: 0.90;
+    cursor: auto;
 }
 
 .popup {
-  font-size: 12px;
-  font-weight: normal;
-  text-align: center;
-  line-height: 150%;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  padding-left: 15px;
-  padding-right: 15px;
-  border-radius: 4px;
-  border: 0px;
-  background-color: black;
-  /*opacity: 0.95;*/
-  color: white;
-  max-width: 300px;
-  margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: normal;
+    text-align: center;
+    line-height: 150%;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 15px;
+    padding-right: 15px;
+    border-radius: 4px;
+    border: 0px;
+    background-color: black;
+    /*opacity: 0.95;*/
+    color: white;
+    max-width: 300px;
+    margin-bottom: 8px;
 }
 
 .popup:after {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  border: solid transparent;
-  content: " ";
-  height: 0;
-  width: 0;
-  border-color: transparent;
-  border-top-color: black;
-  border-width: 4px;
-  margin-top: -8px;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    border-color: transparent;
+    border-top-color: black;
+    border-width: 4px;
+    margin-top: -8px;
 }
 
 .eqn_popup {
-  font-size: 17px;
-  max-width: none;
-  padding-top: 5px;
-  padding-bottom: 5px;
+    font-size: 17px;
+    max-width: none;
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 /* footnotes */
 
 .footnote {
-  background-color: rgba(53, 122, 232, 0.8);
-  color: white;
-  border-radius: 2px;
-  cursor: default;
-  line-height: 1.5;
-  font-size: 14px;
-  /*font-weight: bold;*/
-  padding-bottom: 3px;
-  display: inline-block;
-  text-align: center;
-  width: 17px;
-  height: 19px;
-  position: relative;
+    background-color: rgba(53, 122, 232, 0.8);
+    color: white;
+    border-radius: 2px;
+    cursor: default;
+    line-height: 1.5;
+    font-size: 14px;
+    /*font-weight: bold;*/
+    padding-bottom: 3px;
+    display: inline-block;
+    text-align: center;
+    width: 17px;
+    height: 19px;
+    position: relative;
 }
 
 .footnote:hover {
-  background-color: rgb(53, 122, 232);
+    background-color: rgb(53, 122, 232);
 }
 
 .footnote_popup {
-  text-align: center;
-  width: 200px;
+    text-align: center;
+    width: 200px;
 }
 
 .footnote_popup:after {
-  left: 96px;
-}
-
-/* hover toolbar */
-
-.toolbar {
-  display: none;
-  position: absolute;
-  bottom: -2px;
-  left: 97.3%;
-  cursor: default;
-  line-height: 100%;
-}
-
-.add_button {
-  font-size: 15px;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-top-left-radius: 2px;
-  border-bottom-left-radius: 2px;
-  padding: 0px 6px 0px 6px;
-}
-
-.del_button {
-  font-size: 15px;
-  background-color: rgba(232, 50, 90, 0.8);
-  color: white;
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
-  padding: 0px 6px 0px 6px;
+    left: 96px;
 }
 
 /* top toolbar */
 
 #topbar {
-  position: fixed;
-  right: 10px;
+    position: fixed;
+    right: 10px;
 }
 
 #elltwo.nocontrol #topbar {
-  display: none;
+    display: none;
 }
 
 #topbar_control {
-  float: right;
+    float: right;
 }
 
-#topbar_export {
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
+.topbar-button {
+    cursor: default;
+    text-align: right;
+    font-size: 15px;
+    font-weight: 400;
+    background-color: rgb(53, 122, 232);
+    color: white;
+    width: 61px;
+    border-radius: 2px;
+    padding: 0px 6px 2px 6px;
 }
 
 #topbar_export.expanded {
-  background-color: #666;
+    background-color: #666;
 }
 
 #topbar_slide {
-  display: none;
-  margin-top: 2px;
+    display: none;
+    margin-top: 2px;
 }
 
-#topbar_markdown {
-  float: right;
-  text-align: right;
-  width: 61px;
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
+.topbar-dropdown {
+    float: right;
 }
 
-#topbar_html {
-  float: right;
-  text-align: right;
-  width: 61px;
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
+#elltwo:not(.modified) #topbar_save {
+    display: none;
 }
 
-#topbar_latex {
-  float: right;
-  text-align: right;
-  width: 61px;
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
+#elltwo:not(.modified) #topbar_revert {
+    display: none;
 }
 
-#topbar_pdf {
-  float: right;
-  text-align: right;
-  width: 61px;
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
-}
-
-#topbar_save {
-  display: none;
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
-}
-
-#elltwo.modified #topbar_save {
-  display: inline;
-}
-
-#topbar_revert {
-  display: none;
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
-}
-
-#elltwo.modified #topbar_revert {
-  display: inline;
-}
-
-#topbar_editing {
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: #666;
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
-}
-
-#elltwo.editing #topbar_editing {
-  color: white !important;
-  background-color: rgb(53, 122, 232);
-}
-
-#topbar_reload {
-  cursor: default;
-  font-size: 15px;
-  font-weight: 400;
-  background-color: rgb(53, 122, 232);
-  color: white;
-  border-radius: 2px;
-  padding: 0px 6px 2px 6px;
+#elltwo:not(.editing) #topbar_editing {
+    background-color: #666;
 }
 
 #elltwo.modified #topbar_reload {
-  display: none;
+    display: none;
 }
 
 /* theme */
 
 #marquee {
-  color: #333;
-  position: fixed;
-  cursor: default;
-  top: 6px;
-  left: 10px;
+    color: #333;
+    position: fixed;
+    cursor: default;
+    top: 6px;
+    left: 10px;
 }
 
 #canary {
-  position: fixed;
-  font-family: monospace;
-  font-size: 14px;
-  left: 60px;
-  top: 10px;
+    position: fixed;
+    font-family: monospace;
+    font-size: 14px;
+    left: 60px;
+    top: 10px;
 }
 
 #help {
-  color: #333;
-  position: fixed;
-  top: 30px;
-  cursor: default;
-  font-size: 12px;
-  display: none;
+    color: #333;
+    position: fixed;
+    top: 30px;
+    cursor: default;
+    font-size: 12px;
+    display: none;
 }
 
 .title {
-  font-size: 35px;
-  font-weight: 600;
-  text-align: center !important;
-  margin-bottom: 40px;
+    font-size: 35px;
+    font-weight: 600;
+    text-align: center !important;
+    margin-bottom: 40px;
 }
 
 .section_title.section_level1 {
-  font-size: 25px;
+    font-size: 25px;
 }
 
 .section_title.section_level2 {
-  font-size: 20px;
+    font-size: 20px;
 }
 
 .para_inner {
-  /*text-align: justify;*/
+    /*text-align: justify;*/
 }
 
 #elltwo li {
-  text-align: justify;
+    text-align: justify;
 }
 
 #elltwo * {
-  line-height: 150%;
+    line-height: 150%;
 }
 
 .reference {
-  position: relative;
+    position: relative;
 }
 
 .popup .reference a {
-  color: rgb(53, 122, 232);
+    color: rgb(53, 122, 232);
 }
 
 .error {
-  color: red;
+    color: red;
 }
