@@ -307,7 +307,7 @@ code {
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #topbar_export.expanded {
@@ -322,53 +322,53 @@ code {
 #topbar_markdown {
   float: right;
   text-align: right;
-  width: 54px;
+  width: 61px;
   cursor: default;
   font-size: 15px;
   font-weight: 400;
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #topbar_html {
   float: right;
   text-align: right;
-  width: 54px;
+  width: 61px;
   cursor: default;
   font-size: 15px;
   font-weight: 400;
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #topbar_latex {
   float: right;
   text-align: right;
-  width: 54px;
+  width: 61px;
   cursor: default;
   font-size: 15px;
   font-weight: 400;
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #topbar_pdf {
   float: right;
   text-align: right;
-  width: 54px;
+  width: 61px;
   cursor: default;
   font-size: 15px;
   font-weight: 400;
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #topbar_save {
@@ -379,7 +379,7 @@ code {
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #elltwo.modified #topbar_save {
@@ -394,7 +394,7 @@ code {
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #elltwo.modified #topbar_revert {
@@ -408,7 +408,7 @@ code {
   background-color: #666;
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #elltwo.editing #topbar_editing {
@@ -423,7 +423,7 @@ code {
   background-color: rgb(53, 122, 232);
   color: white;
   border-radius: 2px;
-  padding: 0px 6px 0px 6px;
+  padding: 0px 6px 2px 6px;
 }
 
 #elltwo.modified #topbar_reload {
@@ -436,8 +436,8 @@ code {
   color: #333;
   position: fixed;
   cursor: default;
-  top: 5px;
-  left: 7px;
+  top: 6px;
+  left: 10px;
 }
 
 #canary {
@@ -445,7 +445,7 @@ code {
   font-family: monospace;
   font-size: 14px;
   left: 60px;
-  top: 9px;
+  top: 10px;
 }
 
 #help {
