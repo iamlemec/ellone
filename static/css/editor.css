@@ -1,12 +1,13 @@
-@import url("proxima-nova.css");
+@import url("montserrat.css");
 
 * {
   box-sizing: border-box;
 }
 
 #elltwo {
-  font-family: proxima-nova;
+  font-family: Montserrat;
   font-size: 17px;
+  font-weight: 300;
   margin: 0px;
 }
 
@@ -443,7 +444,7 @@ code {
   position: fixed;
   top: 30px;
   cursor: default;
-  font-size: 10px;
+  font-size: 12px;
   display: none;
 }
 
