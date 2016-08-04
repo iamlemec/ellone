@@ -6,7 +6,7 @@
 
 #elltwo {
   font-family: Montserrat;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 300;
   margin: 0px;
 }
@@ -76,7 +76,7 @@ a:visited {
 .para_outer.editing .para_inner {
   text-align: left;
   font-family: courier;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 #elltwo.editing .para_outer:hover {
@@ -464,7 +464,7 @@ code {
 }
 
 .para_inner {
-  text-align: justify;
+  /*text-align: justify;*/
 }
 
 #elltwo li {
