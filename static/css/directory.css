@@ -1,5 +1,7 @@
+@import url("montserrat.css");
+
 html {
-  font-family: proxima-nova;
+  font-family: 'Montserrat';
 }
 
 .title {
