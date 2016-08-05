@@ -234,7 +234,7 @@ code {
     cursor: default;
     line-height: 1.5;
     font-size: 14px;
-    /*font-weight: bold;*/
+    font-weight: 700;
     padding-bottom: 3px;
     display: inline-block;
     text-align: center;
