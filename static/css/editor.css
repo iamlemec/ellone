@@ -289,11 +289,13 @@ code {
 
 #topbar_slide {
     display: none;
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 .topbar-dropdown {
     float: right;
+    clear: both;
+    margin-top: 2px;
 }
 
 #elltwo:not(.modified) #topbar_save {
@@ -355,15 +357,12 @@ code {
 }
 
 .para_inner {
-    /*text-align: justify;*/
+    text-align: justify;
+    line-height: 150%;
 }
 
 #elltwo li {
     text-align: justify;
-}
-
-#elltwo * {
-    line-height: 150%;
 }
 
 .reference {

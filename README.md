@@ -7,6 +7,8 @@ Elltwo is a simple, browser-based document composition tool. It's geared towards
 - Equation referencing with popup previews
 - Export to Markdown (ish), LaTeX, PDF, and HTML
 
+![Elltwo demo](demo.gif)
+
 # Installing
 
 After cloning the repository locally, you'll want to fetch and build the latest version of KaTeX, which is hooked in as a submodule:
