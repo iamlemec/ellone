@@ -1,6 +1,6 @@
 # Elltwo
 
-Check out the live demo at: [dohan.io](dohan.io)
+Check out the live demo at: [dohan.io](http://dohan.io/)
 
 Elltwo is a web-enabled, cell-based document composition tool. It's geared towards people who, like myself, start developing ideas as snippets of text interspersed with equations. Could very well be useful to others though. The math rendering is taken care of by the wonderful KaTeX library. Notable features include:
 
