@@ -27,11 +27,12 @@ parser.add_argument('--auth', type=str, default='auth.txt')
 args = parser.parse_args()
 
 # authentication
-with open(args.auth) as fid:
-  auth = json.load(fid)
-cookie_secret = auth['cookie_secret']
-username_true = auth['username']
-password_true = auth['password']
+if not args.demo:
+    with open(args.auth) as fid:
+      auth = json.load(fid)
+    cookie_secret = auth['cookie_secret']
+    username_true = auth['username']
+    password_true = auth['password']
 
 if args.demo:
   def authenticated(get0):
