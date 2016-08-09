@@ -27,7 +27,9 @@ parser.add_argument('--auth', type=str, default='auth.txt')
 args = parser.parse_args()
 
 # authentication
-if not args.demo:
+if args.demo:
+    cookie_secret = None
+else:
     with open(args.auth) as fid:
       auth = json.load(fid)
     cookie_secret = auth['cookie_secret']
