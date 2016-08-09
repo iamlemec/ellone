@@ -21,6 +21,7 @@ import markdown
 parser = argparse.ArgumentParser(description='Elltwo Server.')
 parser.add_argument('--path', type=str, default='testing', help='path for markdown files')
 parser.add_argument('--port', type=int, default=8500, help='port to serve on')
+parser.add_argument('--addr', type=str, default='127.0.0.1', help='ip address to listen on')
 parser.add_argument('--demo', action='store_true', help='run in demo mode')
 parser.add_argument('--auth', type=str, default='auth.txt')
 args = parser.parse_args()
@@ -455,5 +456,5 @@ class Application(tornado.web.Application):
 
 # create server
 application = Application()
-application.listen(args.port)
+application.listen(args.port, address=args.addr)
 tornado.ioloop.IOLoop.current().start()
