@@ -197,7 +197,7 @@ function resolve_url(url) {
 }
 
 // regex
-var esc_re = /\\([\[\]\(\)\*@$])/g;
+var esc_re = /\\([\[\]\(\)\*@$`])/g;
 var sec_re = /^(#+)([^!].*)/;
 var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
 var label_re = /^ *\[([\w-_]+)\]((.|\n)*)/m;
@@ -225,18 +225,18 @@ function fnote_marker(match, p, offset, string) {
 }
 var fnote_re = /\^\[([^\]]*)\]/g;
 
-function code_marker(match, p, offset, string) {
-    return "<code>" + p + "</code>";
+function code_marker(match, p1, p2, offset, string) {
+    return p1 + "<code>" + p2 + "</code>";
 }
-var code_re = /`([^`]*)`/g;
+var code_re = /([^\\])`([^`]*)`/g;
 
 function bold_marker(match, p, offset, string) {
-    return "<b>" + p + "</b>";
+    return "<strong>" + p + "</strong>";
 }
 var bold_re = /\*\*([^\*]*)\*\*/g;
 
 function ital_marker(match, p1, p2, offset, string) {
-    return p1 + "<i>" + p2 + "</i>";
+    return p1 + "<em>" + p2 + "</em>";
 }
 var ital_re = /([^\\])\*([^\*]*)\*/g;
 
@@ -297,8 +297,11 @@ function render(box, text, defer) {
         if (cap.length > 0) {
             text += "<p class=\"caption\">" + cap + "</p>";
         }
-    } else if (text.startsWith("$$")) {
-        text = "<div class=\"equation\">" + text.slice(2) + "</div>";
+    } else if (text.startsWith("$$ ")) {
+        text = "<div class=\"equation\">" + text.slice(3) + "</div>";
+        inline = false;
+    } else if (text.startsWith("`` ")) {
+        text = "<pre><code>" + text.slice(3) + "</code></pre>";
         inline = false;
     } else {
         text = fill_tags(text);

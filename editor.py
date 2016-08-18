@@ -22,10 +22,12 @@ parser.add_argument('--port', type=int, default=8500, help='port to serve on')
 parser.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
 parser.add_argument('--demo', action='store_true', help='run in demo mode')
 parser.add_argument('--auth', type=str, default=None)
+parser.add_argument('--local-katex', action='store_true', help='use local KaTeX instead of CDN')
 args = parser.parse_args()
 
 # others
 use_auth = not (args.demo or args.auth is None)
+local_katex = args.local_katex
 tmp_dir = './temp'
 blank_doc = '#! Title\n\nBody text.'
 
@@ -169,7 +171,7 @@ class EditorHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self, path):
         (curdir, fname) = os.path.split(path)
-        self.render('editor.html', path=path, curdir=curdir, fname=fname)
+        self.render('editor.html', path=path, curdir=curdir, fname=fname, local_katex=local_katex)
 
 class MarkdownHandler(tornado.web.RequestHandler):
     @authenticated
