@@ -107,7 +107,7 @@ function get_offset(parent, popup, event) {
 
 // attach a popup to parent
 function attach_popup(parent, popup) {
-    var pop_out = $("<div>", {class: "popup_-uter"});
+    var pop_out = $("<div>", {class: "popup-outer"});
     pop_out.append(popup);
     parent.append(pop_out);
     pop_out.attr("shown", "false");

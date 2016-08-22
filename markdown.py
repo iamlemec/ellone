@@ -555,7 +555,7 @@ html_template = """
 
 <head>
 
-<link rel="stylesheet" href="http://doughanley.com/ellsworth/css/elltwo_standalone.css">
+<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
 
 </head>
@@ -572,7 +572,7 @@ html_template = """
 
 <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
-<script src="http://doughanley.com/ellsworth/js/elltwo_standalone.js"></script>
+<script src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
 
 </body>
 
