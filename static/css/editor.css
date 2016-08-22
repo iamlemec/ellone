@@ -49,49 +49,46 @@ a:visited {
 
 /* paragraph cells */
 
-.para_inner {
+.cell p {
     /*margin-top: 20px;*/
     min-height: 21px;
     padding-left: 5px;
     white-space: pre-wrap;
+    text-align: justify;
+    line-height: 150%;
+    padding: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
-.para_outer.editing {
+.cell.editing {
     border-right: 1px solid rgb(53, 122, 232) !important;
 }
 
-.para_outer.modified {
+.cell.modified {
     border-right: 1px solid red !important;
 }
 
-.para_outer {
+.cell {
     position: relative;
     margin-top: 10px;
-    padding: 3px;
     border-left: 1px solid white;
     border-right: 1px solid white;
+    padding-left: 7px;
     padding-right: 30px;
+    padding-top: 3px;
+    padding-bottom: 3px;
 }
 
-.para_outer.editing .para_inner {
+.cell.editing {
     text-align: left;
     font-family: monospace;
     font-size: 15px;
 }
 
-#elltwo.editing .para_outer:hover {
-    /*border-right: 1px solid #CCC;*/
-}
-
-#elltwo.editing .para_outer:hover > .toolbar {
-    display: block;
-}
-
-#elltwo.editing .para_outer:first-child > .toolbar > .del_button {
-    display: none;
-}
-
-#elltwo.editing .para_outer.active {
+#elltwo.editing .cell.active {
     border-left: 1px solid #CCC;
 }
 
@@ -104,12 +101,12 @@ a:visited {
     margin-bottom: 10px;
 }
 
-.equation_inner {
+.equation-inner {
     margin: auto;
     text-align: center;
 }
 
-.equation_number {
+.equation-number {
     position: absolute;
     top: 50%;
     right: 10px;
@@ -117,27 +114,24 @@ a:visited {
     color: #888;
 }
 
-.equation_inner .equation_row:not(:first-child) {
+.equation-inner .equation-row:not(:first-child) {
     margin-top: 20px;
 }
 
 /* images */
 
-.para_inner.image {
+figure {
     text-align: center;
-}
-
-.image {
     margin-top: 10px;
     margin-bottom: 10px;
 }
 
-.image > img {
+figure > img {
     max-width: 100%;
     height: auto;
 }
 
-.caption {
+figcaption {
     text-align: center;
     font-style: italic;
     margin-top: 0px;
@@ -148,11 +142,13 @@ a:visited {
 ul {
     margin-top: 0px;
     margin-bottom: 0px;
+    line-height: 1.5;
 }
 
 ol {
     margin-top: 0px;
     margin-bottom: 0px;
+    line-height: 1.5;
 }
 
 /* code */
@@ -175,27 +171,27 @@ pre {
 
 pre > code {
     font-family: Consolas, monospace;
-    font-size: 16px;
+    font-size: 15px;
 }
 
 /* sections */
 
-.section_title {
+.sec-title {
     font-weight: 600;
     margin-top: 30px;
 }
 
-.section_title:before {
-    content: attr(sec_num) " ";
+.sec-title:before {
+    content: attr(sec-num) " ";
 }
 
-.para_outer.editing .section_title:before {
+.cell.editing .sec-title:before {
     content: "";
 }
 
 /* popups */
 
-.popup_outer {
+.popup-outer {
     display: none;
     position: absolute;
     z-index: 2;
@@ -235,7 +231,7 @@ pre > code {
     margin-top: -8px;
 }
 
-.eqn_popup {
+.eqn-popup {
     font-size: 17px;
     max-width: none;
     padding-top: 5px;
@@ -264,12 +260,12 @@ pre > code {
     background-color: rgb(53, 122, 232);
 }
 
-.footnote_popup {
+.footnote-popup {
     text-align: center;
     width: 200px;
 }
 
-.footnote_popup:after {
+.footnote-popup:after {
     left: 96px;
 }
 
@@ -284,7 +280,7 @@ pre > code {
     display: none;
 }
 
-#topbar_control {
+#topbar-control {
     float: right;
 }
 
@@ -300,11 +296,11 @@ pre > code {
     padding: 0px 6px 2px 6px;
 }
 
-#topbar_export.expanded {
+#topbar-export.expanded {
     background-color: #666;
 }
 
-#topbar_slide {
+#topbar-slide {
     display: none;
     margin-top: 3px;
 }
@@ -315,19 +311,19 @@ pre > code {
     margin-top: 2px;
 }
 
-#elltwo:not(.modified) #topbar_save {
+#elltwo:not(.modified) #topbar-save {
     display: none;
 }
 
-#elltwo:not(.modified) #topbar_revert {
+#elltwo:not(.modified) #topbar-revert {
     display: none;
 }
 
-#elltwo:not(.editing) #topbar_editing {
+#elltwo:not(.editing) #topbar-editing {
     background-color: #666;
 }
 
-#elltwo.modified #topbar_reload {
+#elltwo.modified #topbar-reload {
     display: none;
 }
 
@@ -363,24 +359,19 @@ pre > code {
     cursor: default;
 }
 
-.title {
+.doc-title {
     font-size: 35px;
     font-weight: 600;
     text-align: center !important;
     margin-bottom: 40px;
 }
 
-.section_title.section_level1 {
+.sec-title.sec-lvl-1 {
     font-size: 25px;
 }
 
-.section_title.section_level2 {
+.sec-title.sec-lvl-2 {
     font-size: 20px;
-}
-
-.para_inner {
-    text-align: justify;
-    line-height: 150%;
 }
 
 #elltwo li {

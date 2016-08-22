@@ -22,15 +22,6 @@ function min(arr) {
 
 // escaping
 
-// convert text (with newlines) to html (with divs) and vice versa
-function fill_tags(text) {
-    if (text.includes("\n")) {
-        return "<div>" + text.replace(/\n/g, "</div><div>") + "</div>";
-    } else {
-        return text;
-    }
-};
-
 function strip_tags(html) {
     if (html.startsWith("<div>")) {
         html = html.replace(/<div>/, "");
@@ -56,12 +47,12 @@ function unescape_html(text) {
 };
 
 // cell utils
-function get_inner(outer,jq) {
-    var outer = outer.children(".para_inner");
+function get_inner(outer, jq) {
+    var inner = outer.children().first();
     if (!jq) {
-        outer = outer[0];
+        inner = inner[0];
     }
-    return outer;
+    return inner;
 }
 
 function is_editing(outer) {
@@ -158,7 +149,7 @@ function activate_cell(cell) {
 }
 
 function activate_prev() {
-    var prev = active.prev(".para_outer");
+    var prev = active.prev(".cell");
     if (prev.length > 0) {
         activate_cell(prev);
         return true;
@@ -168,7 +159,7 @@ function activate_prev() {
 }
 
 function activate_next() {
-    var next = active.next(".para_outer");
+    var next = active.next(".cell");
     if (next.length > 0) {
         activate_cell(next);
         return true;
@@ -178,7 +169,7 @@ function activate_next() {
 }
 
 /*
- * inner cell renderer
+ * cell renderer
  */
 
 // urls
@@ -196,142 +187,36 @@ function resolve_url(url) {
     return url;
 }
 
-// regex
-var esc_re = /\\([\[\]\(\)\*@$`])/g;
-var sec_re = /^(#+)([^!].*)/;
-var img_re = /^!\[([^\]]*)\]\(?([^\)]*)\)?/;
-var label_re = /^ *\[([\w-_]+)\]((.|\n)*)/m;
-var ulist_re = /[\-](.*)/;
-var olist_re = /[\+](.*)/;
-
-function inline_marker(match, p1, p2, offset, string) {
-    return p1 + "<span class=\"latex\">" + p2 + "</span>";
-}
-var inline_re = /([^\\])\$([^\$]*)\$/g;
-
-function reference_marker(match, p, offset, string) {
-    return "<span class=\"reference\" target=\"" + p + "\"></span>";
-}
-var reference_re = /@\[([^\]]+)\]/g;
-
-function link_marker(match, p1, p2, offset, string) {
-    var href = resolve_url(p2);
-    return "<a href=\"" + href + "\">" + p1 + "</a>";
-}
-var link_re = /\[([^\]]*)\]\(([^\)]*)\)/g;
-
-function fnote_marker(match, p, offset, string) {
-    return "<span class=\"footnote\">" + p + "</span>";
-}
-var fnote_re = /\^\[([^\]]*)\]/g;
-
-function code_marker(match, p1, p2, offset, string) {
-    return p1 + "<code>" + p2 + "</code>";
-}
-var code_re = /([^\\])`([^`]*)`/g;
-
-function bold_marker(match, p, offset, string) {
-    return "<strong>" + p + "</strong>";
-}
-var bold_re = /\*\*([^\*]*)\*\*/g;
-
-function ital_marker(match, p1, p2, offset, string) {
-    return p1 + "<em>" + p2 + "</em>";
-}
-var ital_re = /([^\\])\*([^\*]*)\*/g;
-
-// main render
-function render(box, text, defer) {
-    defer = defer || false;
-
+function apply_render(cid, html, defer) {
     var new_section = false;
     var new_equation = false;
     var new_footnote = false;
 
-    // escape carets
-    text = escape_html(text);
+    // set html
+    var outer = $(".cell[cid=" + cid + "]");
+    var box = $(html);
+    outer.empty();
+    outer.append(box);
 
-    // classify cell type
-    var inline = true;
-    if (text.startsWith("#!")) {
-        text = text.slice(2);
-        box.addClass("title");
-    } else if (ret = sec_re.exec(text)) {
-        var lvl = ret[1].length;
-        var title = ret[2];
-        box.addClass("section_title");
-        box.addClass("section_level" + lvl);
-        box.attr("sec-lvl", lvl);
-        if (ret = label_re.exec(title)) {
-            label = ret[1];
-            title = ret[2];
-            box.attr("id", label);
-            box.addClass("numbered");
-        }
-        text = title;
+    // handle sections
+    if (box.hasClass("sec-title")) {
         new_section = true;
-    } else if (text.startsWith("-")) {
-        var items = text.slice(1).split("\n-");
-        var list = "<ul>";
-        for (i in items) {
-            var item = items[i];
-            list += "<li>" + (item.trim().replace(/\n/g," ") || " ") + "</li>";
-        }
-        list += "</ul>";
-        text = list;
-    } else if (text.startsWith("+")) {
-        var items = text.slice(1).split("\n+");
-        var list = "<ol>";
-        for (i in items) {
-            var item = items[i];
-            list += "<li>" + (item.trim().replace(/\n/g," ") || " ") + "</li>";
-        }
-        list += "</ol>";
-        text = list;
-    } else if (ret = img_re.exec(text)) {
-        var cap = ret[1];
-        var src = ret[2];
-        src = resolve_url(src);
-        box.addClass("image");
-        text = "<img src=\"" + src + "\"/>";
-        if (cap.length > 0) {
-            text += "<p class=\"caption\">" + cap + "</p>";
-        }
-    } else if (text.startsWith("$$ ")) {
-        text = "<div class=\"equation\">" + text.slice(3) + "</div>";
-        inline = false;
-    } else if (text.startsWith("`` ")) {
-        text = "<pre><code>" + text.slice(3) + "</code></pre>";
-        inline = false;
-    } else {
-        text = fill_tags(text);
     }
 
-    // tag markers
-    if (inline) {
-        text = text.replace(inline_re, inline_marker);
-    }
-    text = text.replace(reference_re, reference_marker);
-    text = text.replace(link_re, link_marker);
-    text = text.replace(code_re, code_marker);
-    text = text.replace(bold_re, bold_marker);
-    text = text.replace(ital_re, ital_marker);
-    text = text.replace(fnote_re, fnote_marker);
-
-    // unescape special chars
-    text = text.replace(esc_re, "$1");
-
-    // convert to html
-    box.html(text);
+    // handle images
+    box.find("img").each(function() {
+        var img = $(this);
+        var src = img.attr("src");
+        img.attr("src", resolve_url(src));
+    });
 
     // handle footnotes
     box.find(".footnote").each(function() {
         var fnote = $(this);
         var text = fnote.html();
         fnote.html("<span class=\"number\"></span>");
-        var popup = $("<div>", {class: "popup footnote_popup", html: text});
+        var popup = $("<div>", {class: "popup footnote-popup", html: text});
         attach_popup(fnote, popup);
-
         new_footnote = true;
     });
 
@@ -343,31 +228,23 @@ function render(box, text, defer) {
     });
 
     // typeset disyplay equations
-    box.find(".equation").each(function() {
-        var eqn = $(this);
-        var src = eqn.text();
+    if (box.hasClass("equation")) {
+        var src = box.text();
 
-        var num_div = $("<div>", {class: "equation_number"});
-        var div_inner = $("<div>", {class: "equation_inner"});
-
-        var ret = label_re.exec(src);
-        var label;
-        if (ret) {
-            label = ret[1];
-            src = ret[2];
-            eqn.attr("id", label);
-            eqn.addClass("numbered");
-        }
+        var num_div = $("<div>", {class: "equation-number"});
+        var div_inner = $("<div>", {class: "equation-inner"});
 
         var tex = "\\begin{aligned}\n" + src + "\n\\end{aligned}";
         katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
 
-        eqn.html("");
-        eqn.append(num_div);
-        eqn.append(div_inner);
+        box.html("");
+        box.append(num_div);
+        box.append(div_inner);
 
-        new_equation = true;
-    });
+        if (box.hasClass("numbered")) {
+            new_equation = true;
+        }
+    }
 
     // recalculate sections, equations, and references
     if (!defer) {
@@ -388,7 +265,7 @@ function render(box, text, defer) {
 function save_cell(cell) {
     // get source text
     var cid = cell.attr("cid");
-    var body = cell.attr("base_text");
+    var body = cell.attr("base-text");
 
     // send to server
     var msg = JSON.stringify({"cmd": "save", "content": {"cid": cid, "body": body}});
@@ -400,13 +277,13 @@ function save_cell(cell) {
     elltwo_box.addClass("modified");
 }
 
-// create cell (after para_outer)
-function create_cell(cell,edit) {
+// create cell
+function create_cell(cell, edit) {
     // generate id and stitch into linked list
-    var newid = Math.max.apply(null,$(".para_outer").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
+    var newid = Math.max.apply(null, $(".cell").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
     var prev = cell.attr("cid");
     var next = cell.attr("next");
-    var cnext = $(".para_outer[cid="+next+"]");
+    var cnext = $(".cell[cid="+next+"]");
     cnext.attr("prev", newid);
     cell.attr("next", newid);
 
@@ -432,18 +309,18 @@ function create_cell(cell,edit) {
     return outer;
 }
 
-// delete cell (para_outer)
+// delete cell
 function delete_cell(cell) {
     var inner = get_inner(cell, true);
-    var is_section = inner.hasClass("section_title");
+    var is_section = inner.hasClass("sec-title");
     var is_equation = inner.hasClass("equation");
     var has_footnote = (inner.find("footnote").length == 0);
 
     // snip out of linked list
     prev = cell.attr("prev");
     next = cell.attr("next");
-    cprev = $(".para_outer[cid="+prev+"]");
-    cnext = $(".para_outer[cid="+next+"]");
+    cprev = $(".cell[cid="+prev+"]");
+    cnext = $(".cell[cid="+next+"]");
     cprev.attr("next", next);
     cnext.attr("prev", prev);
 
@@ -473,7 +350,7 @@ function delete_cell(cell) {
 
 clipboard = "";
 function copy_cell(cell) {
-    clipboard = cell.attr("base_text");
+    clipboard = cell.attr("base-text");
 }
 
 function paste_cell(cell) {
@@ -481,10 +358,8 @@ function paste_cell(cell) {
         return;
     }
     var outer = create_cell(cell, false);
-    var inner = get_inner(outer, true);
-    outer.attr("base_text", clipboard);
+    outer.attr("base-text", clipboard);
     save_cell(outer);
-    render(inner, clipboard);
 }
 
 // go into static mode
@@ -494,26 +369,22 @@ function freeze_cell(outer) {
     var html = inner.html();
     var text = strip_tags(html);
     var base = unescape_html(text);
-    outer.attr("base_text", base);
-    if (outer.hasClass("modified")) {
-        save_cell(outer);
-    }
+    outer.attr("base-text", base);
     outer.removeClass("editing");
-    inner.attr("contentEditable", "false");
-    render(inner, text);
+    save_cell(outer);
 }
 
 // start editing cell
 function unfreeze_cell(outer) {
-    var inner = get_inner(outer, true);
-    outer.attr("disp_html", inner.html());
-    outer.addClass("editing");
-    inner.removeClass();
-    inner.addClass("para_inner");
-    var base = outer.attr("base_text");
+    var base = outer.attr("base-text");
     var text = escape_html(base);
-    inner.html(text);
-    inner.attr("contentEditable", "true");
+    var inner = $("<div>", {html: text, contentEditable: true});
+    outer.addClass("editing");
+    outer.empty();
+    outer.append(inner);
+    outer.bind("input", function() {
+        outer.addClass("modified");
+    });
     set_caret_at_end(outer);
 }
 
@@ -526,41 +397,29 @@ function save_document() {
 }
 
 // make paragraph for cell
-function make_para(text, cid, prev, next, edit, defer) {
+function make_para(text, cid, prev, next, edit) {
     edit = edit || false;
-    defer = defer || false;
 
     // insert into list
-    var outer = $("<div>", {class: "para_outer"});
+    var outer = $("<div>", {class: "cell"});
     outer.attr("cid", cid);
     outer.attr("prev", prev);
     outer.attr("next", next);
-
-    // render inner paragraph
-    var inner = $("<div>", {class: "para_inner"});
-    outer.attr("base_text", text);
-    render(inner, text, defer);
+    outer.attr("base-text", text);
 
     // event handlers
-    inner.click(function(event) {
+    outer.click(function(event) {
         if (is_editing(elltwo_box)) {
             activate_cell(outer);
         }
     });
-    inner.bind("input", function() {
-        outer.addClass("modified");
-    });
 
     // start out editing?
     if (edit) {
-        outer.attr("disp_html", inner.html());
         outer.addClass("editing");
-        inner.html(outer.attr("base_html"));
-        inner.attr("contentEditable", "true");
+        var inner = $("<div>", {contentEditable: "true"});
+        outer.append(inner);
     }
-
-    // insert into DOM
-    outer.append(inner);
 
     return outer;
 }
@@ -570,13 +429,13 @@ function number_sections() {
     var sec_num = Array();
     sec_num[0] = "";
     sec_num[1] = 0;
-    $(".section_title").each(function() {
+    $(".sec-title").each(function() {
         var sec = $(this);
         var lvl = parseInt(sec.attr("sec-lvl"));
         sec_num[lvl]++;
         sec_num[lvl+1] = 0;
-        var lab = sec_num.slice(1,lvl+1).join(".");
-        sec.attr("sec_num",lab);
+        var lab = sec_num.slice(1, lvl+1).join(".");
+        sec.attr("sec-num", lab);
     });
 }
 
@@ -586,15 +445,15 @@ function number_equations() {
     eqn_num = 1;
     $(".equation.numbered").each(function() {
         var eqn = $(this);
-        var num = eqn.children(".equation_number");
-        eqn.attr("eqn_num", eqn_num);
+        var num = eqn.children(".equation-number");
+        eqn.attr("eqn-num", eqn_num);
         num.html(eqn_num);
         eqn_num++;
     });
 }
 
 // for a hover event and scale factor (of the realized object), generate appropriate css
-function get_offset(parent,popup,event) {
+function get_offset(parent, popup, event) {
     var rects = parent[0].getClientRects();
     var mouseX = event.clientX;
     var mouseY = event.clientY;
@@ -613,17 +472,15 @@ function get_offset(parent,popup,event) {
     var pop_width = popup.outerWidth();
     var pop_height = popup.outerHeight();
 
-    console.log(elem_width, pop_width);
-
     var pos_x = 0.5*(elem_width-pop_width);
     var pos_y = -pop_height;
 
-    return {x:pos_x,y:pos_y};
+    return {x: pos_x, y: pos_y};
 };
 
 // attach a popup to parent
-function attach_popup(parent,popup) {
-    var pop_out = $("<div>", {class: "popup_outer"});
+function attach_popup(parent, popup) {
+    var pop_out = $("<div>", {class: "popup-outer"});
     pop_out.append(popup);
     parent.append(pop_out);
     pop_out.attr("shown", "false");
@@ -631,14 +488,14 @@ function attach_popup(parent,popup) {
         if (pop_out.attr("shown") == "false") {
             pop_out.attr("shown", "true");
             var offset = get_offset(parent, pop_out, event);
-            pop_out.css("left",offset.x).css("top",offset.y);
+            pop_out.css("left", offset.x).css("top", offset.y);
             pop_out.fadeIn(150);
         }
     }, function() {
         var tid = window.setTimeout(function() {
             pop_out.fadeOut(150);
             pop_out.attr("shown", "false");
-        },150);
+        }, 150);
         parent.mouseenter(function(event) {
             window.clearTimeout(tid);
         });
@@ -652,16 +509,16 @@ function resolve_references() {
         var label = ref.attr("target");
         var targ = $("#"+label);
         if (targ.hasClass("equation")) {
-            var eqn_num = targ.attr("eqn_num");
+            var eqn_num = targ.attr("eqn-num");
             ref.html("<a href=\"#" + label + "\">Equation " + eqn_num + "</a>");
             ref.removeClass("error");
-            var popup = $("<div>", {class: "popup eqn_popup", html: targ.children(".equation_inner").html()});
+            var popup = $("<div>", {class: "popup eqn-popup", html: targ.children(".equation-inner").html()});
             attach_popup(ref, popup);
-        } else if (targ.hasClass("section_title")) {
-            var sec_num = targ.attr("sec_num");
+        } else if (targ.hasClass("sec-title")) {
+            var sec_num = targ.attr("sec-num");
             ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
             ref.removeClass("error");
-            var popup = $("<div>", {class: "popup sec_popup", html: targ.html()});
+            var popup = $("<div>", {class: "popup sec-popup", html: targ.html()});
             attach_popup(ref, popup);
         } else {
             ref.html(label);
@@ -682,12 +539,8 @@ function number_footnotes() {
     });
 }
 
-function full_render() {
+function full_update() {
     console.log("rendering");
-    $("div.par").replaceWith(function() {
-        var par = $(this);
-        return make_para(par.html(), par.attr("cid"), par.attr("prev"), par.attr("next"), false, true);
-    });
     number_sections();
     number_equations();
     number_footnotes();
@@ -707,55 +560,44 @@ function initialize() {
     marquee.append(span);
 
     // topbar button handlers
-    $("#topbar_export").click(function() {
-        $("#topbar_slide").slideToggle("fast");
+    $("#topbar-export").click(function() {
+        $("#topbar-slide").slideToggle("fast");
         $(this).toggleClass("expanded");
     });
 
-    $("#topbar_markdown").click(function() {
+    $("#topbar-markdown").click(function() {
         window.location.replace("/markdown/"+path);
     });
 
-    $("#topbar_html").click(function() {
-        var edit = elltwo_box.hasClass("editing");
-        elltwo_box.removeClass("editing");
-        elltwo_box.addClass("nocontrol");
-        var ns = new XMLSerializer();
-        var html = ns.serializeToString(elltwo_box[0]);
-        var msg = JSON.stringify({"cmd": "html", "content": html});
-        console.log(msg);
-        ws.send(msg);
-        if (edit) {
-            elltwo_box.addClass("editing");
-        }
-        elltwo_box.removeClass("nocontrol");
+    $("#topbar-html").click(function() {
+        window.location.replace("/html/"+path);
     });
 
-    $("#topbar_latex").click(function() {
+    $("#topbar-latex").click(function() {
         window.location.replace("/latex/"+path);
     });
 
-    $("#topbar_pdf").click(function() {
+    $("#topbar-pdf").click(function() {
         window.location.replace("/pdf/"+path);
     });
 
-    $("#topbar_save").click(function() {
+    $("#topbar-save").click(function() {
         save_document();
     });
 
-    $("#topbar_revert").click(function() {
+    $("#topbar-revert").click(function() {
         var msg = JSON.stringify({"cmd": "revert", "content": ""});
         console.log(msg);
         ws.send(msg);
         elltwo_box.removeClass("modified");
     });
 
-    $("#topbar_reload").click(function() {
-        var msg = JSON.stringify({"cmd": "query", "content": ""});
+    $("#topbar-reload").click(function() {
+        var msg = JSON.stringify({"cmd": "fetch", "content": ""});
         ws.send(msg);
     });
 
-    $("#topbar_editing").click(function() {
+    $("#topbar-editing").click(function() {
         elltwo_box.toggleClass("editing");
     });
 
@@ -834,7 +676,7 @@ function initialize() {
                         return false;
                     }
                 }
-                if (!$(event.target).hasClass("para_inner")) {
+                if (!$(event.target).attr("contentEditable")) {
                     event.preventDefault();
                 }
             } else if (keyCode == 68) { // d
@@ -889,7 +731,7 @@ function connect(query)
     }
     if ("WebSocket" in window) {
         var ws_con = "ws://" + window.location.host + "/elledit/" + path;
-        console.log(ws_con);
+        // console.log(ws_con);
 
         ws = new WebSocket(ws_con);
 
@@ -897,7 +739,7 @@ function connect(query)
             console.log("websocket connected!");
             $("#canary").text("connected");
             if (query) {
-                var msg = JSON.stringify({"cmd": "query", "content": ""});
+                var msg = JSON.stringify({"cmd": "fetch", "content": ""});
                 ws.send(msg);
             }
             timeoutID = window.setTimeout(keep_alive, [freq]);
@@ -911,22 +753,21 @@ function connect(query)
             if (json_data) {
                 var cmd = json_data["cmd"];
                 var cont = json_data["content"];
-                if (cmd == "results") {
+                if (cmd == "fetch") {
                     var cells = json_data["content"];
-                    outer_box.children(".para_outer").remove();
+                    outer_box.empty();
                     for (i in cells) {
                         var c = cells[i];
-                        var div = $("<div>", {html: c["body"], class: "par"});
-                        div.attr("cid", c["cid"]);
-                        div.attr("prev", c["prev"]);
-                        div.attr("next", c["next"]);
-                        outer_box.append(div);
+                        var outer = make_para(c["text"], c["cid"], c["prev"], c["next"]);
+                        outer_box.append(outer);
+                        apply_render(c["cid"], c["html"], true);
                     }
-                    full_render();
-                    active = outer_box.children(".para_outer").first();
+                    full_update();
+                    active = outer_box.children(".cell").first().addClass("active");
                     active.addClass("active");
-                } else if (cmd == "html") {
-                    window.location.replace("/html/"+path);
+                } else if (cmd == "render") {
+                    var cont = json_data["content"];
+                    apply_render(cont["cid"], cont["html"], cont["defer"]);
                 }
             }
         };

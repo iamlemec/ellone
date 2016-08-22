@@ -22,12 +22,12 @@ parser.add_argument('--port', type=int, default=8500, help='port to serve on')
 parser.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
 parser.add_argument('--demo', action='store_true', help='run in demo mode')
 parser.add_argument('--auth', type=str, default=None)
-parser.add_argument('--local-katex', action='store_true', help='use local KaTeX instead of CDN')
+parser.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
 args = parser.parse_args()
 
 # others
 use_auth = not (args.demo or args.auth is None)
-local_katex = args.local_katex
+local_libs = args.local_libs
 tmp_dir = './temp'
 blank_doc = '#! Title\n\nBody text.'
 
@@ -171,7 +171,7 @@ class EditorHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self, path):
         (curdir, fname) = os.path.split(path)
-        self.render('editor.html', path=path, curdir=curdir, fname=fname, local_katex=local_katex)
+        self.render('editor.html', path=path, curdir=curdir, fname=fname, local_libs=local_libs)
 
 class MarkdownHandler(tornado.web.RequestHandler):
     @authenticated
@@ -294,6 +294,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         self.basename = get_base_name(self.fname)
         self.temppath = os.path.join(tmp_dir, self.fname)
         self.fullpath = os.path.join(args.path, path)
+        self.cells = read_cells(self.fullpath)
 
     def on_close(self):
         print('connection closing')
@@ -312,14 +313,22 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             print(e)
         data = json.loads(msg)
         (cmd, cont) = (data['cmd'], data['content'])
-        if cmd == 'query':
-            self.cells = read_cells(self.fullpath)
-            vcells = [{'cid': i, 'prev': c['prev'], 'next': c['next'], 'body': c['body']} for (i, c) in self.cells.items()]
-            self.write_message(json.dumps({'cmd': 'results', 'content': vcells}))
+        if cmd in ('fetch', 'revert'):
+            if cmd == 'revert':
+                self.cells = read_cells(self.fullpath)
+            vcells = [{'cid': i,
+                       'prev': c['prev'],
+                       'next': c['next'],
+                       'text': c['body'],
+                       'html': markdown.parse_cell(c['body']).html()
+                      } for (i, c) in self.cells.items()]
+            self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
         elif cmd == 'save':
             cid = int(cont['cid'])
             body = cont['body']
             self.cells[cid]['body'] = body
+            html = markdown.parse_cell(body).html()
+            self.write_message({'cmd': 'render', 'content': {'cid': cid, 'html': html}})
         elif cmd == 'create':
             newid = int(cont['newid'])
             prev = int(cont['prev'])
@@ -348,12 +357,6 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             self.cells = read_cells(self.fullpath)
             vcells = [{'cid': i, 'prev': c['prev'], 'next': c['next'], 'body': c['body']} for (i, c) in self.cells.items()]
             self.write_message(json.dumps({'cmd': 'results', 'content': vcells}))
-        elif cmd == 'html':
-            fname_html = '%s.html' % self.basename
-            path_html = os.path.join(tmp_dir, fname_html)
-            file_html = open(path_html, 'w+')
-            file_html.write(cont)
-            self.write_message(json.dumps({'cmd': 'html', 'content': ''}))
 
 class FileHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):

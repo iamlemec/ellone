@@ -57,7 +57,7 @@ class Paragraph:
         return ''.join([str(l) for l in self.elements])
 
     def html(self):
-        return '<p>\n%s\n</p>' % ''.join([html(l) for l in self.elements])
+        return '<p>%s</p>' % ''.join([html(l) for l in self.elements])
 
     def tex(self):
         return ''.join([tex(l) for l in self.elements])
@@ -89,7 +89,7 @@ class Title:
         return 'Title(text=%s)' % str(self.elements)
 
     def html(self):
-        return '<header>\n<h1 class="title">%s</h1>\n</header>' % html(self.elements)
+        return '<div class="doc-title">%s</div>' % html(self.elements)
 
     def tex(self):
         return '\\begin{center}\n{\LARGE \\bf %s}\n\\vspace*{0.8cm}\n\\end{center}' % tex(self.elements)
@@ -106,7 +106,7 @@ class Header:
         return 'Header(level=%d,text=%s)' % (self.level,str(self.elements))
 
     def html(self):
-        return '<section>\n\n<h%d class="title">%s</h2>' % (self.level,html(self.elements))
+        return '<div class="sec-title sec-lvl-%s" sec-lvl="%s">%s</div>' % (self.level,self.level,html(self.elements))
 
     def tex(self):
         return '\\%ssection{%s}' % ('sub'*(self.level-1),tex(self.elements))
@@ -122,7 +122,7 @@ class OrderedList:
         return 'OrderedList(items=[%s])' % ','.join(['%s' % str(r) for r in self.rows])
 
     def html(self):
-        return '<ol>\n%s\n</ol>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
+        return '<ol>%s</ol>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
 
     def tex(self):
         return '\\begin{enumerate}\n%s\n\\end{enumerate}' % '\n'.join(['\\item %s' % tex(r) for r in self.rows])
@@ -138,7 +138,7 @@ class UnorderedList:
         return 'UnorderedList(items=[%s])' % ','.join(['%s' % str(r) for r in self.rows])
 
     def html(self):
-        return '<ul>\n%s\n</ul>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
+        return '<ul>%s</ul>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
 
     def tex(self):
         return '\\begin{itemize}\n%s\n\\end{itemize}' % '\n'.join(['\\item %s' % tex(r) for r in self.rows])
@@ -156,9 +156,9 @@ class Image:
 
     def html(self):
         if self.cap is None:
-            return '<figure class="image">\n<img src="%s">\n</figure>' % self.src
+            return '<figure><img src="%s"/></figure>' % self.src
         else:
-            return '<figure class="image">\n<img src="%s">\n<figcaption>%s</figcaption>\n</figure>' % (self.src,html(self.cap))
+            return '<figure><img src="%s"/><figcaption>%s</figcaption>\n</figure>' % (self.src,html(self.cap))
 
     def tex(self):
         if self.cap is None:
@@ -179,9 +179,9 @@ class Equation:
 
     def html(self):
         if self.label is None:
-            return '<equation>\n%s\n</equation>' % self.math
+            return '<div class="equation">%s</div>' % self.math
         else:
-            return '<equation id="%s">\n%s\n</equation>' % (self.label,self.math)
+            return '<div class="equation numbered" id="%s">%s</div>' % (self.label,self.math)
 
     def tex(self):
         emath = re.sub(r'\\align(?![a-z])','&',escape_tex(self.math))
@@ -195,6 +195,22 @@ class Equation:
             return '$$ %s' % self.math
         else:
             return '$$ [%s] %s' % (self.math,self.label)
+
+class CodeBlock:
+    def __init__(self,text):
+        self.text = text
+
+    def __str__(self):
+        return 'CodeBlock(text=%s)' % self.text
+
+    def html(self):
+        return '<pre><code>%s</code></pre>' % self.text
+
+    def tex(self):
+        return '\\begin{lstlisting}\n%s\n\\end{lstlisting}' % tex(self.text)
+
+    def md(self):
+        return '`%s`' % self.text
 
 #
 # inline elements
@@ -241,7 +257,7 @@ class Bold:
         return 'Bold(text=%s)' % self.text
 
     def html(self):
-        return '<b>%s</b>' % self.text
+        return '<strong>%s</strong>' % self.text
 
     def tex(self):
         return '\\textbf{%s}' % tex(self.text)
@@ -257,7 +273,7 @@ class Ital:
         return 'Ital(text=%s)' % self.text
 
     def html(self):
-        return '<i>%s</i>' % self.text
+        return '<em>%s</em>' % self.text
 
     def tex(self):
         return '\\textit{%s}' % tex(self.text)
@@ -289,7 +305,7 @@ class Math:
         return 'Math(tex=%s)' % self.math
 
     def html(self):
-        return '$%s$' % self.math
+        return '<span class="latex">%s</span>' % self.math
 
     def tex(self):
         return '$%s$' % escape_tex(self.math)
@@ -305,7 +321,7 @@ class Reference:
         return 'Reference(targ=%s)' % self.targ
 
     def html(self):
-        return '<ref target="%s"></ref>' % self.targ
+        return '<span class="reference" target="%s"></span>' % self.targ
 
     def tex(self):
         return '\\Cref{%s}' % self.targ
@@ -321,7 +337,7 @@ class Footnote:
         return 'Footnote(text=%s)' % str(self.text)
 
     def html(self):
-        return '<footnote>%s</footnote>' % html(self.text)
+        return '<span class="footnote">%s</span>' % html(self.text)
 
     def tex(self):
         return '\\footnote{%s}' % tex(self.text)
@@ -334,7 +350,7 @@ class Footnote:
 #
 
 def unescape_markdown(s):
-    return re.sub(r'(?<!\\)\\(\[|\]|\(|\)|\*|\@)',r'\1',s)
+    return re.sub(r'(?<!\\)\\(\[|\]|\(|\)|\*|\@|`)',r'\1',s)
 
 class Lexer():
     states = (
@@ -516,6 +532,9 @@ def parse_cell(cell):
             else:
                 (label,tex) = (None,math)
             return Equation(tex.strip(),label)
+        elif cell.startswith('``'):
+            code = cell[2:].strip()
+            return CodeBlock(code)
         else:
             return Paragraph(parse_markdown(cell).elements)
     except:
@@ -536,20 +555,27 @@ html_template = """
 
 <head>
 
-<script src="http://doughanley.com/ellsworth/js/elltwo_load.js" type="text/javascript"></script>
-<script type="text/javascript">ElltwoAutoload();</script>
+<link rel="stylesheet" href="http://doughanley.com/ellsworth/css/elltwo_standalone.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
 
 </head>
 
-<body class="elltwo">
+<body id="elltwo">
 
-<div class="content">
+<span id="marquee"></span>
+
+<div id="content">
 
 %s
 
 </div>
 
+<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script src="http://doughanley.com/ellsworth/js/elltwo_standalone.js"></script>
+
 </body>
+
 </html>
 """[1:]
 
@@ -565,6 +591,7 @@ latex_template = """
 \\usepackage{graphicx}
 \\usepackage[colorlinks,linkcolor=blue]{hyperref}
 \\usepackage{cleveref}
+\\usepackage{listings}
 \\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
 
 \\Crefformat{equation}{#2Equation~#1#3}
@@ -585,13 +612,7 @@ def convert_html(text):
     cells = parse_doc(text)
     levels = []
     for cell in cells.cells:
-        if type(cell) is Header:
-            last = levels[-1] if len(levels) > 0 else 0
-            if cell.level <= last:
-                levels.pop()
-                body += section_end + '\n\n'
-            levels.append(cell.level)
-        body += html(cell) + '\n\n'
+        body += '<div class="cell">\n' + html(cell) + '\n</div>' + '\n\n'
     ret = html_template % body.rstrip()
     return ret
 
