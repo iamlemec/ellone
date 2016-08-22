@@ -47,6 +47,19 @@ a:visited {
     color: blue;
 }
 
+/* general cells */
+
+.cell {
+    position: relative;
+    margin-top: 10px;
+    border-left: 1px solid white;
+    border-right: 1px solid white;
+    padding-left: 7px;
+    padding-right: 30px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
 /* paragraph cells */
 
 .cell p {
@@ -61,35 +74,6 @@ a:visited {
     margin-right: 0px;
     margin-top: 0px;
     margin-bottom: 0px;
-}
-
-.cell.editing {
-    border-right: 1px solid rgb(53, 122, 232) !important;
-}
-
-.cell.modified {
-    border-right: 1px solid red !important;
-}
-
-.cell {
-    position: relative;
-    margin-top: 10px;
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    padding-left: 7px;
-    padding-right: 30px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-}
-
-.cell.editing {
-    text-align: left;
-    font-family: monospace;
-    font-size: 15px;
-}
-
-#elltwo.editing .cell.active {
-    border-left: 1px solid #CCC;
 }
 
 /* equations */
@@ -181,10 +165,6 @@ pre > code {
     content: attr(sec-num) " ";
 }
 
-.cell.editing .sec-title:before {
-    content: "";
-}
-
 /* popups */
 
 .popup-outer {
@@ -265,64 +245,6 @@ pre > code {
     left: 96px;
 }
 
-/* top toolbar */
-
-#topbar {
-    position: fixed;
-    right: 10px;
-}
-
-#elltwo.nocontrol #topbar {
-    display: none;
-}
-
-#topbar-control {
-    float: right;
-}
-
-.topbar-button {
-    cursor: default;
-    text-align: right;
-    font-size: 15px;
-    font-weight: 400;
-    background-color: rgb(53, 122, 232);
-    color: white;
-    width: 61px;
-    border-radius: 2px;
-    padding: 0px 6px 2px 6px;
-}
-
-#topbar-export.expanded {
-    background-color: #666;
-}
-
-#topbar-slide {
-    display: none;
-    margin-top: 3px;
-}
-
-.topbar-dropdown {
-    float: right;
-    clear: both;
-    margin-top: 2px;
-}
-
-#elltwo:not(.modified) #topbar-save {
-    display: none;
-}
-
-#elltwo:not(.modified) #topbar-revert {
-    display: none;
-}
-
-#elltwo:not(.editing) #topbar-editing {
-    background-color: #666;
-}
-
-#elltwo.modified #topbar-reload {
-    display: none;
-}
-
 /* theme */
 
 #marquee {
@@ -333,29 +255,7 @@ pre > code {
     left: 10px;
 }
 
-#canary {
-    position: fixed;
-    font-family: monospace;
-    font-size: 14px;
-    left: 60px;
-    top: 10px;
-}
-
-#help {
-    position: fixed;
-    top: 50px;
-    display: none;
-}
-
-#help > pre {
-    font-size: 12px;
-    background-color: white;
-    color: #333;
-    padding: 0px;
-    cursor: default;
-}
-
-.doc-title {
+.title {
     font-size: 35px;
     font-weight: 600;
     text-align: center !important;
