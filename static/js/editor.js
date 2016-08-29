@@ -34,6 +34,10 @@ function strip_tags(html) {
                .replace(/<\/span>/g, "");
 };
 
+function add_tags(html) {
+    return html.replace(/\n/g, "<br>");
+}
+
 function escape_html(text) {
     return text.replace(/</g, "&lt;")
                .replace(/>/g, "&gt;");
@@ -378,7 +382,8 @@ function freeze_cell(outer) {
 function unfreeze_cell(outer) {
     var base = outer.attr("base-text");
     var text = escape_html(base);
-    var inner = $("<div>", {html: text, contentEditable: true});
+    var html = add_tags(text);
+    var inner = $("<div>", {html: html, contentEditable: true});
     outer.addClass("editing");
     outer.empty();
     outer.append(inner);
