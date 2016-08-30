@@ -638,3 +638,40 @@ def convert_latex(text):
         pt = t
     ret = latex_template % body
     return ret
+
+# utility stuff
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Elltwo Converter.')
+    parser.add_argument('input', type=str, help='input elltwo file')
+    parser.add_argument('output', type=str, nargs='?', default=None, help='output file')
+    parser.add_argument('--to', type=str, help='output format: tex, html')
+    args = parser.parse_args()
+
+    fname_inp = args.input
+    out_format = args.to
+    if args.output is not None:
+        fname_out = args.output
+        if out_format is None:
+            (base, ext) = os.path.splitext(fname_out)
+            out_format = ext[1:]
+    else:
+        if out_format is None:
+            raise('Must specify either output filename or output format')
+        (base, ext) = os.path.splitext(fname_inp)
+        fname_out = '%s%s%s' % (base, os.path.extsep, out_format)
+
+    print('converting %s to %s using %s' % (fname_inp, fname_out, out_format))
+
+    with open(fname_inp) as fin:
+        mark = fin.read()
+
+    if out_format == 'tex':
+        outp = convert_latex(mark)
+    elif out_format == 'html':
+        outp = convert_html(mark)
+    else:
+        raise('Unrecognized output format')
+
+    with open(fname_out, 'w+') as fout:
+        fout.write(outp)
