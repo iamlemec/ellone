@@ -182,7 +182,8 @@ return {
         resolve_references();
 
         // optional marquee box
-        if (marquee=$("#marquee")) {
+        var marquee = $("#marquee");
+        if (marquee.length > 0) {
             var span = $("<span>", {class: "latex"});
             katex.render("\\ell^2", span[0], {throwOnError: false});
             marquee.append(span);
