@@ -2,6 +2,7 @@
 
 import os
 import re
+import sys
 from ply import lex, yacc
 
 # top level functions
@@ -70,7 +71,7 @@ class Error:
         self.text = text
 
     def __str__(self):
-        return 'Error(text=%s)' % self.text
+        return 'Error(text="%s")' % self.text
 
     def html(self):
         return '<span style="color: red">%s</span>' % self.text
@@ -86,7 +87,7 @@ class Title:
         self.elements = elements
 
     def __str__(self):
-        return 'Title(text=%s)' % str(self.elements)
+        return 'Title(text="%s")' % str(self.elements)
 
     def html(self):
         return '<div class="doc-title">%s</div>' % html(self.elements)
@@ -103,7 +104,7 @@ class Header:
         self.level = level
 
     def __str__(self):
-        return 'Header(level=%d,text=%s)' % (self.level,str(self.elements))
+        return 'Header(level="%d",text="%s")' % (self.level,str(self.elements))
 
     def html(self):
         return '<div class="sec-title sec-lvl-%s" sec-lvl="%s">%s</div>' % (self.level,self.level,html(self.elements))
@@ -119,7 +120,7 @@ class OrderedList:
         self.rows = rows
 
     def __str__(self):
-        return 'OrderedList(items=[%s])' % ','.join(['%s' % str(r) for r in self.rows])
+        return 'OrderedList(items=[%s])' % ','.join(['"%s"' % str(r) for r in self.rows])
 
     def html(self):
         return '<ol>%s</ol>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
@@ -135,7 +136,7 @@ class UnorderedList:
         self.rows = rows
 
     def __str__(self):
-        return 'UnorderedList(items=[%s])' % ','.join(['%s' % str(r) for r in self.rows])
+        return 'UnorderedList(items=[%s])' % ','.join(['"%s"' % str(r) for r in self.rows])
 
     def html(self):
         return '<ul>%s</ul>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
@@ -152,7 +153,7 @@ class Image:
         self.cap = cap
 
     def __str__(self):
-        return 'Image(src=%s,caption=%s)' % (self.src,str(self.cap) if self.cap is not None else '')
+        return 'Image(src="%s",caption="%s")' % (self.src,str(self.cap) if self.cap is not None else '')
 
     def html(self):
         if self.cap is None:
@@ -175,7 +176,7 @@ class Equation:
         self.label = label
 
     def __str__(self):
-        return 'Equation(tex=%s,label=%s)' % (self.math,self.label if self.label is not None else '')
+        return 'Equation(tex="%s",label="%s")' % (self.math,self.label if self.label is not None else '')
 
     def html(self):
         if self.label is None:
@@ -201,7 +202,7 @@ class CodeBlock:
         self.text = text
 
     def __str__(self):
-        return 'CodeBlock(text=%s)' % self.text
+        return 'CodeBlock(text="%s")' % self.text
 
     def html(self):
         return '<pre><code>%s</code></pre>' % self.text
@@ -238,7 +239,7 @@ class Link:
         self.text = text
 
     def __str__(self):
-        return 'Link(href=%s,content=%s)' % (self.href,str(self.text))
+        return 'Link(href="%s",content="%s")' % (self.href,str(self.text))
 
     def html(self):
         return '<a href="%s">%s</a>' % (self.href,html(self.text))
@@ -254,7 +255,7 @@ class Bold:
         self.text = text
 
     def __str__(self):
-        return 'Bold(text=%s)' % self.text
+        return 'Bold(text="%s")' % self.text
 
     def html(self):
         return '<strong>%s</strong>' % self.text
@@ -270,7 +271,7 @@ class Ital:
         self.text = text
 
     def __str__(self):
-        return 'Ital(text=%s)' % self.text
+        return 'Ital(text="%s")' % self.text
 
     def html(self):
         return '<em>%s</em>' % self.text
@@ -286,7 +287,7 @@ class Code:
         self.text = text
 
     def __str__(self):
-        return 'Code(text=%s)' % self.text
+        return 'Code(text="%s")' % self.text
 
     def html(self):
         return '<code>%s</code>' % self.text
@@ -302,7 +303,7 @@ class Math:
         self.math = math
 
     def __str__(self):
-        return 'Math(tex=%s)' % self.math
+        return 'Math(tex="%s")' % self.math
 
     def html(self):
         return '<span class="latex">%s</span>' % self.math
@@ -318,7 +319,7 @@ class Reference:
         self.targ = targ
 
     def __str__(self):
-        return 'Reference(targ=%s)' % self.targ
+        return 'Reference(targ="%s")' % self.targ
 
     def html(self):
         return '<span class="reference" target="%s"></span>' % self.targ
@@ -334,7 +335,7 @@ class Footnote:
         self.text = text
 
     def __str__(self):
-        return 'Footnote(text=%s)' % str(self.text)
+        return 'Footnote(text="%s")' % str(self.text)
 
     def html(self):
         return '<span class="footnote">%s</span>' % html(self.text)
@@ -423,8 +424,8 @@ class Yaccer():
         p[0] = [p[1]]
 
     def p_elements2(self,p):
-        """elements : element elements"""
-        p[0] = [p[1]] + p[2]
+        """elements : elements element"""
+        p[0] = p[1] + [p[2]]
 
     def p_element(self,p):
         """element : ital
@@ -643,35 +644,42 @@ def convert_latex(text):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Elltwo Converter.')
-    parser.add_argument('input', type=str, help='input elltwo file')
+    parser.add_argument('input', type=str, nargs='?', default=None, help='input elltwo file')
     parser.add_argument('output', type=str, nargs='?', default=None, help='output file')
     parser.add_argument('--to', type=str, help='output format: tex, html')
     args = parser.parse_args()
 
     fname_inp = args.input
+    fname_out = args.output
     out_format = args.to
-    if args.output is not None:
-        fname_out = args.output
+    if fname_out is not None:
         if out_format is None:
             (base, ext) = os.path.splitext(fname_out)
             out_format = ext[1:]
     else:
-        if out_format is None:
-            raise('Must specify either output filename or output format')
-        (base, ext) = os.path.splitext(fname_inp)
-        fname_out = '%s%s%s' % (base, os.path.extsep, out_format)
+        if fname_inp is not None:
+            (base, ext) = os.path.splitext(fname_inp)
+            fname_out = '%s%s%s' % (base, os.path.extsep, out_format)
 
-    print('converting %s to %s using %s' % (fname_inp, fname_out, out_format))
+    # print('converting %s to %s using %s' % (fname_inp, fname_out, out_format))
 
-    with open(fname_inp) as fin:
-        mark = fin.read()
+    if fname_inp is not None:
+        with open(fname_inp) as fin:
+            mark = fin.read()
+    else:
+        mark = sys.stdin.read()
 
     if out_format == 'tex':
         outp = convert_latex(mark)
     elif out_format == 'html':
         outp = convert_html(mark)
+    elif out_format is None:
+        outp = str(parse_doc(mark))
     else:
         raise('Unrecognized output format')
 
-    with open(fname_out, 'w+') as fout:
-        fout.write(outp)
+    if fname_out is not None:
+        with open(fname_out, 'w+') as fout:
+            fout.write(outp)
+    else:
+        print(outp)
