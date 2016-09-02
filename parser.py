@@ -564,7 +564,7 @@ html_template = """
 
 <body id="elltwo">
 
-<span id="marquee"></span>
+<!-- <span id="marquee"></span> -->
 
 <div id="content">
 
