@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import shutil
 from ply import lex, yacc
 
 # top level functions
@@ -527,7 +528,7 @@ def parse_cell(cell):
             return Image(fname,cap)
         elif cell.startswith('$$'):
             math = cell[2:].strip()
-            ret = re.match(r'\[([^\]]*)\](.*)',math)
+            ret = re.match(r'\[([^\]]*)\](.*)', math, flags=re.DOTALL)
             if ret:
                 (label,tex) = ret.groups()
             else:
@@ -538,7 +539,7 @@ def parse_cell(cell):
             return CodeBlock(code)
         else:
             return Paragraph(parse_markdown(cell).elements)
-    except:
+    except Exception as e:
         return Error(cell)
 
 def parse_doc(text):
@@ -623,12 +624,17 @@ def convert_markdown(text):
     return ret
 
 def convert_latex(text):
-    text = re.sub(r'([%&])',r'\\\1',text)
+    text = re.sub(r'([%&])', r'\\\1', text)
     cells = parse_doc(text).cells
-    pt = None
+
     body = ''
+    images = []
+
+    pt = None
     for c in cells:
         t = type(c)
+
+        # paragraph equation interplay
         if pt is None:
             pref = ''
         elif ((t is Equation) and ((pt is Paragraph) or (pt is Equation))) or ((t is Paragraph) and (pt is Equation)):
@@ -636,9 +642,15 @@ def convert_latex(text):
         else:
             pref = '\n\n'
         body += pref + tex(c)
+
+        # image storing
+        if t is Image:
+            images.append(c.src)
+
         pt = t
-    ret = latex_template % body
-    return ret
+
+    latex = latex_template % body
+    return (latex, images)
 
 # utility stuff
 if __name__ == '__main__':

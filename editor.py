@@ -8,6 +8,7 @@ from operator import itemgetter
 from collections import namedtuple
 import codecs
 import random
+from subprocess import call
 
 import tornado.ioloop
 import tornado.web
@@ -236,22 +237,21 @@ class PdfHandler(tornado.web.RequestHandler):
         # generate latex
         fid = open(fullpath, 'r')
         text = fid.read()
-        # (latex, images) = markdown.convert_latex(text)
-        latex = markdown.convert_latex(text)
+        (latex, images) = markdown.convert_latex(text)
 
         # copy over images
-        # for img in images:
-        #     ret = re.search(r'(^|:)//(.*)', img)
-        #     if ret:
-        #         (rloc, ) = ret.groups()
-        #         (_, rname) = os.path.split(rloc)
-        #         urllib.urlretrieve(url, os.path.join(tmp_dir, rname))
-        #     else:
-        #         if img[0] == '/':
-        #             ipath = img[1:]
-        #         else:
-        #             ipath = os.path.join(rdir, img)
-        #         shutil.copy(os.path.join(args.path, ipath), tmp_dir)
+        for img in images:
+            ret = re.search(r'(^|:)//(.*)', img)
+            if ret:
+                (rloc, ) = ret.groups()
+                (_, rname) = os.path.split(rloc)
+                urllib.urlretrieve(url, os.path.join(tmp_dir, rname))
+            else:
+                if img[0] == '/':
+                    ipath = img[1:]
+                else:
+                    ipath = os.path.join(rdir, img)
+                shutil.copy(os.path.join(args.path, ipath), tmp_dir)
 
         ret = re.match(r'(.*)\.md', fname)
         if ret:
@@ -265,10 +265,9 @@ class PdfHandler(tornado.web.RequestHandler):
         ftex.close()
 
         cwd = os.getcwd()
-        cmd = 'pdflatex -interaction=nonstopmode %s' % fname_tex
         os.chdir(tmp_dir)
-        os.system(cmd)
-        os.system(cmd) # to resolve references
+        call(['pdflatex','-interaction=nonstopmode',fname_tex])
+        call(['pdflatex','-interaction=nonstopmode',fname_tex]) # to resolve references
         os.chdir(cwd)
 
         fname_pdf = '%s.pdf' % fname_new
@@ -352,7 +351,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             fid = codecs.open(self.temppath, 'w+', encoding='utf-8')
             fid.write(output)
             fid.close()
-            os.system('mv %s %s' % (self.temppath, self.fullpath))
+            shutil.move(self.temppath, self.fullpath)
         elif cmd == 'revert':
             self.cells = read_cells(self.fullpath)
             vcells = [{'cid': i, 'prev': c['prev'], 'next': c['next'], 'body': c['body']} for (i, c) in self.cells.items()]
