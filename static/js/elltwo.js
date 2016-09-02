@@ -23,9 +23,8 @@ function apply_render(box) {
     });
 
     // typeset disyplay equations
-    box.find(".equation").each(function() {
-        var eqn = $(this);
-        var src = eqn.text();
+    if (box.hasClass("equation")) {
+        var src = box.text();
 
         var num_div = $("<div>", {class: "equation-number"});
         var div_inner = $("<div>", {class: "equation-inner"});
@@ -33,10 +32,10 @@ function apply_render(box) {
         var tex = "\\begin{aligned}\n" + src + "\n\\end{aligned}";
         katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
 
-        eqn.html("");
-        eqn.append(num_div);
-        eqn.append(div_inner);
-    });
+        box.html("");
+        box.append(num_div);
+        box.append(div_inner);
+    }
 
     // encapsulate in cell
     var cell = $("<div>", {class: "cell"});

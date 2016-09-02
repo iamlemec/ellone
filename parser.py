@@ -160,7 +160,7 @@ class Image:
         if self.cap is None:
             return '<figure><img src="%s"/></figure>' % self.src
         else:
-            return '<figure><img src="%s"/><figcaption>%s</figcaption>\n</figure>' % (self.src,html(self.cap))
+            return '<figure><img src="%s"/><figcaption>%s</figcaption></figure>' % (self.src,html(self.cap))
 
     def tex(self):
         if self.cap is None:
@@ -612,10 +612,8 @@ latex_template = """
 def convert_html(text):
     body = ''
     cells = parse_doc(text)
-    levels = []
-    for cell in cells.cells:
-        body += '<div class="cell">\n' + html(cell) + '\n</div>' + '\n\n'
-    ret = html_template % body.rstrip()
+    body = html(cells)
+    ret = html_template % body
     return ret
 
 def convert_markdown(text):
@@ -649,8 +647,8 @@ def convert_latex(text):
 
         pt = t
 
-    latex = latex_template % body
-    return (latex, images)
+    ret = latex_template % body
+    return (ret, images)
 
 # utility stuff
 if __name__ == '__main__':

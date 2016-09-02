@@ -14,17 +14,17 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
-import markdown
+import parser
 
 # parse input arguments
-parser = argparse.ArgumentParser(description='Elltwo Server.')
-parser.add_argument('--path', type=str, default='testing', help='path for markdown files')
-parser.add_argument('--port', type=int, default=8500, help='port to serve on')
-parser.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
-parser.add_argument('--demo', action='store_true', help='run in demo mode')
-parser.add_argument('--auth', type=str, default=None)
-parser.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
-args = parser.parse_args()
+ap = argparse.ArgumentParser(description='Elltwo Server.')
+ap.add_argument('--path', type=str, default='testing', help='path for markdown files')
+ap.add_argument('--port', type=int, default=8500, help='port to serve on')
+ap.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
+ap.add_argument('--demo', action='store_true', help='run in demo mode')
+ap.add_argument('--auth', type=str, default=None)
+ap.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
+args = ap.parse_args()
 
 # others
 use_auth = not (args.demo or args.auth is None)
@@ -194,7 +194,7 @@ class HtmlHandler(tornado.web.RequestHandler):
         fullpath = os.path.join(args.path, rpath)
         fid = open(fullpath, 'r')
         text = fid.read()
-        html = markdown.convert_html(text)
+        html = parser.convert_html(text)
 
         ret = re.match(r'(.*)\.md', fname)
         if ret:
@@ -214,8 +214,7 @@ class LatexHandler(tornado.web.RequestHandler):
         fullpath = os.path.join(args.path, rpath)
         fid = open(fullpath, 'r')
         text = fid.read()
-        # (latex, images) = markdown.convert_latex(text)
-        latex = markdown.convert_latex(text)
+        (latex, images) = parser.convert_latex(text)
 
         ret = re.match(r'(.*)\.md', fname)
         if ret:
@@ -237,7 +236,7 @@ class PdfHandler(tornado.web.RequestHandler):
         # generate latex
         fid = open(fullpath, 'r')
         text = fid.read()
-        (latex, images) = markdown.convert_latex(text)
+        (latex, images) = parser.convert_latex(text)
 
         # copy over images
         for img in images:
@@ -319,14 +318,14 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
                        'prev': c['prev'],
                        'next': c['next'],
                        'text': c['body'],
-                       'html': markdown.parse_cell(c['body']).html()
+                       'html': parser.parse_cell(c['body']).html()
                       } for (i, c) in self.cells.items()]
             self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
         elif cmd == 'save':
             cid = int(cont['cid'])
             body = cont['body']
             self.cells[cid]['body'] = body
-            html = markdown.parse_cell(body).html()
+            html = parser.parse_cell(body).html()
             self.write_message({'cmd': 'render', 'content': {'cid': cid, 'html': html}})
         elif cmd == 'create':
             newid = int(cont['newid'])
