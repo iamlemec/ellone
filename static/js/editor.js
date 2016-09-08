@@ -186,7 +186,6 @@ function resolve_url(url) {
                 url = "/" + curdir + "/" + url;
             }
         }
-        url = "/local" + url;
     }
     return url;
 }

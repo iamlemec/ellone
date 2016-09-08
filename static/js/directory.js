@@ -1,9 +1,9 @@
 // Elltwo editor
 
-function make_entry(type,target,name) {
+function make_entry(type,name) {
   var entry = $("<div>",{class:"entry"});
   entry.addClass(type);
-  var href = "/" + target + "/" + relpath + name;
+  var href = "/" + relpath + name;
   var link = $("<a>",{href:href,html:name});
   entry.append(link);
   var del = $("<div>",{class:"delbox",html:"&#x2715;"});
@@ -48,15 +48,15 @@ function connect()
           $(".directory .entry.doc").remove();
           $(".directory .entry.misc").remove();
           $(cont['dirs']).each(function (i,name) {
-            var entry = make_entry("dir","directory",name);
+            var entry = make_entry("dir",name);
             entry.insertBefore(tools);
           });
           $(cont['docs']).each(function (i,name) {
-            var entry = make_entry("doc","editor",name);
+            var entry = make_entry("doc",name);
             entry.insertBefore(tools);
           });
           $(cont['misc']).each(function (i,name) {
-            var entry = make_entry("misc","local",name);
+            var entry = make_entry("misc",name);
             entry.insertBefore(tools);
           });
         }

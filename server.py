@@ -4,6 +4,7 @@ import sys
 import re
 import json
 import argparse
+import mimetypes
 from operator import itemgetter
 from collections import namedtuple
 import codecs
@@ -29,8 +30,11 @@ args = ap.parse_args()
 # others
 use_auth = not (args.demo or args.auth is None)
 local_libs = args.local_libs
-tmp_dir = './temp'
+tmp_dir = 'temp'
 blank_doc = '#! Title\n\nBody text.'
+
+# randomization
+rand_hex = lambda: hex(random.getrandbits(128))[2:].zfill(32)
 
 # authentication
 if use_auth:
@@ -141,11 +145,24 @@ class BrowseHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('directory.html', relpath='', dirname='', pardir='', demo=args.demo)
 
-class DirectoryHandler(tornado.web.RequestHandler):
+class PathHandler(tornado.web.RequestHandler):
     @authenticated
-    def get(self, targ):
-        (pardir, dirname) = os.path.split(targ)
-        self.render('directory.html', relpath=targ, dirname=dirname, pardir=pardir, demo=args.demo)
+    def get(self, path):
+        (pardir, fname) = os.path.split(path)
+        fpath = os.path.join(args.path, path)
+        if os.path.isdir(fpath):
+            self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=args.demo)
+        elif os.path.isfile(fpath):
+            if fname.endswith('.md'):
+                self.render('editor.html', path=path, curdir=pardir, fname=fname, local_libs=local_libs)
+            else:
+                (mime_type, encoding) = mimetypes.guess_type(path)
+                if mime_type:
+                    self.set_header("Content-Type", mime_type)
+                fid = open(fpath, 'rb')
+                self.write(fid.read())
+        else:
+            self.write('File %s not found!' % path)
 
 class UploadHandler(tornado.web.RequestHandler):
     @authenticated
@@ -161,27 +178,24 @@ class UploadHandler(tornado.web.RequestHandler):
 
 class DemoHandler(tornado.web.RequestHandler):
     def get(self):
-        drand = '%s' % hex(random.getrandbits(128))[2:]
+        drand = rand_hex()
         fullpath = os.path.join(args.path, drand)
         os.mkdir(fullpath)
         shutil.copy(os.path.join('testing', 'demo.md'), fullpath)
         shutil.copy(os.path.join('testing', 'Jahnke_gamma_function.png'), fullpath)
-        self.redirect('/directory/%s' % drand)
-
-class EditorHandler(tornado.web.RequestHandler):
-    @authenticated
-    def get(self, path):
-        (curdir, fname) = os.path.split(path)
-        self.render('editor.html', path=path, curdir=curdir, fname=fname, local_libs=local_libs)
+        self.redirect('/%s' % drand)
 
 class MarkdownHandler(tornado.web.RequestHandler):
     @authenticated
     def post(self, rpath):
         (curdir, fname) = os.path.split(rpath)
         fullpath = os.path.join(args.path, rpath)
+
+        # read source
         fid = open(fullpath, 'r')
         text = fid.read()
 
+        # post output
         self.set_header('Content-Type', 'text/markdown')
         self.set_header('Content-Disposition', 'attachment; filename=%s' % fname)
         self.write(text)
@@ -192,17 +206,21 @@ class HtmlHandler(tornado.web.RequestHandler):
     def post(self, rpath):
         (curdir, fname) = os.path.split(rpath)
         fullpath = os.path.join(args.path, rpath)
+
+        # generate html
         fid = open(fullpath, 'r')
         text = fid.read()
         html = parser.convert_html(text)
 
+        # find new name
         ret = re.match(r'(.*)\.md', fname)
         if ret:
             fname_new = ret.group(1)
         else:
             fname_new = fname
 
-        self.set_header('Content-Type', 'text/latex')
+        # post output
+        self.set_header('Content-Type', 'text/html')
         self.set_header('Content-Disposition', 'attachment; filename=%s.html' % fname_new)
         self.write(html)
     get = post
@@ -212,16 +230,20 @@ class LatexHandler(tornado.web.RequestHandler):
     def post(self, rpath):
         (curdir, fname) = os.path.split(rpath)
         fullpath = os.path.join(args.path, rpath)
+
+        # generate latex
         fid = open(fullpath, 'r')
         text = fid.read()
         (latex, images) = parser.convert_latex(text)
 
+        # find new name
         ret = re.match(r'(.*)\.md', fname)
         if ret:
             fname_new = ret.group(1)
         else:
             fname_new = fname
 
+        # post output
         self.set_header('Content-Type', 'text/latex')
         self.set_header('Content-Disposition', 'attachment; filename=%s.tex' % fname_new)
         self.write(latex)
@@ -238,41 +260,53 @@ class PdfHandler(tornado.web.RequestHandler):
         text = fid.read()
         (latex, images) = parser.convert_latex(text)
 
+        # create unique directory
+        comp_dir = os.path.join(tmp_dir, rand_hex())
+        os.mkdir(comp_dir)
+
         # copy over images
         for img in images:
             ret = re.search(r'(^|:)//(.*)', img)
             if ret:
                 (rloc, ) = ret.groups()
                 (_, rname) = os.path.split(rloc)
-                urllib.urlretrieve(url, os.path.join(tmp_dir, rname))
+                urllib.urlretrieve(url, os.path.join(comp_dir, rname))
             else:
                 if img[0] == '/':
                     ipath = img[1:]
                 else:
                     ipath = os.path.join(rdir, img)
-                shutil.copy(os.path.join(args.path, ipath), tmp_dir)
+                shutil.copy(os.path.join(args.path, ipath), comp_dir)
 
+        # find new name
         ret = re.match(r'(.*)\.md', fname)
         if ret:
             fname_new = ret.group(1)
         else:
             fname_new = fname
 
+        # write latex file
         fname_tex = '%s.tex' % fname_new
-        ftex = open(os.path.join(tmp_dir, fname_tex), 'w+')
+        ftex = open(os.path.join(comp_dir, fname_tex), 'w+')
         ftex.write(latex)
         ftex.close()
 
+        # compile latex file
         cwd = os.getcwd()
-        os.chdir(tmp_dir)
-        call(['pdflatex','-interaction=nonstopmode',fname_tex])
-        call(['pdflatex','-interaction=nonstopmode',fname_tex]) # to resolve references
+        os.chdir(comp_dir)
+        call(['pdflatex', '-interaction=nonstopmode', fname_tex])
+        call(['pdflatex', '-interaction=nonstopmode', fname_tex]) # to resolve references
         os.chdir(cwd)
 
+        # read latex file
         fname_pdf = '%s.pdf' % fname_new
-        fpdf = open(os.path.join(tmp_dir, fname_pdf), 'rb')
+        fpdf = open(os.path.join(comp_dir, fname_pdf), 'rb')
         data = fpdf.read()
 
+        # remove compilation directory
+        shutil.rmtree(comp_dir)
+
+        # post output
         self.set_header('Content-Type', 'application/pdf')
         self.set_header('Content-Disposition', 'attachment; filename=%s' % fname_pdf)
         self.write(data)
@@ -426,30 +460,28 @@ class FileHandler(tornado.websocket.WebSocketHandler):
 # tornado content handlers
 class Application(tornado.web.Application):
     def __init__(self):
-        if args.demo:
-            handlers = [
-                (r'/?', DemoHandler),
-                (r'/directory/(.+)', DirectoryHandler)
-            ]
-        else:
-            handlers = [
-                (r'/?', BrowseHandler),
-                (r'/directory/(.*)', DirectoryHandler)
-            ]
-
-        handlers += [
+        handlers = [
             (r'/auth/login/?', AuthLoginHandler),
             (r'/auth/logout/?', AuthLogoutHandler),
             (r'/upload/(.*)', UploadHandler),
-            (r'/editor/(.+)', EditorHandler),
             (r'/markdown/(.+)', MarkdownHandler),
             (r'/html/(.+)', HtmlHandler),
             (r'/latex/(.+)', LatexHandler),
             (r'/pdf/(.+)', PdfHandler),
             (r'/elledit/(.*)', ContentHandler),
-            (r'/diredit/(.*)', FileHandler),
-            (r'/local/(.*)', tornado.web.StaticFileHandler, {'path': args.path}),
+            (r'/diredit/(.*)', FileHandler)
         ]
+
+        if args.demo:
+            handlers += [
+                (r'/?', DemoHandler),
+                (r'/(.+)', PathHandler),
+            ]
+        else:
+            handlers += [
+                (r'/?', BrowseHandler),
+                (r'/(.*)', PathHandler)
+            ]
 
         settings = dict(
             app_name='Elltwo Editor',
