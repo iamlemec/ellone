@@ -153,7 +153,7 @@ class PathHandler(tornado.web.RequestHandler):
         if os.path.isdir(fpath):
             self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=args.demo)
         elif os.path.isfile(fpath):
-            if fname.endswith('.md'):
+            if fname.endswith('.md') or '.' not in fname:
                 self.render('editor.html', path=path, curdir=pardir, fname=fname, local_libs=local_libs)
             else:
                 (mime_type, encoding) = mimetypes.guess_type(path)
