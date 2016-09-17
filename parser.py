@@ -9,11 +9,11 @@ from ply import lex, yacc
 # top level functions
 
 def escape_latex(s):
-    s = re.sub(r'([#])',r'\\\1',s)
+    s = re.sub(r'([#&%])',r'\\\1',s)
     s = re.sub(r'\^',r'\\textasciicircum',s)
     return s
 
-def escape_tex(s):
+def escape_math(s):
     s = re.sub(r'\\gt(?![a-z])','>',s)
     s = re.sub(r'\\lt(?![a-z])','<',s)
     return s
@@ -186,7 +186,7 @@ class Equation:
             return '<div class="equation numbered" id="%s">%s</div>' % (self.label,self.math)
 
     def tex(self):
-        emath = re.sub(r'\\align(?![a-z])','&',escape_tex(self.math))
+        emath = escape_math(self.math)
         if self.label is None:
             return '\\begin{align*}\n%s\n\\end{align*}' % emath
         else:
@@ -310,7 +310,7 @@ class Math:
         return '<span class="latex">%s</span>' % self.math
 
     def tex(self):
-        return '$%s$' % escape_tex(self.math)
+        return '$%s$' % escape_math(self.math)
 
     def md(self):
         return '$%s$' % self.math
@@ -622,7 +622,6 @@ def convert_markdown(text):
     return ret
 
 def convert_latex(text):
-    text = re.sub(r'([%&])', r'\\\1', text)
     cells = parse_doc(text).cells
 
     body = ''
