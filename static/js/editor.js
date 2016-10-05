@@ -297,8 +297,10 @@ function create_cell(cell, edit) {
     // activate cell
     activate_cell(outer);
 
-    // place caret inside
-    set_caret_at_end(outer);
+    // place caret inside if editing
+    if (edit) {
+        set_caret_at_end(outer);
+    }
 
     // notify server
     var msg = JSON.stringify({"cmd": "create", "content": {"newid": newid, "prev": prev, "next": next}});
