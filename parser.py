@@ -421,11 +421,11 @@ class Yaccer():
         self.tokens = lexmod.tokens
 
     def p_elements1(self,p):
-        """elements : element"""
+        "elements : element"
         p[0] = [p[1]]
 
     def p_elements2(self,p):
-        """elements : elements element"""
+        "elements : elements element"
         p[0] = p[1] + [p[2]]
 
     def p_element(self,p):
@@ -442,11 +442,11 @@ class Yaccer():
         p[0] = p[1]
 
     def p_mblock(self,p):
-        """mblock : math TEX mend"""
+        "mblock : math TEX mend"
         p[0] = Math(p[2])
 
     def p_mblock_empty(self,p):
-        """mblock : math mend"""
+        "mblock : math mend"
         p[0] = Math('')
 
     def p_reference(self,p):
@@ -474,25 +474,27 @@ class Yaccer():
         p[0] = Code(p[2])
 
     def p_error(self,p):
-        err = "Syntax error at '%s'" % p
-        print(err)
-        raise Exception(err)
+        if p:
+            err = 'Syntax error at token %s' % p.type
+        else:
+            err = 'Syntax error at EOF'
+        raise(Exception(err))
 
 #
 # build lexer and yaccer
 #
 
 lexmod = Lexer()
-lexer = lex.lex(module=lexmod)
-
 yaccmod = Yaccer(lexmod)
 yaccer = yacc.yacc(module=yaccmod,outputdir='parser')
+yaccmod.yaccer = yaccer
 
 #
 # external interface
 #
 
 def parse_markdown(s):
+    lexer = lex.lex(module=lexmod)
     return ElementList(yaccer.parse(s))
 
 def parse_cell(cell):
