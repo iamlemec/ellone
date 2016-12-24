@@ -15,7 +15,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
-import parser
+import mistwo
 
 # parse input arguments
 ap = argparse.ArgumentParser(description='Elltwo Server.')
@@ -352,14 +352,16 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
                        'prev': c['prev'],
                        'next': c['next'],
                        'text': c['body'],
-                       'html': parser.parse_cell(c['body']).html()
+                       # 'html': parser.parse_cell(c['body']).html()
+                       'html': mistwo.markdown(c['body'])
                       } for (i, c) in self.cells.items()]
             self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
         elif cmd == 'save':
             cid = int(cont['cid'])
             body = cont['body']
             self.cells[cid]['body'] = body
-            html = parser.parse_cell(body).html()
+            # html = parser.parse_cell(body).html()
+            html = mistwo.markdown(body)
             self.write_message({'cmd': 'render', 'content': {'cid': cid, 'html': html}})
         elif cmd == 'create':
             newid = int(cont['newid'])

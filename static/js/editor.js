@@ -238,6 +238,7 @@ function apply_render(cid, html, defer) {
         var div_inner = $("<div>", {class: "equation-inner"});
 
         var tex = "\\begin{aligned}\n" + src + "\n\\end{aligned}";
+        console.log(tex);
         katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
 
         box.html("");
