@@ -263,6 +263,9 @@ var init = function(targ) {
     }
     content = elltwo_box.find("#content");
 
+    // for non-editors
+    curdir = '/';
+
     // run
     render(true);
     number_sections();
