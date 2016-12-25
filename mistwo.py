@@ -93,7 +93,7 @@ class BlockGrammar(object):
     """Grammars for block level tokens."""
 
     newline = re.compile(r'^\n+')
-    block_code = re.compile(r'^``\n([^\n]+(\n[^\n]+)*\n*)+')
+    block_code = re.compile(r'^``\n([^\n]+(\n[^\n]+)*)')
     fences = re.compile(
         r'^ *(`{3,}|~{3,}) *(\S+)? *\n'  # ```lang
         r'([\s\S]+?)\s*'
@@ -146,7 +146,7 @@ class BlockGrammar(object):
         r'^ *(\S.*\|.*)\n *([-:]+ *\|[-| :]*)\n((?:.*\|.*(?:\n|$))*)\n*'
     )
     text = re.compile(r'^[^\n]+')
-    equation = re.compile(r'^\$\$ *(\[[^\]*]\])?([^\n]*(?:\n[^\n]*)*\n*)')
+    equation = re.compile(r'^\$\$ *(?:\[([^\]]*)\])? *([^\[][^\n]*(?:\n[^\n]+)*)\n*')
 
 
 class BlockLexer(object):
@@ -534,256 +534,6 @@ class InlineLexer(object):
         return self.renderer.math(tex)
 
 
-class Renderer(object):
-    """The default HTML renderer for rendering Markdown.
-    """
-
-    def __init__(self, **kwargs):
-        self.options = kwargs
-
-    def placeholder(self):
-        """Returns the default, empty output value for the renderer.
-
-        All renderer methods use the '+=' operator to append to this value.
-        Default is a string so rendering HTML can build up a result string with
-        the rendered Markdown.
-
-        Can be overridden by Renderer subclasses to be types like an empty
-        list, allowing the renderer to create a tree-like structure to
-        represent the document (which can then be reprocessed later into a
-        separate format like docx or pdf).
-        """
-        return ''
-
-    def block_code(self, code, lang=None):
-        """Rendering block level code. ``pre > code``.
-
-        :param code: text content of the code block.
-        :param lang: language of the given code.
-        """
-        code = code.rstrip('\n')
-        if not lang:
-            code = escape(code, smart_amp=False)
-            return '<pre><code>%s\n</code></pre>\n' % code
-        code = escape(code, quote=True, smart_amp=False)
-        return '<pre><code class="lang-%s">%s\n</code></pre>\n' % (lang, code)
-
-    def block_quote(self, text):
-        """Rendering <blockquote> with the given text.
-
-        :param text: text content of the blockquote.
-        """
-        return '<blockquote>%s\n</blockquote>\n' % text.rstrip('\n')
-
-    def block_html(self, html):
-        """Rendering block level pure html content.
-
-        :param html: text content of the html snippet.
-        """
-        if self.options.get('skip_style') and \
-           html.lower().startswith('<style'):
-            return ''
-        if self.options.get('escape'):
-            return escape(html)
-        return html
-
-    def header(self, text, level, raw=None):
-        """Rendering header/heading tags like ``<h1>`` ``<h2>``.
-
-        :param text: rendered text content for the header.
-        :param level: a number for the header level, for example: 1.
-        :param raw: raw text content of the header.
-        """
-        return '<div class="sec-title sec-lvl-%d">%s</div>\n' % (level, text)
-
-    def hrule(self):
-        """Rendering method for ``<hr>`` tag."""
-        if self.options.get('use_xhtml'):
-            return '<hr />\n'
-        return '<hr>\n'
-
-    def list(self, body, ordered=True):
-        """Rendering list tags like ``<ul>`` and ``<ol>``.
-
-        :param body: body contents of the list.
-        :param ordered: whether this list is ordered or not.
-        """
-        tag = 'ul'
-        if ordered:
-            tag = 'ol'
-        return '<%s>\n%s</%s>\n' % (tag, body, tag)
-
-    def list_item(self, text):
-        """Rendering list item snippet. Like ``<li>``."""
-        return '<li>%s</li>\n' % text
-
-    def paragraph(self, text):
-        """Rendering paragraph tags. Like ``<p>``."""
-        return '<p>%s</p>\n' % text.strip(' ')
-
-    def table(self, header, body):
-        """Rendering table element. Wrap header and body in it.
-
-        :param header: header part of the table.
-        :param body: body part of the table.
-        """
-        return (
-            '<table>\n<thead>%s</thead>\n'
-            '<tbody>\n%s</tbody>\n</table>\n'
-        ) % (header, body)
-
-    def table_row(self, content):
-        """Rendering a table row. Like ``<tr>``.
-
-        :param content: content of current table row.
-        """
-        return '<tr>\n%s</tr>\n' % content
-
-    def table_cell(self, content, **flags):
-        """Rendering a table cell. Like ``<th>`` ``<td>``.
-
-        :param content: content of current table cell.
-        :param header: whether this is header or not.
-        :param align: align of current table cell.
-        """
-        if flags['header']:
-            tag = 'th'
-        else:
-            tag = 'td'
-        align = flags['align']
-        if not align:
-            return '<%s>%s</%s>\n' % (tag, content, tag)
-        return '<%s style="text-align:%s">%s</%s>\n' % (
-            tag, align, content, tag
-        )
-
-    def double_emphasis(self, text):
-        """Rendering **strong** text.
-
-        :param text: text content for emphasis.
-        """
-        return '<strong>%s</strong>' % text
-
-    def emphasis(self, text):
-        """Rendering *emphasis* text.
-
-        :param text: text content for emphasis.
-        """
-        return '<em>%s</em>' % text
-
-    def codespan(self, text):
-        """Rendering inline `code` text.
-
-        :param text: text content for inline code.
-        """
-        text = escape(text.rstrip(), smart_amp=False)
-        return '<code>%s</code>' % text
-
-    def linebreak(self):
-        """Rendering line break like ``<br>``."""
-        if self.options.get('use_xhtml'):
-            return '<br />\n'
-        return '<br>\n'
-
-    def strikethrough(self, text):
-        """Rendering ~~strikethrough~~ text.
-
-        :param text: text content for strikethrough.
-        """
-        return '<del>%s</del>' % text
-
-    def text(self, text):
-        """Rendering unformatted text.
-
-        :param text: text content.
-        """
-        if self.options.get('parse_block_html'):
-            return text
-        return escape(text)
-
-    def escape(self, text):
-        """Rendering escape sequence.
-
-        :param text: text content.
-        """
-        return escape(text)
-
-    def link(self, link, title, text):
-        """Rendering a given link with content and title.
-
-        :param link: href link for ``<a>`` tag.
-        :param title: title content for `title` attribute.
-        :param text: text content for description.
-        """
-        link = escape_link(link)
-        if not title:
-            return '<a href="%s">%s</a>' % (link, text)
-        title = escape(title, quote=True)
-        return '<a href="%s" title="%s">%s</a>' % (link, title, text)
-
-    def image(self, src, title):
-        """Rendering a image with title and text.
-
-        :param src: source link of the image.
-        :param title: caption text of the image.
-        """
-        src = escape_link(src)
-        if title:
-            title = escape(title, quote=True)
-            html = '<figure><img src="%s"><figcaption>%s</figcaption></figure>\n' % (src, title)
-        else:
-            html = '<figure><img src="%s"></figure>\n' % src
-        return html
-
-    def reflink(self, tag):
-        """Rendering an in document reference.
-
-        :param tag: tag to target.
-        """
-        html = '<span class="reference" target="%s"></span>'
-        return html % tag
-
-    def newline(self):
-        """Rendering newline element."""
-        return ''
-
-    def footnote(self, text):
-        """Rendering the ref anchor of a footnote.
-
-        :param key: identity key for the footnote.
-        :param index: the index count of current footnote.
-        """
-        html = '<span class="footnote">%s</span>'
-        return html % text
-
-    def equation(self, tex, tag):
-        """Render display math.
-
-        :param tex: tex specification.
-        """
-        if tag:
-            html = '<div class="equation numbered" id="%s">%s</div>\n' % (tag, tex)
-        else:
-            html = '<div class="equation">%s</div>\n' % tex
-        return html
-
-    def math(self, tex):
-        """Render inline math.
-
-        :param tex: tex specification.
-        """
-        html = '<span class="latex">%s</span>'
-        return html % tex
-
-    def title(self, text):
-        """Render page title.
-
-        :param text: title text.
-        """
-        html = '<div class="doc-title">%s</div>\n'
-        return html % text
-
-
 class Markdown(object):
     """The Markdown parser.
 
@@ -792,11 +542,7 @@ class Markdown(object):
     :param block: A block lexer class or instance.
     """
     def __init__(self, renderer=None, inline=None, block=None, **kwargs):
-        if not renderer:
-            renderer = Renderer(**kwargs)
-        else:
-            kwargs.update(renderer.options)
-
+        kwargs.update(renderer.options)
         self.renderer = renderer
 
         if inline and inspect.isclass(inline):

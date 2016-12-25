@@ -1,553 +1,376 @@
-# https://github.com/toshiya/my-markdown-parser
+#!/usr/bin/env python3
 
-import os
-import re
-import sys
-import shutil
-from ply import lex, yacc
-
-# top level functions
-
-def escape_latex(s):
-    s = re.sub(r'([#&%])',r'\\\1',s)
-    s = re.sub(r'\^',r'\\textasciicircum',s)
-    return s
-
-def escape_math(s):
-    s = re.sub(r'\\gt(?![a-z])','>',s)
-    s = re.sub(r'\\lt(?![a-z])','<',s)
-    return s
-
-def html(x):
-    return x if type(x) is str else x.html()
-
-def tex(x):
-    return escape_latex(x) if type(x) is str else x.tex()
-
-def md(x):
-    return x if type(x) is str else x.md()
+##
+## elltwo parsing functions
+##
 
 #
-# top level elements
+# renderers
 #
 
-class CellList:
-    def __init__(self,cells):
-        self.cells = cells
+class HtmlRenderer(object):
+    """The default HTML renderer for rendering Markdown.
+    """
 
-    def __str__(self):
-        return '\n\n'.join([str(l) for l in self.cells])
+    def __init__(self, **kwargs):
+        self.options = kwargs
 
-    def html(self):
-        return '\n\n'.join([html(l) for l in self.cells])
+    def placeholder(self):
+        """Returns the default, empty output value for the renderer.
 
-    def tex(self):
-        return '\n\n'.join([tex(l) for l in self.cells])
+        All renderer methods use the '+=' operator to append to this value.
+        Default is a string so rendering HTML can build up a result string with
+        the rendered Markdown.
 
-    def md(self):
-        return '\n\n'.join([md(l) for l in self.cells])
+        Can be overridden by Renderer subclasses to be types like an empty
+        list, allowing the renderer to create a tree-like structure to
+        represent the document (which can then be reprocessed later into a
+        separate format like docx or pdf).
+        """
+        return ''
 
-#
-# block elements
-#
+    def block_code(self, code, lang=None):
+        """Rendering block level code. ``pre > code``.
 
-class Paragraph:
-    def __init__(self,elements):
-        self.elements = elements
+        :param code: text content of the code block.
+        :param lang: language of the given code.
+        """
+        code = code.rstrip('\n')
+        if not lang:
+            code = escape(code, smart_amp=False)
+            return '<pre><code>%s\n</code></pre>\n' % code
+        code = escape(code, quote=True, smart_amp=False)
+        return '<pre><code class="lang-%s">%s\n</code></pre>\n' % (lang, code)
 
-    def __str__(self):
-        return ''.join([str(l) for l in self.elements])
+    def block_quote(self, text):
+        """Rendering <blockquote> with the given text.
 
-    def html(self):
-        return '<p>%s</p>' % ''.join([html(l) for l in self.elements])
+        :param text: text content of the blockquote.
+        """
+        return '<blockquote>%s\n</blockquote>\n' % text.rstrip('\n')
 
-    def tex(self):
-        return ''.join([tex(l) for l in self.elements])
+    def header(self, text, level, raw=None):
+        """Rendering header/heading tags like ``<h1>`` ``<h2>``.
 
-    def md(self):
-        return ''.join([md(l) for l in self.elements])
+        :param text: rendered text content for the header.
+        :param level: a number for the header level, for example: 1.
+        :param raw: raw text content of the header.
+        """
+        return '<h%d>%s</h%d>\n' % (level, text, level)
 
-class Error:
-    def __init__(self,text):
-        self.text = text
+    def hrule(self):
+        """Rendering method for ``<hr>`` tag."""
+        if self.options.get('use_xhtml'):
+            return '<hr />\n'
+        return '<hr>\n'
 
-    def __str__(self):
-        return 'Error(text="%s")' % self.text
+    def list(self, body, ordered=True):
+        """Rendering list tags like ``<ul>`` and ``<ol>``.
 
-    def html(self):
-        return '<span style="color: red">%s</span>' % self.text
+        :param body: body contents of the list.
+        :param ordered: whether this list is ordered or not.
+        """
+        tag = 'ul'
+        if ordered:
+            tag = 'ol'
+        return '<%s>\n%s</%s>\n' % (tag, body, tag)
 
-    def tex(self):
-        return '{\\color{red} %s}' % self.text
+    def list_item(self, text):
+        """Rendering list item snippet. Like ``<li>``."""
+        return '<li>%s</li>\n' % text
 
-    def md(self):
-        return self.text
+    def paragraph(self, text):
+        """Rendering paragraph tags. Like ``<p>``."""
+        return '<p>%s</p>\n' % text.strip(' ')
 
-class Title:
-    def __init__(self,elements):
-        self.elements = elements
+    def table(self, header, body):
+        """Rendering table element. Wrap header and body in it.
 
-    def __str__(self):
-        return 'Title(text="%s")' % str(self.elements)
+        :param header: header part of the table.
+        :param body: body part of the table.
+        """
+        return (
+            '<table>\n<thead>%s</thead>\n'
+            '<tbody>\n%s</tbody>\n</table>\n'
+        ) % (header, body)
 
-    def html(self):
-        return '<div class="doc-title">%s</div>' % html(self.elements)
+    def table_row(self, content):
+        """Rendering a table row. Like ``<tr>``.
 
-    def tex(self):
-        return '\\begin{center}\n{\LARGE \\bf %s}\n\\vspace*{0.8cm}\n\\end{center}' % tex(self.elements)
+        :param content: content of current table row.
+        """
+        return '<tr>\n%s</tr>\n' % content
 
-    def md(self):
-        return '#! %s' % md(self.elements)
+    def table_cell(self, content, **flags):
+        """Rendering a table cell. Like ``<th>`` ``<td>``.
 
-class Header:
-    def __init__(self,elements,level):
-        self.elements = elements
-        self.level = level
-
-    def __str__(self):
-        return 'Header(level="%d",text="%s")' % (self.level,str(self.elements))
-
-    def html(self):
-        return '<div class="sec-title sec-lvl-%s" sec-lvl="%s">%s</div>' % (self.level,self.level,html(self.elements))
-
-    def tex(self):
-        return '\\%ssection{%s}' % ('sub'*(self.level-1),tex(self.elements))
-
-    def md(self):
-        return '%s %s' % (self.level*'#',md(self.elements))
-
-class OrderedList:
-    def __init__(self,rows):
-        self.rows = rows
-
-    def __str__(self):
-        return 'OrderedList(items=[%s])' % ','.join(['"%s"' % str(r) for r in self.rows])
-
-    def html(self):
-        return '<ol>%s</ol>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
-
-    def tex(self):
-        return '\\begin{enumerate}\n%s\n\\end{enumerate}' % '\n'.join(['\\item %s' % tex(r) for r in self.rows])
-
-    def md(self):
-        return '\n'.join(['+ %s' % md(row) for row in self.rows])
-
-class UnorderedList:
-    def __init__(self,rows):
-        self.rows = rows
-
-    def __str__(self):
-        return 'UnorderedList(items=[%s])' % ','.join(['"%s"' % str(r) for r in self.rows])
-
-    def html(self):
-        return '<ul>%s</ul>' % '\n'.join(['<li>%s</li>' % html(r) for r in self.rows])
-
-    def tex(self):
-        return '\\begin{itemize}\n%s\n\\end{itemize}' % '\n'.join(['\\item %s' % tex(r) for r in self.rows])
-
-    def md(self):
-        return '\n'.join(['- %s' % md(row) for row in self.rows])
-
-class Image:
-    def __init__(self,src,cap=None):
-        self.src = src
-        self.cap = cap
-
-    def __str__(self):
-        return 'Image(src="%s",caption="%s")' % (self.src,str(self.cap) if self.cap is not None else '')
-
-    def html(self):
-        if self.cap is None:
-            return '<figure><img src="%s"/></figure>' % self.src
+        :param content: content of current table cell.
+        :param header: whether this is header or not.
+        :param align: align of current table cell.
+        """
+        if flags['header']:
+            tag = 'th'
         else:
-            return '<figure><img src="%s"/><figcaption>%s</figcaption></figure>' % (self.src,html(self.cap))
+            tag = 'td'
+        align = flags['align']
+        if not align:
+            return '<%s>%s</%s>\n' % (tag, content, tag)
+        return '<%s style="text-align:%s">%s</%s>\n' % (
+            tag, align, content, tag
+        )
 
-    def tex(self):
-        if self.cap is None:
-            return '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n\\end{figure}' % self.src
+    def double_emphasis(self, text):
+        """Rendering **strong** text.
+
+        :param text: text content for emphasis.
+        """
+        return '<strong>%s</strong>' % text
+
+    def emphasis(self, text):
+        """Rendering *emphasis* text.
+
+        :param text: text content for emphasis.
+        """
+        return '<em>%s</em>' % text
+
+    def codespan(self, text):
+        """Rendering inline `code` text.
+
+        :param text: text content for inline code.
+        """
+        text = escape(text.rstrip(), smart_amp=False)
+        return '<code>%s</code>' % text
+
+    def linebreak(self):
+        """Rendering line break like ``<br>``."""
+        if self.options.get('use_xhtml'):
+            return '<br />\n'
+        return '<br>\n'
+
+    def strikethrough(self, text):
+        """Rendering ~~strikethrough~~ text.
+
+        :param text: text content for strikethrough.
+        """
+        return '<del>%s</del>' % text
+
+    def text(self, text):
+        """Rendering unformatted text.
+
+        :param text: text content.
+        """
+        if self.options.get('parse_block_html'):
+            return text
+        return escape(text)
+
+    def escape(self, text):
+        """Rendering escape sequence.
+
+        :param text: text content.
+        """
+        return escape(text)
+
+    def link(self, link, title, text):
+        """Rendering a given link with content and title.
+
+        :param link: href link for ``<a>`` tag.
+        :param title: title content for `title` attribute.
+        :param text: text content for description.
+        """
+        link = escape_link(link)
+        if not title:
+            return '<a href="%s">%s</a>' % (link, text)
+        title = escape(title, quote=True)
+        return '<a href="%s" title="%s">%s</a>' % (link, title, text)
+
+    def image(self, src, title):
+        """Rendering a image with title and text.
+
+        :param src: source link of the image.
+        :param title: caption text of the image.
+        """
+        src = escape_link(src)
+        if title:
+            title = escape(title, quote=True)
+            html = '<figure><img src="%s"><figcaption>%s</figcaption></figure>\n' % (src, title)
         else:
-            return '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n\\caption{%s}\n\\end{figure}' % (self.src,tex(self.cap))
+            html = '<figure><img src="%s"></figure>\n' % src
+        return html
 
-    def md(self):
-        return '![%s](%s)' % (self.src,md(self.cap) if self.cap is not None else '')
+    def reflink(self, tag):
+        """Rendering an in document reference.
 
-class Equation:
-    def __init__(self,math,label=None):
-        self.math = math
-        self.label = label
+        :param tag: tag to target.
+        """
+        html = '<ref>%s</ref>'
+        return html % tag
 
-    def __str__(self):
-        return 'Equation(tex="%s",label="%s")' % (self.math,self.label if self.label is not None else '')
+    def newline(self):
+        """Rendering newline element."""
+        return ''
 
-    def html(self):
-        if self.label is None:
-            return '<div class="equation">%s</div>' % self.math
+    def footnote(self, text):
+        """Rendering the ref anchor of a footnote.
+
+        :param key: identity key for the footnote.
+        :param index: the index count of current footnote.
+        """
+        html = '<footnote>%s</footnote>'
+        return html % text
+
+    def equation(self, tex, tag):
+        """Render display math.
+
+        :param tex: tex specification.
+        """
+        if tag:
+            html = '<equation id="%s">%s</equation>\n' % (tag, tex)
         else:
-            return '<div class="equation numbered" id="%s">%s</div>' % (self.label,self.math)
+            html = '<equation>%s</equation>\n' % tex
+        return html
 
-    def tex(self):
-        emath = escape_math(self.math)
-        if self.label is None:
-            return '\\begin{align*}\n%s\n\\end{align*}' % emath
+    def math(self, tex):
+        """Render inline math.
+
+        :param tex: tex specification.
+        """
+        html = '<tex>%s</tex>'
+        return html % tex
+
+    def title(self, text):
+        """Render page title.
+
+        :param text: title text.
+        """
+        html = '<title>%s</title>\n'
+        return html % text
+
+class LatexRenderer(object):
+    def __init__(self, **kwargs):
+        self.options = kwargs
+
+    def placeholder(self):
+        return ''
+
+    def block_code(self, code, lang=None):
+        code = code.rstrip('\n')
+        if not lang:
+            code = escape(code, smart_amp=False)
+            return '<pre><code>%s\n</code></pre>\n' % code
+        code = escape(code, quote=True, smart_amp=False)
+        return '<pre><code class="lang-%s">%s\n</code></pre>\n' % (lang, code)
+
+    def block_quote(self, text):
+        return '<blockquote>%s\n</blockquote>\n' % text.rstrip('\n')
+
+    def header(self, text, level, raw=None):
+        return '<h%d>%s</h%d>\n' % (level, text, level)
+
+    def hrule(self):
+        if self.options.get('use_xhtml'):
+            return '<hr />\n'
+        return '<hr>\n'
+
+    def list(self, body, ordered=True):
+        tag = 'ul'
+        if ordered:
+            tag = 'ol'
+        return '<%s>\n%s</%s>\n' % (tag, body, tag)
+
+    def list_item(self, text):
+        return '<li>%s</li>\n' % text
+
+    def paragraph(self, text):
+        return '<p>%s</p>\n' % text.strip(' ')
+
+    def table(self, header, body):
+        return (
+            '<table>\n<thead>%s</thead>\n'
+            '<tbody>\n%s</tbody>\n</table>\n'
+        ) % (header, body)
+
+    def table_row(self, content):
+        return '<tr>\n%s</tr>\n' % content
+
+    def table_cell(self, content, **flags):
+        if flags['header']:
+            tag = 'th'
         else:
-            return '\\begin{align} \\label{%s}\n%s\n\\end{align}' % (self.label,emath)
+            tag = 'td'
+        align = flags['align']
+        if not align:
+            return '<%s>%s</%s>\n' % (tag, content, tag)
+        return '<%s style="text-align:%s">%s</%s>\n' % (
+            tag, align, content, tag
+        )
 
-    def md(self):
-        if self.label is None:
-            return '$$ %s' % self.math
+    def double_emphasis(self, text):
+        return '<strong>%s</strong>' % text
+
+    def emphasis(self, text):
+        return '<em>%s</em>' % text
+
+    def codespan(self, text):
+        text = escape(text.rstrip(), smart_amp=False)
+        return '<code>%s</code>' % text
+
+    def linebreak(self):
+        if self.options.get('use_xhtml'):
+            return '<br />\n'
+        return '<br>\n'
+
+    def strikethrough(self, text):
+        return '<del>%s</del>' % text
+
+    def text(self, text):
+        if self.options.get('parse_block_html'):
+            return text
+        return escape(text)
+
+    def escape(self, text):
+        return escape(text)
+
+    def link(self, link, title, text):
+        link = escape_link(link)
+        if not title:
+            return '<a href="%s">%s</a>' % (link, text)
+        title = escape(title, quote=True)
+        return '<a href="%s" title="%s">%s</a>' % (link, title, text)
+
+    def image(self, src, title):
+        src = escape_link(src)
+        if title:
+            title = escape(title, quote=True)
+            html = '<figure><img src="%s"><figcaption>%s</figcaption></figure>\n' % (src, title)
         else:
-            return '$$ [%s] %s' % (self.math,self.label)
-
-class CodeBlock:
-    def __init__(self,text):
-        self.text = text
-
-    def __str__(self):
-        return 'CodeBlock(text="%s")' % self.text
-
-    def html(self):
-        return '<pre><code>%s</code></pre>' % self.text
-
-    def tex(self):
-        return '\\begin{lstlisting}\n%s\n\\end{lstlisting}' % tex(self.text)
-
-    def md(self):
-        return '`%s`' % self.text
-
-#
-# inline elements
-#
-
-class ElementList:
-    def __init__(self,elements):
-        self.elements = elements
-
-    def __str__(self):
-        return ''.join([str(l) for l in self.elements])
-
-    def html(self):
-        return ''.join([html(l) for l in self.elements])
-
-    def tex(self):
-        return ''.join([tex(l) for l in self.elements])
-
-    def md(self):
-        return ''.join([md(l) for l in self.elements])
-
-class Link:
-    def __init__(self,href,text):
-        self.href = href
-        self.text = text
-
-    def __str__(self):
-        return 'Link(href="%s",content="%s")' % (self.href,str(self.text))
-
-    def html(self):
-        return '<a href="%s">%s</a>' % (self.href,html(self.text))
-
-    def tex(self):
-        return '\\href{%s}{%s}' % (self.href,tex(self.text))
-
-    def md(self):
-        return '[%s](%s)' % (md(self.text),self.href)
-
-class Bold:
-    def __init__(self,text):
-        self.text = text
-
-    def __str__(self):
-        return 'Bold(text="%s")' % self.text
-
-    def html(self):
-        return '<strong>%s</strong>' % self.text
-
-    def tex(self):
-        return '\\textbf{%s}' % tex(self.text)
-
-    def md(self):
-        return '**%s**' % self.text
-
-class Ital:
-    def __init__(self,text):
-        self.text = text
-
-    def __str__(self):
-        return 'Ital(text="%s")' % self.text
-
-    def html(self):
-        return '<em>%s</em>' % self.text
-
-    def tex(self):
-        return '\\textit{%s}' % tex(self.text)
-
-    def md(self):
-        return '*%s*' % self.text
-
-class Code:
-    def __init__(self,text):
-        self.text = text
-
-    def __str__(self):
-        return 'Code(text="%s")' % self.text
-
-    def html(self):
-        return '<code>%s</code>' % self.text
-
-    def tex(self):
-        return '\\texttt{%s}' % tex(self.text)
-
-    def md(self):
-        return '`%s`' % self.text
-
-class Math:
-    def __init__(self,math):
-        self.math = math
-
-    def __str__(self):
-        return 'Math(tex="%s")' % self.math
-
-    def html(self):
-        return '<span class="latex">%s</span>' % self.math
-
-    def tex(self):
-        return '$%s$' % escape_math(self.math)
-
-    def md(self):
-        return '$%s$' % self.math
-
-class Reference:
-    def __init__(self,targ):
-        self.targ = targ
-
-    def __str__(self):
-        return 'Reference(targ="%s")' % self.targ
-
-    def html(self):
-        return '<span class="reference" target="%s"></span>' % self.targ
-
-    def tex(self):
-        return '\\Cref{%s}' % self.targ
-
-    def md(self):
-        return '@[%s]' % self.targ
-
-class Footnote:
-    def __init__(self,text):
-        self.text = text
-
-    def __str__(self):
-        return 'Footnote(text="%s")' % str(self.text)
-
-    def html(self):
-        return '<span class="footnote">%s</span>' % html(self.text)
-
-    def tex(self):
-        return '\\footnote{%s}' % tex(self.text)
-
-    def md(self):
-        return '^[%s]' % md(self.text)
-
-#
-# lexing
-#
-
-def unescape_markdown(s):
-    return re.sub(r'(?<!\\)\\(\[|\]|\(|\)|\*|\@|`)',r'\1',s)
-
-class Lexer():
-    states = (
-        ('math','exclusive'),
-    )
-
-    tokens = (
-        "LEFT_BRA",
-        "REF_BRA",
-        "FOOT_BRA",
-        "RIGHT_BRA",
-        "LEFT_PAR",
-        "RIGHT_PAR",
-        "BOLD_DELIM",
-        "ITAL_DELIM",
-        "CODE_DELIM",
-        "LITERAL",
-        "math",
-        "mend",
-        "TEX"
-    )
-
-    t_LEFT_BRA = r"(?<![@\^])\["
-    t_REF_BRA = r"@\["
-    t_FOOT_BRA = r"\^\["
-    t_RIGHT_BRA = r"\]"
-    t_LEFT_PAR = r"\("
-    t_RIGHT_PAR = r"\)"
-    t_BOLD_DELIM = r"\*\*"
-    t_ITAL_DELIM = r"\*(?!\*)"
-    t_CODE_DELIM = r"`"
-
-    def t_math(self,t):
-        r"(?<!\\)\$"
-        t.lexer.begin('math')
-        return t
-
-    def t_math_mend(self,t):
-        r"(?<!\\)\$"
-        t.lexer.begin('INITIAL')
-        return t
-
-    def t_math_TEX(self,t):
-        r"([^\$]|(?<=\\)\$)+"
-        return t
-
-    def t_math_error(self,t):
-        print("Illegal math character '%s'" % t.value[0])
-        t.lexer.skip(1)
-
-    def t_LITERAL(self,t):
-        r"([^\[\]\(\)\*\$`@\^]|(?<=\\)[\[\]\(\)\*\$`]|[@\^](?!\[))+"
-        t.value = unescape_markdown(t.value)
-        return t
-
-    def t_error(self,t):
-        print("Illegal character '%s'" % t.value[0])
-        t.lexer.skip(1)
-
-#
-# parsing
-#
-
-class Yaccer():
-    def __init__(self,lexmod):
-        self.tokens = lexmod.tokens
-
-    def p_elements1(self,p):
-        "elements : element"
-        p[0] = [p[1]]
-
-    def p_elements2(self,p):
-        "elements : elements element"
-        p[0] = p[1] + [p[2]]
-
-    def p_element(self,p):
-        """element : ital
-                   | bold
-                   | code
-                   | mblock
-                   | reference
-                   | footnote
-                   | link
-                   | LEFT_PAR
-                   | RIGHT_PAR
-                   | LITERAL"""
-        p[0] = p[1]
-
-    def p_mblock(self,p):
-        "mblock : math TEX mend"
-        p[0] = Math(p[2])
-
-    def p_mblock_empty(self,p):
-        "mblock : math mend"
-        p[0] = Math('')
-
-    def p_reference(self,p):
-        "reference : REF_BRA LITERAL RIGHT_BRA"
-        p[0] = Reference(p[2])
-
-    def p_footnote(self,p):
-        "footnote : FOOT_BRA elements RIGHT_BRA"
-        p[0] = Footnote(ElementList(p[2]))
-
-    def p_link(self,p):
-        "link : LEFT_BRA LITERAL RIGHT_BRA LEFT_PAR LITERAL RIGHT_PAR"
-        p[0] = Link(p[5],p[2])
-
-    def p_bold(self,p):
-        "bold : BOLD_DELIM LITERAL BOLD_DELIM"
-        p[0] = Bold(p[2])
-
-    def p_ital(self,p):
-        "ital : ITAL_DELIM LITERAL ITAL_DELIM"
-        p[0] = Ital(p[2])
-
-    def p_code(self,p):
-        "code : CODE_DELIM LITERAL CODE_DELIM"
-        p[0] = Code(p[2])
-
-    def p_error(self,p):
-        if p:
-            err = 'Syntax error at token %s' % p.type
+            html = '<figure><img src="%s"></figure>\n' % src
+        return html
+
+    def reflink(self, tag):
+        html = '<ref>%s</ref>'
+        return html % tag
+
+    def newline(self):
+        return ''
+
+    def footnote(self, text):
+        html = '<footnote>%s</footnote>'
+        return html % text
+
+    def equation(self, tex, tag):
+        if tag:
+            html = '<equation id="%s">%s</equation>\n' % (tag, tex)
         else:
-            err = 'Syntax error at EOF'
-        raise(Exception(err))
+            html = '<equation>%s</equation>\n' % tex
+        return html
 
-#
-# build lexer and yaccer
-#
+    def math(self, tex):
+        html = '<tex>%s</tex>'
+        return html % tex
 
-lexmod = Lexer()
-yaccmod = Yaccer(lexmod)
-yaccer = yacc.yacc(module=yaccmod,outputdir='parser')
-yaccmod.yaccer = yaccer
-
-#
-# external interface
-#
-
-def parse_markdown(s):
-    lexer = lex.lex(module=lexmod)
-    return ElementList(yaccer.parse(s))
-
-def parse_cell(cell):
-    try:
-        if cell.startswith('#'):
-            if cell.startswith('#!'):
-                text = cell[2:].strip()
-                return Title(parse_markdown(text))
-            else:
-                ret = re.match(r'(#+) ?(.*)',cell)
-                (pound,title) = ret.groups()
-                level = len(pound)
-                return Header(parse_markdown(title),level)
-        elif cell.startswith('+'):
-            items = [item.strip() for item in cell[1:].split('\n+')]
-            return OrderedList([parse_markdown(item) for item in items])
-        elif cell.startswith('-'):
-            items = [item.strip() for item in cell[1:].split('\n-')]
-            return UnorderedList([parse_markdown(item) for item in items])
-        elif cell.startswith('!'):
-            ret = re.match(r'\[([^\]]*)\]\((.*)\)$',cell[1:].strip())
-            (cap,url) = ret.groups()
-            if len(cap) > 0:
-                cap = parse_markdown(cap)
-            else:
-                cap = None
-            ret = re.search(r'(^|:)//(.*)',url)
-            if ret:
-                (rpath,) = ret.groups()
-            else:
-                rpath = url
-            (_,fname) = os.path.split(rpath)
-            return Image(fname,cap)
-        elif cell.startswith('$$'):
-            math = cell[2:].strip()
-            ret = re.match(r'\[([^\]]*)\](.*)', math, flags=re.DOTALL)
-            if ret:
-                (label,tex) = ret.groups()
-            else:
-                (label,tex) = (None,math)
-            return Equation(tex.strip(),label)
-        elif cell.startswith('``'):
-            code = cell[2:].strip()
-            return CodeBlock(code)
-        else:
-            return Paragraph(parse_markdown(cell).elements)
-    except Exception as e:
-        return Error(cell)
-
-def parse_doc(text):
-    cells = [c.strip() for c in text.split('\n\n')]
-    output = [parse_cell(c) for c in cells]
-    return CellList(output)
+    def title(self, text):
+        html = '<title>%s</title>\n'
+        return html % text
 
 #
 # document converters
@@ -611,17 +434,18 @@ latex_template = """
 \\end{document}
 """[1:]
 
-def convert_html(text):
-    body = ''
-    cells = parse_doc(text)
-    body = html(cells)
-    ret = html_template % body
-    return ret
+#
+# parser
+#
 
-def convert_markdown(text):
-    cells = parse_doc(text)
-    ret = md(cells)
-    return ret
+def parse_markdown(s, output='html'):
+    if output == 'html':
+        renderer = HtmlRenderer()
+    return mistwo.markdown(renderer=renderer)
+
+def convert_html(s):
+    body = parse_markdown(s, output='html')
+    return html_template % body
 
 def convert_latex(text):
     cells = parse_doc(text).cells

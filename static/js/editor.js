@@ -194,6 +194,7 @@ function apply_render(cid, html, defer) {
     var new_section = false;
     var new_equation = false;
     var new_footnote = false;
+    var new_reference = false;
 
     // set html
     var outer = $(".cell[cid=" + cid + "]");
@@ -201,9 +202,22 @@ function apply_render(cid, html, defer) {
     outer.empty();
     outer.append(box);
 
+    // final substitutions
+    var tag = box[0].tagName;
+
     // handle sections
-    if (box.hasClass("sec-title")) {
+    if (tag == "TITLE") {
+        var div = $("<div>", {class: "doc-title", html: box.text()});
+        box.replaceWith(div);
+        box = div;
+    }
+
+    if ((tag[0] == "H") && (tag.length == 2)) {
         new_section = true;
+        box.addClass("sec-title");
+        var lvl = parseInt(tag[1]);
+        box.addClass("sec-lvl-"+lvl);
+        box.attr("sec-lvl",lvl);
     }
 
     // handle images
@@ -214,40 +228,58 @@ function apply_render(cid, html, defer) {
     });
 
     // handle footnotes
-    box.find(".footnote").each(function() {
+    box.find("footnote").replaceWith(function() {
+        new_footnote = true;
         var fnote = $(this);
         var text = fnote.html();
-        fnote.html("<span class=\"number\"></span>");
+        var span = $("<span>", {class: "footnote"});
+        var num = $("<span>", {class: "number"});
         var popup = $("<div>", {class: "popup footnote-popup", html: text});
-        attach_popup(fnote, popup);
-        new_footnote = true;
+        span.append(num);
+        attach_popup(span, popup);
+        return span;
     });
 
-    // inline-ish elements
-    box.find(".latex").each(function() {
-        var span = $(this);
-        var text = span.text();
-        katex.render(text, span[0], {throwOnError: false});
+    // handle inline latex
+    box.find("tex").replaceWith(function() {
+        var tex = $(this);
+        var src = tex.text();
+        var span = $("<span>", {class: "latex"});
+        katex.render(src, span[0], {throwOnError: false});
+        return span;
+    });
+
+    // handle references
+    box.find("ref").replaceWith(function() {
+        new_reference = true;
+        var ref = $(this);
+        var targ = ref.text();
+        var span = $("<span>", {class: "reference", target: targ});
+        return span;
     });
 
     // typeset disyplay equations
-    if (box.hasClass("equation")) {
+    if (tag == "EQUATION") {
         var src = box.text();
 
         var num_div = $("<div>", {class: "equation-number"});
         var div_inner = $("<div>", {class: "equation-inner"});
 
         var tex = "\\begin{aligned}\n" + src + "\n\\end{aligned}";
-        console.log(tex);
         katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
 
-        box.html("");
-        box.append(num_div);
-        box.append(div_inner);
-
-        if (box.hasClass("numbered")) {
+        var eq = $("<div>", {class: "equation"});
+        var id = box.attr("id");
+        if (id != null) {
             new_equation = true;
+            eq.addClass("numbered");
+            eq.attr("id", id);
         }
+
+        eq.append(num_div);
+        eq.append(div_inner);
+        box.replaceWith(eq);
+        box = eq;
     }
 
     // recalculate sections, equations, and references
@@ -261,7 +293,13 @@ function apply_render(cid, html, defer) {
         if (new_footnote) {
             number_footnotes();
         }
-        resolve_references(box);
+        if (new_section || new_equation) {
+            resolve_references();
+        } else {
+            if (new_reference) {
+                resolve_references(box);
+            }
+        }
     }
 }
 
@@ -342,6 +380,9 @@ function delete_cell(cell) {
     }
     if (has_footnote) {
         number_footnotes();
+    }
+    if (is_equation || is_section) {
+        resolve_references();
     }
 
     // inform server
@@ -509,9 +550,12 @@ function attach_popup(parent, popup) {
     });
 }
 
-function resolve_references() {
+function resolve_references(box) {
     console.log("resolving references");
-    $(".reference").each(function() {
+    if (box == null) {
+        box = elltwo_box;
+    }
+    box.find(".reference").each(function() {
         var ref = $(this);
         var label = ref.attr("target");
         var targ = $("#"+label);
