@@ -282,13 +282,11 @@ var init = function(targ) {
 // public interface
 return {
     init: init,
-    render: render,
     apply_render: apply_render,
     number_footnotes: number_footnotes,
     number_equations: number_equations,
     number_sections: number_sections,
     resolve_references: resolve_references,
-    attach_popup: attach_popup
 }
 
 // end module
