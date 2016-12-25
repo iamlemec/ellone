@@ -7,12 +7,14 @@ var elltwo = (function() {
 
 // urls
 var resolve_url = function(url) {
-    if (url.search("(^|:)//") == -1) {
-        if (url[0] != "/") {
-            if (curdir.length == 0) {
-                url = "/" + url;
-            } else {
-                url = "/" + curdir + "/" + url;
+    if (curdir != null) {
+        if (url.search("(^|:)//") == -1) {
+            if (url[0] != "/") {
+                if (curdir.length == 0) {
+                    url = "/" + url;
+                } else {
+                    url = "/" + curdir + "/" + url;
+                }
             }
         }
     }
@@ -264,7 +266,7 @@ var init = function(targ) {
     content = elltwo_box.find("#content");
 
     // for non-editors
-    curdir = '/';
+    curdir = null;
 
     // run
     render(true);
