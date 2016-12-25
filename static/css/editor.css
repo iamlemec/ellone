@@ -1,67 +1,4 @@
-@import url("montserrat.css");
-
-* {
-    box-sizing: border-box;
-}
-
-#elltwo {
-    font-family: Montserrat;
-    font-size: 18px;
-    font-weight: 300;
-    margin: 0px;
-}
-
-/* content */
-
-#content {
-    width: 700px !important;
-    margin: 0px auto;
-    padding-top: 80px;
-    padding-bottom: 200px;
-    background-color: white;
-    color: #333;
-    -webkit-box-sizing: content-box;
-    -moz-box-sizing: content-box;
-    box-sizing: content-box;
-}
-
-#content * {
-    text-decoration: none;
-}
-
-#content *:focus {
-    outline: 0;
-}
-
-/* links */
-
-a:focus {
-    outline: 0px;
-}
-
-a {
-    color: blue;
-}
-
-a:visited {
-    color: blue;
-}
-
-/* paragraph cells */
-
-.cell p {
-    /*margin-top: 20px;*/
-    min-height: 21px;
-    padding-left: 5px;
-    white-space: pre-wrap;
-    text-align: justify;
-    line-height: 150%;
-    padding: 0px;
-    margin-left: 0px;
-    margin-right: 0px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-}
+/* cell related rules */
 
 .cell.editing {
     border-right: 1px solid rgb(53, 122, 232) !important;
@@ -73,13 +10,6 @@ a:visited {
 
 .cell {
     position: relative;
-    margin-top: 10px;
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    padding-left: 7px;
-    padding-right: 30px;
-    padding-top: 3px;
-    padding-bottom: 3px;
 }
 
 .cell.editing {
@@ -92,177 +22,8 @@ a:visited {
     border-left: 1px solid #CCC;
 }
 
-/* equations */
-
-.equation {
-    position: relative;
-    text-align: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-.equation-inner {
-    margin: auto;
-    text-align: center;
-}
-
-.equation-number {
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    -webkit-transform: translateY(-50%);
-    color: #888;
-}
-
-/* images */
-
-figure {
-    text-align: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-figure > img {
-    max-width: 100%;
-    height: auto;
-}
-
-figcaption {
-    text-align: center;
-    font-style: italic;
-    margin-top: 0px;
-}
-
-/* lists */
-
-ul {
-    margin-top: 0px;
-    margin-bottom: 0px;
-    line-height: 1.5;
-}
-
-ol {
-    margin-top: 0px;
-    margin-bottom: 0px;
-    line-height: 1.5;
-}
-
-/* code */
-
-:not(pre) > code {
-    font-family: Consolas, monospace;
-    font-size: 16px;
-    background-color: #F1F1F1;
-    padding: 2px;
-    border-radius: 3px;
-}
-
-pre {
-    background-color: #F1F1F1;
-    padding: 10px;
-    border-radius: 3px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-}
-
-pre > code {
-    font-family: Consolas, monospace;
-    font-size: 15px;
-}
-
-/* sections */
-
-.sec-title {
-    font-weight: 600;
-    margin-top: 30px;
-}
-
-.sec-title:before {
-    content: attr(sec-num) " ";
-}
-
 .cell.editing .sec-title:before {
     content: "";
-}
-
-/* popups */
-
-.popup-outer {
-    display: none;
-    position: absolute;
-    z-index: 2;
-    opacity: 0.90;
-    cursor: auto;
-}
-
-.popup {
-    font-size: 12px;
-    font-weight: normal;
-    text-align: center;
-    line-height: 150%;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    padding-left: 15px;
-    padding-right: 15px;
-    border-radius: 4px;
-    border: 0px;
-    background-color: black;
-    /*opacity: 0.95;*/
-    color: white;
-    max-width: 300px;
-    margin-bottom: 8px;
-}
-
-.popup:after {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    border: solid transparent;
-    content: " ";
-    height: 0;
-    width: 0;
-    border-color: transparent;
-    border-top-color: black;
-    border-width: 4px;
-    margin-top: -8px;
-}
-
-.eqn-popup {
-    font-size: 17px;
-    max-width: none;
-    padding-top: 5px;
-    padding-bottom: 5px;
-}
-
-/* footnotes */
-
-.footnote {
-    background-color: rgba(53, 122, 232, 0.8);
-    color: white;
-    border-radius: 2px;
-    cursor: default;
-    line-height: 1.5;
-    font-size: 14px;
-    font-weight: 700;
-    padding-bottom: 3px;
-    display: inline-block;
-    text-align: center;
-    width: 17px;
-    height: 19px;
-    position: relative;
-}
-
-.footnote:hover {
-    background-color: rgb(53, 122, 232);
-}
-
-.footnote-popup {
-    text-align: center;
-    width: 200px;
-}
-
-.footnote-popup:after {
-    left: 96px;
 }
 
 /* top toolbar */
@@ -325,14 +86,6 @@ pre > code {
 
 /* theme */
 
-#marquee {
-    color: #333;
-    position: fixed;
-    cursor: default;
-    top: 6px;
-    left: 10px;
-}
-
 #canary {
     position: fixed;
     font-family: monospace;
@@ -353,35 +106,4 @@ pre > code {
     color: #333;
     padding: 0px;
     cursor: default;
-}
-
-.doc-title {
-    font-size: 35px;
-    font-weight: 600;
-    text-align: center !important;
-    margin-bottom: 40px;
-}
-
-.sec-title.sec-lvl-1 {
-    font-size: 25px;
-}
-
-.sec-title.sec-lvl-2 {
-    font-size: 20px;
-}
-
-#elltwo li {
-    text-align: justify;
-}
-
-.reference {
-    position: relative;
-}
-
-.popup .reference a {
-    color: rgb(53, 122, 232);
-}
-
-.error {
-    color: red;
 }
