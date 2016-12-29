@@ -36,7 +36,9 @@ function add_tags(html) {
 
 function escape_html(text) {
     return text.replace(/</g, "&lt;")
-               .replace(/>/g, "&gt;");
+               .replace(/>/g, "&gt;")
+               .replace(/&/g, "&ampl")
+               .replace(/  /g, " &nbsp;");
 };
 
 function unescape_html(text) {
@@ -554,7 +556,7 @@ function connect(query)
 
         ws.onmessage = function (evt) {
             var msg = evt.data;
-            console.log("Received: " + msg);
+            // console.log("Received: " + msg);
 
             var json_data = JSON.parse(msg);
             if (json_data) {
