@@ -115,6 +115,26 @@
     line-height: 1.5;
 }
 
+/* tables */
+
+#content table {
+  border-spacing: 0px;
+  margin: 20px auto 20px auto;
+}
+
+#content table > thead > tr > th {
+    border-bottom: 2px solid black;
+    padding: 5px 20px 5px 5px;
+}
+
+#content table > tbody > tr:nth-child(2n) {
+    background-color: #E0E0E0;
+}
+
+#content table > tbody > tr > td {
+    padding: 5px 20px 5px 5px;
+}
+
 /* code */
 
 #content :not(pre) > code {
