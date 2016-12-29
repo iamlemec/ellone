@@ -4,16 +4,12 @@
     box-sizing: border-box;
 }
 
+/* content */
+
 #elltwo {
     font-family: Montserrat;
     font-size: 18px;
     font-weight: 300;
-    margin: 0px;
-}
-
-/* content */
-
-#content {
     width: 700px !important;
     margin: 0px auto;
     padding-top: 80px;
@@ -25,31 +21,31 @@
     box-sizing: content-box;
 }
 
-#content * {
+#elltwo * {
     text-decoration: none;
 }
 
-#content *:focus {
+#elltwo *:focus {
     outline: 0;
 }
 
 /* links */
 
-#content a:focus {
+#elltwo a:focus {
     outline: 0px;
 }
 
-#content a {
+#elltwo a {
     color: blue;
 }
 
-#content a:visited {
+#elltwo a:visited {
     color: blue;
 }
 
 /* paragraph cells */
 
-#content p {
+#elltwo p {
     /*margin-top: 20px;*/
     min-height: 21px;
     padding-left: 5px;
@@ -62,19 +58,19 @@
 
 /* equations */
 
-#content .equation {
+#elltwo .equation {
     position: relative;
     text-align: center;
     margin-top: 30px;
     margin-bottom: 30px;
 }
 
-#content .equation-inner {
+#elltwo .equation-inner {
     margin: auto;
     text-align: center;
 }
 
-#content .equation-number {
+#elltwo .equation-number {
     position: absolute;
     top: 50%;
     right: 10px;
@@ -84,18 +80,18 @@
 
 /* images */
 
-#content figure {
+#elltwo figure {
     text-align: center;
     margin-top: 30px;
     margin-bottom: 30px;
 }
 
-#content figure > img {
+#elltwo figure > img {
     max-width: 100%;
     height: auto;
 }
 
-#content figcaption {
+#elltwo figcaption {
     text-align: center;
     font-style: italic;
     margin-top: 0px;
@@ -103,13 +99,13 @@
 
 /* lists */
 
-#content ul {
+#elltwo ul {
     margin-top: 10px;
     margin-bottom: 20px;
     line-height: 1.5;
 }
 
-#content ol {
+#elltwo ol {
     margin-top: 10px;
     margin-bottom: 20px;
     line-height: 1.5;
@@ -117,27 +113,27 @@
 
 /* tables */
 
-#content table {
+#elltwo table {
   border-spacing: 0px;
   margin: 20px auto 20px auto;
 }
 
-#content table > thead > tr > th {
+#elltwo table > thead > tr > th {
     border-bottom: 2px solid black;
     padding: 5px 20px 5px 5px;
 }
 
-#content table > tbody > tr:nth-child(2n) {
+#elltwo table > tbody > tr:nth-child(2n) {
     background-color: #E0E0E0;
 }
 
-#content table > tbody > tr > td {
+#elltwo table > tbody > tr > td {
     padding: 5px 20px 5px 5px;
 }
 
 /* code */
 
-#content :not(pre) > code {
+#elltwo :not(pre) > code {
     font-family: Consolas, monospace;
     font-size: 16px;
     background-color: #F1F1F1;
@@ -145,7 +141,7 @@
     border-radius: 3px;
 }
 
-#content pre {
+#elltwo pre {
     background-color: #F1F1F1;
     padding: 10px;
     border-radius: 3px;
@@ -153,25 +149,25 @@
     margin-bottom: 0px;
 }
 
-#content pre > code {
+#elltwo pre > code {
     font-family: Consolas, monospace;
     font-size: 15px;
 }
 
 /* sections */
 
-#content .sec-title {
+#elltwo .sec-title {
     font-weight: 600;
     margin-top: 30px;
 }
 
-#content .sec-title:before {
+#elltwo .sec-title:before {
     content: attr(sec-num) " ";
 }
 
 /* popups */
 
-#content .popup-outer {
+#elltwo .popup-outer {
     display: none;
     position: absolute;
     z-index: 2;
@@ -179,7 +175,7 @@
     cursor: auto;
 }
 
-#content .popup {
+#elltwo .popup {
     font-size: 12px;
     font-weight: normal;
     text-align: center;
@@ -197,7 +193,7 @@
     margin-bottom: 8px;
 }
 
-#content .popup:after {
+#elltwo .popup:after {
     position: absolute;
     top: 100%;
     left: 50%;
@@ -211,7 +207,7 @@
     margin-top: -8px;
 }
 
-#content .eqn-popup {
+#elltwo .eqn-popup {
     font-size: 17px;
     max-width: none;
     padding-top: 5px;
@@ -220,7 +216,7 @@
 
 /* footnotes */
 
-#content .footnote {
+#elltwo .footnote {
     background-color: rgba(53, 122, 232, 0.8);
     color: white;
     border-radius: 2px;
@@ -236,16 +232,16 @@
     position: relative;
 }
 
-#content .footnote:hover {
+#elltwo .footnote:hover {
     background-color: rgb(53, 122, 232);
 }
 
-#content .footnote-popup {
+#elltwo .footnote-popup {
     text-align: center;
     width: 200px;
 }
 
-#content .footnote-popup:after {
+#elltwo .footnote-popup:after {
     left: 96px;
 }
 
@@ -255,37 +251,37 @@
     color: #333;
     position: fixed;
     cursor: default;
-    top: 6px;
+    top: 9px;
     left: 10px;
 }
 
-#content .doc-title {
+#elltwo .doc-title {
     font-size: 35px;
     font-weight: 600;
     text-align: center !important;
     margin-bottom: 40px;
 }
 
-#content .sec-title.sec-lvl-1 {
+#elltwo .sec-title.sec-lvl-1 {
     font-size: 25px;
 }
 
-#content .sec-title.sec-lvl-2 {
+#elltwo .sec-title.sec-lvl-2 {
     font-size: 20px;
 }
 
-#content li {
+#elltwo li {
     text-align: justify;
 }
 
-#content .reference {
+#elltwo .reference {
     position: relative;
 }
 
-#content .popup .reference a {
+#elltwo .popup .reference a {
     color: rgb(53, 122, 232);
 }
 
-#content .error {
+#elltwo .error {
     color: red;
 }

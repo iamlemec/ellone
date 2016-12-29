@@ -5,6 +5,10 @@
 // begin module
 var editor = (function() {
 
+// find outer box
+var body = $("body");
+var content = $("#elltwo");
+
 // globals
 var ws;
 
@@ -174,16 +178,16 @@ function activate_next() {
 function save_cell(cell) {
     // get source text
     var cid = cell.attr("cid");
-    var body = cell.attr("base-text");
+    var text = cell.attr("base-text");
 
     // send to server
-    var msg = JSON.stringify({"cmd": "save", "content": {"cid": cid, "body": body}});
+    var msg = JSON.stringify({"cmd": "save", "content": {"cid": cid, "body": text}});
     console.log(msg);
     ws.send(msg);
 
     // mark document as modified (cell not so)
     cell.removeClass("modified");
-    elltwo_box.addClass("modified");
+    body.addClass("modified");
 }
 
 // create cell
@@ -214,7 +218,7 @@ function create_cell(cell, edit) {
     ws.send(msg);
 
     // mark document modified
-    elltwo_box.addClass("modified");
+    body.addClass("modified");
 
     // return created cell
     return outer;
@@ -259,7 +263,7 @@ function delete_cell(cell) {
     ws.send(msg);
 
     // mark document modified
-    elltwo_box.addClass("modified");
+    body.addClass("modified");
 }
 
 clipboard = "";
@@ -308,7 +312,7 @@ function save_document() {
     var msg = JSON.stringify({"cmd": "write", "content": ""});
     console.log(msg);
     ws.send(msg);
-    elltwo_box.removeClass("modified");
+    body.removeClass("modified");
 }
 
 // make paragraph for cell
@@ -324,7 +328,7 @@ function make_para(text, cid, prev, next, edit) {
 
     // event handlers
     outer.click(function(event) {
-        if (is_editing(elltwo_box)) {
+        if (is_editing(body)) {
             activate_cell(outer);
         }
     });
@@ -359,14 +363,11 @@ function full_update() {
 // initialization code
 function initialize() {
     // marquee box
-    var marquee = elltwo_box.children("#marquee");
+    var marquee = $("#marquee");
     var help = $("#help");
-    var span = $("<span>");
-    katex.render("\\ell^2", span[0]);
-    span.click(function() {
+    marquee.click(function() {
         help.slideToggle("fast");
     });
-    marquee.append(span);
 
     // topbar button handlers
     $("#topbar-export").click(function() {
@@ -398,7 +399,7 @@ function initialize() {
         var msg = JSON.stringify({"cmd": "revert", "content": ""});
         console.log(msg);
         ws.send(msg);
-        elltwo_box.removeClass("modified");
+        body.removeClass("modified");
     });
 
     $("#topbar-reload").click(function() {
@@ -407,7 +408,7 @@ function initialize() {
     });
 
     $("#topbar-editing").click(function() {
-        elltwo_box.toggleClass("editing");
+        body.toggleClass("editing");
     });
 
     // vim-like controls :)
@@ -415,7 +416,7 @@ function initialize() {
         // console.log(event.keyCode);
 
         var keyCode = event.keyCode;
-        var docEdit = is_editing(elltwo_box);
+        var docEdit = is_editing(body);
         var actEdit = is_editing(active);
 
         if (docEdit) {
@@ -597,11 +598,6 @@ return {
     init: function() {
         console.log(path);
 
-        // load common elements
-        body = $("body");
-        elltwo_box = $("#elltwo");
-        content = elltwo_box.find("#content");
-
         // run
         initialize();
         connect(true);
@@ -610,8 +606,3 @@ return {
 
 // end module
 })();
-
-// when ready
-$(document).ready(function() {
-    editor.init();
-});

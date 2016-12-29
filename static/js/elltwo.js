@@ -5,6 +5,9 @@
 // begin module
 var elltwo = (function() {
 
+// find outer box
+var content = $("#elltwo");
+
 // urls
 var resolve_url = function(url) {
     if (curdir != null) {
@@ -255,34 +258,23 @@ var number_footnotes = function() {
     });
 };
 
-// initialize a target
-var init = function(targ) {
-    // find outer box
-    if (targ == null) {
-        elltwo_box = $("#elltwo");
-    } else {
-        elltwo_box = $(targ);
-    }
-    content = elltwo_box.find("#content");
-
-    // for non-editors
+// render for static docs
+var init = function() {
     curdir = null;
-
-    // run
     render(true);
     number_sections();
     number_equations();
     number_footnotes();
     resolve_references();
+}
 
-    // optional marquee box
-    var marquee = $("#marquee");
-    if (marquee.length > 0) {
-        var span = $("<span>", {class: "latex"});
-        katex.render("\\ell^2", span[0], {throwOnError: false});
-        marquee.append(span);
-    }
-};
+// optional marquee box
+var marquee = $("#marquee");
+if (marquee.length > 0) {
+    var span = $("<span>", {class: "latex"});
+    katex.render("\\ell^2", span[0], {throwOnError: false});
+    marquee.append(span);
+}
 
 // public interface
 return {

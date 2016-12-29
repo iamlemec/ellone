@@ -18,11 +18,11 @@
 
 </head>
 
-<body>
+<body class="editing">
 
-<div id="elltwo" class="editing">
 <span id="marquee"></span>
 <span id="canary">connecting</span>
+
 <div id="help">
 <pre>
 title: #!
@@ -68,14 +68,9 @@ P: paste cell
 <span id="topbar-pdf" class="topbar-button topbar-dropdown">.pdf</span><br/>
 </div>
 </div>
-<div id="content"></div>
-</div>
 
-<script type="text/javascript">
-  path = "{{ path }}";
-  curdir = "{{ curdir }}";
-  fname = "{{ fname }}";
-</script>
+<div id="elltwo"></div>
+
 {% if local_libs %}
 <script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
 <script src="{{ static_url('katex/build/katex.min.js') }}" type="text/javascript"></script>
@@ -85,6 +80,13 @@ P: paste cell
 {% end %}
 <script src="{{ static_url('js/elltwo.js') }}" type="text/javascript"></script>
 <script src="{{ static_url('js/editor.js') }}" type="text/javascript"></script>
+
+<script type="text/javascript">
+path = "{{ path }}";
+curdir = "{{ curdir }}";
+fname = "{{ fname }}";
+editor.init();
+</script>
 
 </body>
 

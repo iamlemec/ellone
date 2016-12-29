@@ -1,43 +1,43 @@
 /* cell related rules */
 
-.cell.editing {
+#elltwo .cell.editing {
     border-right: 1px solid rgb(53, 122, 232) !important;
 }
 
-.cell.modified {
+#elltwo .cell.modified {
     border-right: 1px solid red !important;
 }
 
-.cell {
+#elltwo .cell {
     position: relative;
     border-left: 1px solid #FFF;
     padding-left: 10px;
 }
 
-.cell.editing {
+#elltwo .cell.editing {
     text-align: left;
     font-family: monospace;
     font-size: 15px;
     margin-top: 10px;
 }
 
-#elltwo.editing .cell.active {
+body.editing #elltwo .cell.active {
     border-left: 1px solid #CCC;
 }
 
-.cell.editing .sec-title:before {
+#elltwo .cell.editing .sec-title:before {
     content: "";
 }
 
 /* top toolbar */
 
 #topbar {
-    position: fixed;
-    right: 10px;
+    font-family: Montserrat;
 }
 
-#elltwo.nocontrol #topbar {
-    display: none;
+#topbar {
+    position: fixed;
+    right: 10px;
 }
 
 #topbar-control {
@@ -71,19 +71,19 @@
     margin-top: 2px;
 }
 
-#elltwo:not(.modified) #topbar-save {
+body:not(.modified) #topbar-save {
     display: none;
 }
 
-#elltwo:not(.modified) #topbar-revert {
+body:not(.modified) #topbar-revert {
     display: none;
 }
 
-#elltwo:not(.editing) #topbar-editing {
+body:not(.editing) #topbar-editing {
     background-color: #666;
 }
 
-#elltwo.modified #topbar-reload {
+body.modified #topbar-reload {
     display: none;
 }
 
@@ -99,7 +99,7 @@
 
 #help {
     position: fixed;
-    top: 50px;
+    top: 30px;
     display: none;
 }
 
@@ -107,6 +107,6 @@
     font-size: 12px;
     background-color: white;
     color: #333;
-    padding: 0px;
+    padding: 3px;
     cursor: default;
 }
