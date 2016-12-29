@@ -16,8 +16,9 @@ __author__ = 'Hsiaoming Yang <me@lepture.com>'
 __all__ = [
     'BlockGrammar', 'BlockLexer',
     'InlineGrammar', 'InlineLexer',
-    'Renderer', 'Markdown',
-    'markdown', 'escape',
+    'Markdown',
+    'HtmlRenderer', 'LatexRenderer',
+    'markdown', 'escape_html',
 ]
 
 
@@ -25,32 +26,10 @@ _key_pattern = re.compile(r'\s+')
 _nonalpha_pattern = re.compile(r'\W')
 _escape_pattern = re.compile(r'&(?!#?\w+;)')
 _newline_pattern = re.compile(r'\r\n|\r')
-_block_quote_leading_pattern = re.compile(r'^ *> ?', flags=re.M)
-_inline_tags = [
-    'a', 'em', 'strong', 'small', 's', 'cite', 'q', 'dfn', 'abbr', 'data',
-    'time', 'code', 'var', 'samp', 'kbd', 'sub', 'sup', 'i', 'b', 'u', 'mark',
-    'ruby', 'rt', 'rp', 'bdi', 'bdo', 'span', 'br', 'wbr', 'ins', 'del',
-    'img', 'font',
-]
-_pre_tags = ['pre', 'script', 'style']
-_valid_end = r'(?!:/|[^\w\s@]*@)\b'
-_valid_attr = r'''\s*[a-zA-Z\-](?:\=(?:"[^"]*"|'[^']*'|\d+))*'''
-_block_tag = r'(?!(?:%s)\b)\w+%s' % ('|'.join(_inline_tags), _valid_end)
 _scheme_blacklist = ('javascript:', 'vbscript:')
 
 
-def _pure_pattern(regex):
-    pattern = regex.pattern
-    if pattern.startswith('^'):
-        pattern = pattern[1:]
-    return pattern
-
-
-def _keyify(key):
-    return _key_pattern.sub(' ', key.lower())
-
-
-def escape(text, quote=False, smart_amp=True):
+def escape_html(text, quote=False, smart_amp=True):
     """Replace special characters "&", "<" and ">" to HTML-safe sequences.
 
     The original cgi.escape will always escape "&", but you can control
@@ -71,13 +50,18 @@ def escape(text, quote=False, smart_amp=True):
     return text
 
 
+def escape_latex(text):
+    text = re.sub(r'([#&\$])', r'\\\1', text)
+    text = re.sub(r'(\^)', r'\\^{ }', text)
+    return text
+
 def escape_link(url):
     """Remove dangerous URL schemes like javascript: and escape afterwards."""
     lower_url = url.lower().strip('\x00\x1a \n\r\t')
     for scheme in _scheme_blacklist:
         if lower_url.startswith(scheme):
             return ''
-    return escape(url, quote=True, smart_amp=False)
+    return escape_html(url, quote=True, smart_amp=False)
 
 
 def preprocessing(text, tab=4):
@@ -92,53 +76,32 @@ def preprocessing(text, tab=4):
 class BlockGrammar(object):
     """Grammars for block level tokens."""
 
-    newline = re.compile(r'^\n+')
-    block_code = re.compile(r'^``\n([^\n]+(\n[^\n]+)*)')
-    fences = re.compile(
-        r'^ *(`{3,}|~{3,}) *(\S+)? *\n'  # ```lang
-        r'([\s\S]+?)\s*'
-        r'\1 *(?:\n+|$)'  # ```
-    )
-    hrule = re.compile(r'^ {0,3}[-*_](?: *[-*_]){2,} *(?:\n+|$)')
+    block_code = re.compile(r'^``\s*([^\n]+(\n[^\n]+)*)(?:\n+|$)')
     heading = re.compile(r'^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)')
-    lheading = re.compile(r'^([^\n]+)\n *(=|-)+ *(?:\n+|$)')
     title = re.compile(r'^ *#! *([^\n]+?) *(?:\n+|$)')
     image = re.compile(
         r'^!\[('
         r'(?:\[[^^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*'
-        r')\]\('
-        r'''\s*(<)?([\s\S]*?)(?(2)>)\s*'''
-        r'\)'
+        r')\]'
+        r'\(([^\)]+)\)'
+        r'(?:\n+|$)'
     )
-    block_quote = re.compile(r'^( *>[^\n]+(\n[^\n]+)*\n*)+')
     list_block = re.compile(
         r'^( *)([*+-]|\d+\.) [\s\S]+?'
         r'(?:'
-        r'\n+(?=\1?(?:[-*_] *){3,}(?:\n+|$))'  # hrule
-        r'|\n{2,}'
+        r'\n{2,}'
         r'(?! )'
         r'(?!\1(?:[*+-]|\d+\.) )\n*'
         r'|'
-        r'\s*$)'    )
+        r'\s*$)'
+    )
     list_item = re.compile(
         r'^(( *)(?:[*+-]|\d+\.) [^\n]*'
         r'(?:\n(?!\2(?:[*+-]|\d+\.) )[^\n]*)*)',
         flags=re.M
     )
     list_bullet = re.compile(r'^ *(?:[*+-]|\d+\.) +')
-    paragraph = re.compile(
-        r'^((?:[^\n]+\n?(?!'
-        r'%s|%s|%s|%s|%s|%s|%s'
-        r'))+)\n*' % (
-            _pure_pattern(fences).replace(r'\1', r'\2'),
-            _pure_pattern(list_block).replace(r'\1', r'\3'),
-            _pure_pattern(hrule),
-            _pure_pattern(heading),
-            _pure_pattern(lheading),
-            _pure_pattern(block_quote),
-            '<' + _block_tag,
-        )
-    )
+    paragraph = re.compile(r'^((?:[^\n]+\n?)+)\n*')
     table = re.compile(
         r'^ *\|(.+)\n *\|( *[-:]+[-| :]*)\n((?: *\|.*(?:\n|$))*)\n*'
     )
@@ -154,20 +117,16 @@ class BlockLexer(object):
     grammar_class = BlockGrammar
 
     default_rules = [
-        'newline', 'hrule', 'block_code', 'fences', 'title', 'image',
-        'heading', 'nptable', 'lheading', 'block_quote', 'equation',
-        'list_block', 'table', 'paragraph', 'text'
+        'title', 'image', 'heading', 'nptable', 'equation', 
+        'block_code', 'list_block', 'table', 'paragraph', 'text'
     ]
 
     list_rules = (
-        'newline', 'block_code', 'fences', 'lheading', 'hrule',
-        'block_quote', 'list_block', 'text',
+        'block_code', 'list_block', 'text'
     )
 
     footnote_rules = (
-        'newline', 'block_code', 'fences', 'heading',
-        'nptable', 'lheading', 'hrule', 'block_quote',
-        'list_block', 'table', 'paragraph', 'text'
+        'paragraph', 'text'
     )
 
     def __init__(self, rules=None, **kwargs):
@@ -194,22 +153,19 @@ class BlockLexer(object):
                 if not m:
                     continue
                 getattr(self, 'parse_%s' % key)(m)
+                print(key)
                 return m
             return False  # pragma: no cover
 
         while text:
             m = manipulate(text)
+            print(m)
             if m is not False:
                 text = text[len(m.group(0)):]
                 continue
             if text:  # pragma: no cover
                 raise RuntimeError('Infinite loop at: %s' % text)
         return self.tokens
-
-    def parse_newline(self, m):
-        length = len(m.group(0))
-        if length > 1:
-            self.tokens.append({'type': 'newline'})
 
     def parse_block_code(self, m):
         # clean leading whitespace
@@ -220,30 +176,12 @@ class BlockLexer(object):
             'text': code,
         })
 
-    def parse_fences(self, m):
-        self.tokens.append({
-            'type': 'code',
-            'lang': m.group(2),
-            'text': m.group(3),
-        })
-
     def parse_heading(self, m):
         self.tokens.append({
             'type': 'heading',
             'level': len(m.group(1)),
             'text': m.group(2),
         })
-
-    def parse_lheading(self, m):
-        """Parse setext heading."""
-        self.tokens.append({
-            'type': 'heading',
-            'level': 1 if m.group(2) == '=' else 2,
-            'text': m.group(1),
-        })
-
-    def parse_hrule(self, m):
-        self.tokens.append({'type': 'hrule'})
 
     def parse_list_block(self, m):
         bull = m.group(2)
@@ -294,13 +232,6 @@ class BlockLexer(object):
             # recurse
             self.parse(item, self.list_rules)
             self.tokens.append({'type': 'list_item_end'})
-
-    def parse_block_quote(self, m):
-        self.tokens.append({'type': 'block_quote_start'})
-        # clean leading >
-        cap = _block_quote_leading_pattern.sub('', m.group(0))
-        self.parse(cap)
-        self.tokens.append({'type': 'block_quote_end'})
 
     def parse_table(self, m):
         item = self._process_table(m)
@@ -367,25 +298,25 @@ class BlockLexer(object):
 
     def parse_image(self, m):
         title = m.group(1)
-        link = m.group(3)
+        link = m.group(2)
         self.tokens.append({
             'type': 'image',
             'title': title,
             'link': link,
         })
 
+
 class InlineGrammar(object):
     """Grammars for inline level tokens."""
 
-    escape = re.compile(r'^\\([\\`*{}\[\]()#+\-.!_>~|\$])')  # \* \+ \! ....
+    escape = re.compile(r'^\\([\\`*{}\[\]()#+\-.!_>~|@\$\^])')  # \* \+ \! ....
     link = re.compile(
         r'\[('
-        r'(?:\[[^^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*'
-        r')\]\('
-        r'''\s*(<)?([\s\S]*?)(?(2)>)(?:\s+['"]([\s\S]*?)['"])?\s*'''
-        r'\)'
+        r'(?:(?<!\^)\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*'
+        r')\]'
+        r'\(([^\)]*)\)'
     )
-    reflink = re.compile(r'^@([^\]]+)@')
+    reflink = re.compile(r'^@\[([^\]]+)\]')
     double_emphasis = re.compile(
         r'^_{2}([\s\S]+?)_{2}(?!_)'  # __word__
         r'|'
@@ -399,18 +330,13 @@ class InlineGrammar(object):
     code = re.compile(r'^`\s*([\s\S]*?[^`])\s*`(?!`)')  # `code`
     linebreak = re.compile(r'^ {2,}\n(?!\s*$)')
     strikethrough = re.compile(r'^~~(?=\S)([\s\S]*?\S)~~')  # ~~word~~
-    footnote = re.compile(r'^\^\[([^\]]+)\]')
+    footnote = re.compile(
+        r'^\^\[('
+        r'(?:(?<!\^)\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*'
+        r')\]'
+    )
     text = re.compile(r'^[\s\S]+?(?=[\\<!\[_*`~@\$\^]|https?://| {2,}\n|$)')
     math = re.compile(r'^\$([^\$]+?)\$')
-
-    def hard_wrap(self):
-        """Grammar for hard wrap linebreak. You don't need to add two
-        spaces at the end of a line.
-        """
-        self.linebreak = re.compile(r'^ *\n(?!\s*$)')
-        self.text = re.compile(
-            r'^[\s\S]+?(?=[\\<!\[_*`~]|https?://| *\n|$)'
-        )
 
 
 class InlineLexer(object):
@@ -429,9 +355,6 @@ class InlineLexer(object):
             rules = self.grammar_class()
 
         kwargs.update(self.renderer.options)
-        if kwargs.get('hard_wrap'):
-            rules.hard_wrap()
-
         self.rules = rules
 
         self._in_link = False
@@ -492,13 +415,13 @@ class InlineLexer(object):
     def output_link(self, m):
         line = m.group(0)
         text = m.group(1)
-        link = m.group(3)
-        title = m.group(4)
+        link = m.group(2)
 
         self._in_link = True
         text = self.output(text)
         self._in_link = False
-        return self.renderer.link(link, title, text)
+        title = self.output(title)
+        return self.renderer.link(link, text)
 
     def output_reflink(self, m):
         tag = m.group(1)
@@ -611,12 +534,6 @@ class Markdown(object):
             text += '\n' + self.pop()['text']
         return self.inline(text)
 
-    def output_newline(self):
-        return self.renderer.newline()
-
-    def output_hrule(self):
-        return self.renderer.hrule()
-
     def output_heading(self):
         return self.renderer.header(
             self.inline(self.token['text']),
@@ -654,12 +571,6 @@ class Markdown(object):
             body += self.renderer.table_row(cell)
 
         return self.renderer.table(header, body)
-
-    def output_block_quote(self):
-        body = self.renderer.placeholder()
-        while self.pop()['type'] != 'block_quote_end':
-            body += self.tok()
-        return self.renderer.block_quote(body)
 
     def output_list(self):
         ordered = self.token['ordered']
@@ -729,17 +640,10 @@ class HtmlRenderer(object):
         """
         code = code.rstrip('\n')
         if not lang:
-            code = escape(code, smart_amp=False)
+            code = escape_html(code, smart_amp=False)
             return '<pre><code>%s\n</code></pre>\n' % code
-        code = escape(code, quote=True, smart_amp=False)
-        return '<pre><code class="lang-%s">%s\n</code></pre>\n' % (lang, code)
-
-    def block_quote(self, text):
-        """Rendering <blockquote> with the given text.
-
-        :param text: text content of the blockquote.
-        """
-        return '<blockquote>%s\n</blockquote>\n' % text.rstrip('\n')
+        code = escape_html(code, quote=True, smart_amp=False)
+        return '<pre><code class="lang-%s">%s\n</code></pre>\n\n' % (lang, code)
 
     def header(self, text, level, raw=None):
         """Rendering header/heading tags like ``<h1>`` ``<h2>``.
@@ -748,13 +652,7 @@ class HtmlRenderer(object):
         :param level: a number for the header level, for example: 1.
         :param raw: raw text content of the header.
         """
-        return '<h%d>%s</h%d>\n' % (level, text, level)
-
-    def hrule(self):
-        """Rendering method for ``<hr>`` tag."""
-        if self.options.get('use_xhtml'):
-            return '<hr />\n'
-        return '<hr>\n'
+        return '<h%d>%s</h%d>\n\n' % (level, text, level)
 
     def list(self, body, ordered=True):
         """Rendering list tags like ``<ul>`` and ``<ol>``.
@@ -765,7 +663,7 @@ class HtmlRenderer(object):
         tag = 'ul'
         if ordered:
             tag = 'ol'
-        return '<%s>\n%s</%s>\n' % (tag, body, tag)
+        return '<%s>\n%s</%s>\n\n' % (tag, body, tag)
 
     def list_item(self, text):
         """Rendering list item snippet. Like ``<li>``."""
@@ -773,7 +671,7 @@ class HtmlRenderer(object):
 
     def paragraph(self, text):
         """Rendering paragraph tags. Like ``<p>``."""
-        return '<p>%s</p>\n' % text.strip(' ')
+        return '<p>%s</p>\n\n' % text.strip(' ')
 
     def table(self, header, body):
         """Rendering table element. Wrap header and body in it.
@@ -783,7 +681,7 @@ class HtmlRenderer(object):
         """
         return (
             '<table>\n<thead>%s</thead>\n'
-            '<tbody>\n%s</tbody>\n</table>\n'
+            '<tbody>\n%s</tbody>\n</table>\n\n'
         ) % (header, body)
 
     def table_row(self, content):
@@ -830,14 +728,14 @@ class HtmlRenderer(object):
 
         :param text: text content for inline code.
         """
-        text = escape(text.rstrip(), smart_amp=False)
+        text = escape_html(text.rstrip(), smart_amp=False)
         return '<code>%s</code>' % text
 
     def linebreak(self):
         """Rendering line break like ``<br>``."""
         if self.options.get('use_xhtml'):
-            return '<br />\n'
-        return '<br>\n'
+            return '<br />\n\n'
+        return '<br>\n\n'
 
     def strikethrough(self, text):
         """Rendering ~~strikethrough~~ text.
@@ -851,29 +749,23 @@ class HtmlRenderer(object):
 
         :param text: text content.
         """
-        if self.options.get('parse_block_html'):
-            return text
-        return escape(text)
+        return text
 
     def escape(self, text):
         """Rendering escape sequence.
 
         :param text: text content.
         """
-        return escape(text)
+        return text
 
-    def link(self, link, title, text):
+    def link(self, link, text):
         """Rendering a given link with content and title.
 
         :param link: href link for ``<a>`` tag.
-        :param title: title content for `title` attribute.
         :param text: text content for description.
         """
         link = escape_link(link)
-        if not title:
-            return '<a href="%s">%s</a>' % (link, text)
-        title = escape(title, quote=True)
-        return '<a href="%s" title="%s">%s</a>' % (link, title, text)
+        return '<a href="%s">%s</a>' % (link, text)
 
     def image(self, src, title):
         """Rendering a image with title and text.
@@ -883,10 +775,9 @@ class HtmlRenderer(object):
         """
         src = escape_link(src)
         if title:
-            title = escape(title, quote=True)
-            html = '<figure><img src="%s"><figcaption>%s</figcaption></figure>\n' % (src, title)
+            html = '<figure><img src="%s"><figcaption>%s</figcaption></figure>\n\n' % (src, title)
         else:
-            html = '<figure><img src="%s"></figure>\n' % src
+            html = '<figure><img src="%s"></figure>\n\n' % src
         return html
 
     def reflink(self, tag):
@@ -916,9 +807,9 @@ class HtmlRenderer(object):
         :param tex: tex specification.
         """
         if tag:
-            html = '<equation id="%s">%s</equation>\n' % (tag, tex)
+            html = '<equation id="%s">%s</equation>\n\n' % (tag, tex)
         else:
-            html = '<equation>%s</equation>\n' % tex
+            html = '<equation>%s</equation>\n\n' % tex
         return html
 
     def math(self, tex):
@@ -934,7 +825,7 @@ class HtmlRenderer(object):
 
         :param text: title text.
         """
-        html = '<title>%s</title>\n'
+        html = '<title>%s</title>\n\n'
         return html % text
 
 
@@ -946,121 +837,95 @@ class LatexRenderer(object):
         return ''
 
     def block_code(self, code, lang=None):
-        code = code.rstrip('\n')
-        if not lang:
-            code = escape(code, smart_amp=False)
-            return '<pre><code>%s\n</code></pre>\n' % code
-        code = escape(code, quote=True, smart_amp=False)
-        return '<pre><code class="lang-%s">%s\n</code></pre>\n' % (lang, code)
-
-    def block_quote(self, text):
-        return '<blockquote>%s\n</blockquote>\n' % text.rstrip('\n')
+        return '\\begin{lstlisting}\n%s\n\\end{lstlisting}\n\n' % code
 
     def header(self, text, level, raw=None):
-        return '<h%d>%s</h%d>\n' % (level, text, level)
-
-    def hrule(self):
-        if self.options.get('use_xhtml'):
-            return '<hr />\n'
-        return '<hr>\n'
+        return '\\%ssection{%s}\n\n' % ('sub'*(level-1), text)
 
     def list(self, body, ordered=True):
-        tag = 'ul'
+        tag = 'itemize'
         if ordered:
-            tag = 'ol'
-        return '<%s>\n%s</%s>\n' % (tag, body, tag)
+            tag = 'enumerate'
+        return '\\begin{%s}\n%s\\end{%s}\n\n' % (tag, body, tag)
 
     def list_item(self, text):
-        return '<li>%s</li>\n' % text
+        return '\\item %s\n' % text
 
     def paragraph(self, text):
-        return '<p>%s</p>\n' % text.strip(' ')
+        return '%s\n\n' % text
 
     def table(self, header, body):
-        return (
-            '<table>\n<thead>%s</thead>\n'
-            '<tbody>\n%s</tbody>\n</table>\n'
-        ) % (header, body)
+        ncols = len(re.findall(r'(?:^|[^\\])&', header))
+        return '\\begin{tabular}{%s}\n%s\n\\hrule\n%s\n\\end{tabular}\n\n' % (ncols*'c', header, body)
 
     def table_row(self, content):
-        return '<tr>\n%s</tr>\n' % content
+        row = content.rstrip()
+        if row.endswith('&'):
+            row = '%s \\\\' % row[:-1].rstrip()
+        return row
 
     def table_cell(self, content, **flags):
         if flags['header']:
-            tag = 'th'
+            cell = '\\textbf{%s}' % content
         else:
-            tag = 'td'
-        align = flags['align']
-        if not align:
-            return '<%s>%s</%s>\n' % (tag, content, tag)
-        return '<%s style="text-align:%s">%s</%s>\n' % (
-            tag, align, content, tag
-        )
+            cell = content
+        return '%s &' % cell
 
     def double_emphasis(self, text):
-        return '<strong>%s</strong>' % text
+        return '\\textbf{%s}' % text
 
     def emphasis(self, text):
-        return '<em>%s</em>' % text
+        return '\\textit{%s}' % text
 
     def codespan(self, text):
-        text = escape(text.rstrip(), smart_amp=False)
-        return '<code>%s</code>' % text
+        return '\\texttt{%s}' % escape_latex(text.strip())
 
     def linebreak(self):
-        if self.options.get('use_xhtml'):
-            return '<br />\n'
-        return '<br>\n'
+        return '\\newline'
 
     def strikethrough(self, text):
-        return '<del>%s</del>' % text
+        return '\\sout{%s}' % text
 
     def text(self, text):
-        if self.options.get('parse_block_html'):
-            return text
-        return escape(text)
+        return escape_latex(text)
 
     def escape(self, text):
-        return escape(text)
+        return text
 
-    def link(self, link, title, text):
+    def link(self, link, text):
         link = escape_link(link)
-        if not title:
-            return '<a href="%s">%s</a>' % (link, text)
-        title = escape(title, quote=True)
-        return '<a href="%s" title="%s">%s</a>' % (link, title, text)
+        return '\\href{%s}{%s}' % (link, text)
 
     def image(self, src, title):
         src = escape_link(src)
         if title:
-            title = escape(title, quote=True)
-            html = '<figure><img src="%s"><figcaption>%s</figcaption></figure>\n' % (src, title)
+            html = '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n\\caption{%s}\n\\end{figure}\n\n' % (src, title)
         else:
-            html = '<figure><img src="%s"></figure>\n' % src
+            html = '\\begin{figure}\n\\includegraphics[width=\\textwidth]{%s}\n\\end{figure}\n\n' % src
         return html
 
     def reflink(self, tag):
-        html = '<ref>%s</ref>'
+        html = '\\Cref{%s}'
         return html % tag
 
     def newline(self):
         return ''
 
     def footnote(self, text):
-        html = '<footnote>%s</footnote>'
+        html = '\\footnote{%s}'
         return html % text
 
     def equation(self, tex, tag):
         if tag:
-            html = '<equation id="%s">%s</equation>\n' % (tag, tex)
+            html = '\\begin{align} \\label{%s}\n%s\n\\end{align}\n\n' % (tag, tex)
         else:
-            html = '<equation>%s</equation>\n' % tex
+            html = '\\begin{align*}\n%s\n\\end{align*}\n\n' % tex
         return html
 
     def math(self, tex):
-        html = '<tex>%s</tex>'
+        html = '$%s$'
         return html % tex
 
     def title(self, text):
-        html = '<title>%s</title>\n'
+        html = '\\begin{center}\n{\LARGE \\bf %s}\n\\vspace*{0.8cm}\n\\end{center}\n\n'
         return html % text

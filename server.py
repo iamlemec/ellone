@@ -234,7 +234,7 @@ class LatexHandler(tornado.web.RequestHandler):
         # generate latex
         fid = open(fullpath, 'r')
         text = fid.read()
-        (latex, images) = parser.convert_latex(text)
+        latex = parser.convert_latex(text)
 
         # find new name
         ret = re.match(r'(.*)\.md', fname)

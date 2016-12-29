@@ -35,36 +35,21 @@
 
 /* links */
 
-a:focus {
+#content a:focus {
     outline: 0px;
 }
 
-a {
+#content a {
     color: blue;
 }
 
-a:visited {
+#content a:visited {
     color: blue;
 }
-
-/* general cells */
-
-/*
-.cell {
-    position: relative;
-    margin-top: 10px;
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    padding-left: 7px;
-    padding-right: 30px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-}
-*/
 
 /* paragraph cells */
 
-p {
+#content p {
     /*margin-top: 20px;*/
     min-height: 21px;
     padding-left: 5px;
@@ -77,19 +62,19 @@ p {
 
 /* equations */
 
-.equation {
+#content .equation {
     position: relative;
     text-align: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 30px;
+    margin-bottom: 30px;
 }
 
-.equation-inner {
+#content .equation-inner {
     margin: auto;
     text-align: center;
 }
 
-.equation-number {
+#content .equation-number {
     position: absolute;
     top: 50%;
     right: 10px;
@@ -99,18 +84,18 @@ p {
 
 /* images */
 
-figure {
+#content figure {
     text-align: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 30px;
+    margin-bottom: 30px;
 }
 
-figure > img {
+#content figure > img {
     max-width: 100%;
     height: auto;
 }
 
-figcaption {
+#content figcaption {
     text-align: center;
     font-style: italic;
     margin-top: 0px;
@@ -118,21 +103,21 @@ figcaption {
 
 /* lists */
 
-ul {
-    margin-top: 0px;
-    margin-bottom: 0px;
+#content ul {
+    margin-top: 10px;
+    margin-bottom: 20px;
     line-height: 1.5;
 }
 
-ol {
-    margin-top: 0px;
-    margin-bottom: 0px;
+#content ol {
+    margin-top: 10px;
+    margin-bottom: 20px;
     line-height: 1.5;
 }
 
 /* code */
 
-:not(pre) > code {
+#content :not(pre) > code {
     font-family: Consolas, monospace;
     font-size: 16px;
     background-color: #F1F1F1;
@@ -140,7 +125,7 @@ ol {
     border-radius: 3px;
 }
 
-pre {
+#content pre {
     background-color: #F1F1F1;
     padding: 10px;
     border-radius: 3px;
@@ -148,25 +133,25 @@ pre {
     margin-bottom: 0px;
 }
 
-pre > code {
+#content pre > code {
     font-family: Consolas, monospace;
     font-size: 15px;
 }
 
 /* sections */
 
-.sec-title {
+#content .sec-title {
     font-weight: 600;
     margin-top: 30px;
 }
 
-.sec-title:before {
+#content .sec-title:before {
     content: attr(sec-num) " ";
 }
 
 /* popups */
 
-.popup-outer {
+#content .popup-outer {
     display: none;
     position: absolute;
     z-index: 2;
@@ -174,7 +159,7 @@ pre > code {
     cursor: auto;
 }
 
-.popup {
+#content .popup {
     font-size: 12px;
     font-weight: normal;
     text-align: center;
@@ -192,7 +177,7 @@ pre > code {
     margin-bottom: 8px;
 }
 
-.popup:after {
+#content .popup:after {
     position: absolute;
     top: 100%;
     left: 50%;
@@ -206,7 +191,7 @@ pre > code {
     margin-top: -8px;
 }
 
-.eqn-popup {
+#content .eqn-popup {
     font-size: 17px;
     max-width: none;
     padding-top: 5px;
@@ -215,7 +200,7 @@ pre > code {
 
 /* footnotes */
 
-.footnote {
+#content .footnote {
     background-color: rgba(53, 122, 232, 0.8);
     color: white;
     border-radius: 2px;
@@ -231,16 +216,16 @@ pre > code {
     position: relative;
 }
 
-.footnote:hover {
+#content .footnote:hover {
     background-color: rgb(53, 122, 232);
 }
 
-.footnote-popup {
+#content .footnote-popup {
     text-align: center;
     width: 200px;
 }
 
-.footnote-popup:after {
+#content .footnote-popup:after {
     left: 96px;
 }
 
@@ -254,33 +239,33 @@ pre > code {
     left: 10px;
 }
 
-.doc-title {
+#content .doc-title {
     font-size: 35px;
     font-weight: 600;
     text-align: center !important;
     margin-bottom: 40px;
 }
 
-.sec-title.sec-lvl-1 {
+#content .sec-title.sec-lvl-1 {
     font-size: 25px;
 }
 
-.sec-title.sec-lvl-2 {
+#content .sec-title.sec-lvl-2 {
     font-size: 20px;
 }
 
-#elltwo li {
+#content li {
     text-align: justify;
 }
 
-.reference {
+#content .reference {
     position: relative;
 }
 
-.popup .reference a {
+#content .popup .reference a {
     color: rgb(53, 122, 232);
 }
 
-.error {
+#content .error {
     color: red;
 }

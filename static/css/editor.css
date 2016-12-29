@@ -10,12 +10,15 @@
 
 .cell {
     position: relative;
+    border-left: 1px solid #FFF;
+    padding-left: 10px;
 }
 
 .cell.editing {
     text-align: left;
     font-family: monospace;
     font-size: 15px;
+    margin-top: 10px;
 }
 
 #elltwo.editing .cell.active {
