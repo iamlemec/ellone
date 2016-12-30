@@ -41,7 +41,7 @@ function add_tags(html) {
 function escape_html(text) {
     return text.replace(/</g, "&lt;")
                .replace(/>/g, "&gt;")
-               .replace(/&/g, "&ampl")
+               .replace(/&/g, "&amp;")
                .replace(/  /g, " &nbsp;");
 };
 
@@ -186,8 +186,10 @@ function save_cell(cell) {
     ws.send(msg);
 
     // mark document as modified (cell not so)
-    cell.removeClass("modified");
-    body.addClass("modified");
+    if (cell.hasClass("modified")) {
+        body.addClass("modified");
+        cell.removeClass("modified");
+    }
 }
 
 // create cell

@@ -117,7 +117,7 @@ class BlockLexer(object):
     grammar_class = BlockGrammar
 
     default_rules = [
-        'title', 'image', 'heading', 'nptable', 'equation', 
+        'title', 'image', 'heading', 'nptable', 'equation',
         'block_code', 'list_block', 'table', 'paragraph', 'text'
     ]
 
@@ -703,7 +703,7 @@ class HtmlRenderer(object):
         else:
             tag = 'td'
         align = flags['align']
-        if not align:
+        if not align or align == 'left':
             return '<%s>%s</%s>\n' % (tag, content, tag)
         return '<%s style="text-align:%s">%s</%s>\n' % (
             tag, align, content, tag

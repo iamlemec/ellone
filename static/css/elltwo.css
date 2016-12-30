@@ -121,10 +121,16 @@
 #elltwo table > thead > tr > th {
     border-bottom: 2px solid black;
     padding: 5px 20px 5px 5px;
+    text-align: left;
+    font-variant: small-caps;
 }
 
 #elltwo table > tbody > tr:nth-child(2n) {
-    background-color: #E0E0E0;
+    /*background-color: #E0E0E0;*/
+}
+
+#elltwo table > tbody > tr:not(:last-child) > td {
+    border-bottom: 1px solid #E0E0E0;
 }
 
 #elltwo table > tbody > tr > td {
