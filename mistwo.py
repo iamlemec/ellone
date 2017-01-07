@@ -420,7 +420,6 @@ class InlineLexer(object):
         self._in_link = True
         text = self.output(text)
         self._in_link = False
-        title = self.output(title)
         return self.renderer.link(link, text)
 
     def output_reflink(self, m):

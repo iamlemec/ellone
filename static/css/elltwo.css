@@ -266,6 +266,7 @@
     font-weight: 600;
     text-align: center !important;
     margin-bottom: 40px;
+    border-bottom: 2px solid black;
 }
 
 #elltwo .sec-title.sec-lvl-1 {
