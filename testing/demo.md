@@ -49,6 +49,17 @@ $$ x^2 = \frac{y^2 + \sqrt{\elm^3}}{2}
 
 Equations can be numbered with semi-arbitrary labels as in `[eq1]`, and referenced similarly with `@[eq1]`, for example @[eq1]. There will be a hover preview of the contents of the referenced equation.
 
+# Tables
+
+One can include tables using standard Markdown syntax. Here is an example
+
+| City | Country | Population (m) | Area (km${}^2$) |
+|:---- |:------- |:---------- |:-------------------- |
+| Seoul | South Korea | 10 | 605 |
+| Tokyo | Japan | 14 | 2,188 |
+| Lagos | Nigeria | 16 | 1,171 |
+| New York | USA | 8 | 469 |
+
 # Exporting
 
 Documents can be exported to a variety of formats:
