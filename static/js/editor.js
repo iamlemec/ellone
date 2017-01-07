@@ -536,8 +536,7 @@ function keep_alive() {
 }
 
 // websockets
-function connect(query)
-{
+function connect(query) {
     if ("MozWebSocket" in window) {
         WebSocket = MozWebSocket;
     }
@@ -588,8 +587,7 @@ function connect(query)
     }
 }
 
-function disconnect()
-{
+function disconnect() {
     if (ws) {
         ws.close();
     }
