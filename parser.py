@@ -21,11 +21,11 @@ html_template = """
 
 </head>
 
-<body id="elltwo">
+<body>
 
 <!-- <span id="marquee"></span> -->
 
-<div id="content">
+<div id="elltwo">
 
 %s
 

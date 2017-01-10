@@ -136,6 +136,7 @@ var render = function(defer) {
     console.log("rendering");
     content.children().each(function() {
         var outer = $(this);
+        console.log(outer);
         apply_render(outer, defer);
     });
 };
