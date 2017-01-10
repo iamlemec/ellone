@@ -12,6 +12,7 @@
 
 var block = {
   newline: /^\n+/,
+  equation: /^\$\$ *((?:[^\n]+\n?)*)(?:\n+|$)/,
   code: /^( {4}[^\n]+\n*)+/,
   fences: noop,
   hr: /^( *[-*_]){3,} *(?:\n+|$)/,
@@ -168,6 +169,15 @@ Lexer.prototype.token = function(src, top, bq) {
           type: 'space'
         });
       }
+    }
+
+    // equation
+    if (cap = this.rules.equation.exec(src)) {
+      src = src.substring(cap[0].length);
+      this.tokens.push({
+        type: 'equation',
+        tex: cap[1]
+      })
     }
 
     // code
@@ -460,7 +470,9 @@ var inline = {
   code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
   br: /^ {2,}\n(?!\s*$)/,
   del: noop,
-  text: /^[\s\S]+?(?=[\\<!\[_*`]| {2,}\n|$)/
+  text: /^[\s\S]+?(?=[\\<!\[_*`\$]| {2,}\n|$)/,
+  math: /^\$([\s\S]+?)\$/,
+  ref: /^@\[([^\s\]]+)\]/
 };
 
 inline._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
@@ -564,7 +576,10 @@ InlineLexer.prototype.output = function(src) {
     , link
     , text
     , href
-    , cap;
+    , cap
+    , tex;
+
+  console.log(src);
 
   while (src) {
     // escape
@@ -572,6 +587,21 @@ InlineLexer.prototype.output = function(src) {
       src = src.substring(cap[0].length);
       out += cap[1];
       continue;
+    }
+
+    // math
+    if (cap = this.rules.math.exec(src)) {
+      src = src.substring(cap[0].length);
+      tex = cap[1];
+      out += this.renderer.math(tex);
+      continue;
+    }
+
+    // ref
+    if (cap = this.rules.ref.exec(src)) {
+      src = src.substring(cap[0].length);
+      id = cap[1];
+      out += this.renderer.ref(id);
     }
 
     // autolink
@@ -896,6 +926,21 @@ Renderer.prototype.image = function(href, title, text) {
   return out;
 };
 
+Renderer.prototype.math = function(tex) {
+  var out = '<tex>' + tex + '</tex>';
+  return out;
+}
+
+Renderer.prototype.equation = function(tex) {
+  var out = '<equation>' + tex + '</equation>';
+  return out;
+}
+
+Renderer.prototype.ref = function(id) {
+  var out = '<ref>' + id + '</ref>';
+  return out;
+}
+
 Renderer.prototype.text = function(text) {
   return text;
 };
@@ -1074,6 +1119,9 @@ Parser.prototype.tok = function() {
     case 'paragraph': {
       return this.renderer.paragraph(this.inline.output(this.token.text));
     }
+    case 'equation': {
+      return this.renderer.equation(this.token.tex);
+    }
     case 'text': {
       return this.renderer.paragraph(this.parseText());
     }
@@ -1094,7 +1142,7 @@ function escape(html, encode) {
 }
 
 function unescape(html) {
-	// explicitly match decimal, hex, and named HTML entities 
+	// explicitly match decimal, hex, and named HTML entities
   return html.replace(/&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/g, function(_, n) {
     n = n.toLowerCase();
     if (n === 'colon') return ':';
