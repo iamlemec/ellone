@@ -12,7 +12,6 @@
 
 var block = {
   newline: /^\n+/,
-  equation: /^\$\$ *((?:[^\n]+\n?)*)(?:\n+|$)/,
   code: /^( {4}[^\n]+\n*)+/,
   fences: noop,
   hr: /^( *[-*_]){3,} *(?:\n+|$)/,
@@ -25,7 +24,9 @@ var block = {
   def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +["(]([^\n]+)[")])? *(?:\n+|$)/,
   table: noop,
   paragraph: /^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def))+)\n*/,
-  text: /^[^\n]+/
+  text: /^[^\n]+/,
+  equation: /^\$\$ *(?:\[([\w-]+)\])? *((?:[^\n]+\n?)*)(?:\n+|$)/,
+  title: /^#! *([^\n]*)(?:\n+|$)/
 };
 
 block.bullet = /(?:[*+-]|\d+\.)/;
@@ -176,8 +177,10 @@ Lexer.prototype.token = function(src, top, bq) {
       src = src.substring(cap[0].length);
       this.tokens.push({
         type: 'equation',
-        tex: cap[1]
+        id: cap[1],
+        tex: cap[2]
       })
+      continue;
     }
 
     // code
@@ -200,6 +203,16 @@ Lexer.prototype.token = function(src, top, bq) {
         type: 'code',
         lang: cap[2],
         text: cap[3] || ''
+      });
+      continue;
+    }
+
+    // title
+    if (cap = this.rules.title.exec(src)) {
+      src = src.substring(cap[0].length);
+      this.tokens.push({
+        type: 'title',
+        text: cap[1]
       });
       continue;
     }
@@ -822,6 +835,10 @@ Renderer.prototype.html = function(html) {
   return html;
 };
 
+Renderer.prototype.title = function(text) {
+  return '<title>' + text + '<title>';
+}
+
 Renderer.prototype.heading = function(text, level, raw) {
   return '<h'
     + level
@@ -931,8 +948,12 @@ Renderer.prototype.math = function(tex) {
   return out;
 }
 
-Renderer.prototype.equation = function(tex) {
-  var out = '<equation>' + tex + '</equation>';
+Renderer.prototype.equation = function(id, tex) {
+  if (id) {
+    var out = '<equation id="' + id + '">' + tex + '</equation>';
+  } else {
+    var out = '<equation>' + tex + '</equation>';
+  }
   return out;
 }
 
@@ -1024,6 +1045,9 @@ Parser.prototype.tok = function() {
     }
     case 'hr': {
       return this.renderer.hr();
+    }
+    case 'title': {
+      return this.renderer.title(this.inline.output(this.token.text));
     }
     case 'heading': {
       return this.renderer.heading(
@@ -1120,7 +1144,7 @@ Parser.prototype.tok = function() {
       return this.renderer.paragraph(this.inline.output(this.token.text));
     }
     case 'equation': {
-      return this.renderer.equation(this.token.tex);
+      return this.renderer.equation(this.token.id, this.token.tex);
     }
     case 'text': {
       return this.renderer.paragraph(this.parseText());
