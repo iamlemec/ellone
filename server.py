@@ -258,25 +258,25 @@ class PdfHandler(tornado.web.RequestHandler):
         # generate latex
         fid = open(fullpath, 'r')
         text = fid.read()
-        (latex, images) = parser.convert_latex(text)
+        latex = parser.convert_latex(text)
 
         # create unique directory
         comp_dir = os.path.join(tmp_dir, rand_hex())
         os.mkdir(comp_dir)
 
         # copy over images
-        for img in images:
-            ret = re.search(r'(^|:)//(.*)', img)
-            if ret:
-                (rloc, ) = ret.groups()
-                (_, rname) = os.path.split(rloc)
-                urllib.urlretrieve(url, os.path.join(comp_dir, rname))
-            else:
-                if img[0] == '/':
-                    ipath = img[1:]
-                else:
-                    ipath = os.path.join(rdir, img)
-                shutil.copy(os.path.join(args.path, ipath), comp_dir)
+        # for img in images:
+        #     ret = re.search(r'(^|:)//(.*)', img)
+        #     if ret:
+        #         (rloc, ) = ret.groups()
+        #         (_, rname) = os.path.split(rloc)
+        #         urllib.urlretrieve(url, os.path.join(comp_dir, rname))
+        #     else:
+        #         if img[0] == '/':
+        #             ipath = img[1:]
+        #         else:
+        #             ipath = os.path.join(rdir, img)
+        #         shutil.copy(os.path.join(args.path, ipath), comp_dir)
 
         # find new name
         ret = re.match(r'(.*)\.md', fname)
