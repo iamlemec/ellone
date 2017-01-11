@@ -836,7 +836,7 @@ class LatexRenderer(object):
         return ''
 
     def block_code(self, code, lang=None):
-        return '\\begin{lstlisting}\n%s\n\\end{lstlisting}\n\n' % code
+        return '\\begin{quote}\n%s\n\\end{quote}\n\n' % code
 
     def header(self, text, level, raw=None):
         return '\\%ssection{%s}\n\n' % ('sub'*(level-1), text)
@@ -851,11 +851,11 @@ class LatexRenderer(object):
         return '\\item %s\n' % text
 
     def paragraph(self, text):
-        return '%s\n\n' % text
+        return '%s\n\n' % text.replace('\n','\\newline ')
 
     def table(self, header, body):
-        ncols = len(re.findall(r'(?:^|[^\\])&', header))
-        return '\\begin{tabular}{%s}\n%s\n\\hrule\n%s\n\\end{tabular}\n\n' % (ncols*'c', header, body)
+        ncols = len(re.findall(r'(?:^|[^\\])&', header)) + 1
+        return '\\begin{center}\n\\begin{tabular}{%s}\n%s\n\\hline\n%s\n\\end{tabular}\n\\end{center}\n\n' % (ncols*'c', header, body)
 
     def table_row(self, content):
         row = content.rstrip()
