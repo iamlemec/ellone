@@ -26,8 +26,17 @@ var block = {
   paragraph: /^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def))+)\n*/,
   text: /^[^\n]+/,
   equation: /^\$\$ *(?:\[([\w-]+)\])? *((?:[^\n]+\n?)*)(?:\n+|$)/,
-  title: /^#! *([^\n]*)(?:\n+|$)/
+  title: /^#! *([^\n]*)(?:\n+|$)/,
+  image: /^!\[(inside)\]\(href\)/
 };
+
+block._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
+block._href = /\s*<?([\s\S]*?)>?(?:\s+['"]([\s\S]*?)['"])?\s*/;
+
+block.image = replace(block.image)
+  ('inside', block._inside)
+  ('href', block._href)
+  ();
 
 block.bullet = /(?:[*+-]|\d+\.)/;
 block.item = /^( *)(bull) [^\n]*(?:\n(?!\1bull )[^\n]*)*/;
@@ -192,6 +201,17 @@ Lexer.prototype.token = function(src, top, bq) {
         text: !this.options.pedantic
           ? cap.replace(/\n+$/, '')
           : cap
+      });
+      continue;
+    }
+
+    // image
+    if (cap = this.rules.image.exec(src)) {
+      src = src.substring(cap[0].length);
+      this.tokens.push({
+        type: 'image',
+        title: cap[1],
+        href: cap[2]
       });
       continue;
     }
@@ -483,9 +503,10 @@ var inline = {
   code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
   br: /^ {2,}\n(?!\s*$)/,
   del: noop,
-  text: /^[\s\S]+?(?=[\\<!\[_*`\$]| {2,}\n|$)/,
+  text: /^[\s\S]+?(?=[\\<!\[_*`\$\^@]| {2,}\n|$)/,
   math: /^\$([\s\S]+?)\$/,
-  ref: /^@\[([^\s\]]+)\]/
+  ref: /^@\[([\w-]+?)\]/,
+  footnote: /^\^\[(inside)\]/
 };
 
 inline._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
@@ -497,6 +518,10 @@ inline.link = replace(inline.link)
   ();
 
 inline.reflink = replace(inline.reflink)
+  ('inside', inline._inside)
+  ();
+
+inline.footnote = replace(inline.footnote)
   ('inside', inline._inside)
   ();
 
@@ -592,8 +617,6 @@ InlineLexer.prototype.output = function(src) {
     , cap
     , tex;
 
-  console.log(src);
-
   while (src) {
     // escape
     if (cap = this.rules.escape.exec(src)) {
@@ -615,6 +638,13 @@ InlineLexer.prototype.output = function(src) {
       src = src.substring(cap[0].length);
       id = cap[1];
       out += this.renderer.ref(id);
+    }
+
+    // footnote
+    if (cap = this.rules.footnote.exec(src)) {
+      src = src.substring(cap[0].length);
+      out += this.renderer.footnote(this.output(cap[1]));
+      continue;
     }
 
     // autolink
@@ -934,19 +964,26 @@ Renderer.prototype.link = function(href, title, text) {
   return out;
 };
 
+/*
 Renderer.prototype.image = function(href, title, text) {
-  var out = '<img src="' + href + '" alt="' + text + '"';
+  var out = '<figure><img src="' + href + '" alt="' + text + '"';
   if (title) {
     out += ' title="' + title + '"';
   }
   out += this.options.xhtml ? '/>' : '>';
+  out += '</figure>';
   return out;
+};
+*/
+
+Renderer.prototype.text = function(text) {
+  return text;
 };
 
 Renderer.prototype.math = function(tex) {
   var out = '<tex>' + tex + '</tex>';
   return out;
-}
+};
 
 Renderer.prototype.equation = function(id, tex) {
   if (id) {
@@ -955,16 +992,22 @@ Renderer.prototype.equation = function(id, tex) {
     var out = '<equation>' + tex + '</equation>';
   }
   return out;
-}
+};
 
 Renderer.prototype.ref = function(id) {
   var out = '<ref>' + id + '</ref>';
   return out;
-}
-
-Renderer.prototype.text = function(text) {
-  return text;
 };
+
+Renderer.prototype.footnote = function(text) {
+  var out = '<footnote>' + text + '</footnote>';
+  return out;
+};
+
+Renderer.prototype.image = function(title, href) {
+  var out = '<figure>\n' + '<img src="' + href + '">\n<figcaption>' + title + '</figcaption>\n</figure>';
+  return out;
+}
 
 /**
  * Parsing & Compiling
@@ -1143,11 +1186,14 @@ Parser.prototype.tok = function() {
     case 'paragraph': {
       return this.renderer.paragraph(this.inline.output(this.token.text));
     }
+    case 'text': {
+      return this.renderer.paragraph(this.parseText());
+    }
     case 'equation': {
       return this.renderer.equation(this.token.id, this.token.tex);
     }
-    case 'text': {
-      return this.renderer.paragraph(this.parseText());
+    case 'image': {
+      return this.renderer.image(this.inline.output(this.token.title), this.token.href);
     }
   }
 };
@@ -1350,7 +1396,7 @@ if (typeof module !== 'undefined' && typeof exports === 'object') {
 } else if (typeof define === 'function' && define.amd) {
   define(function() { return marked; });
 } else {
-  this.marked = marked;
+  this.marktwo = marked;
 }
 
 }).call(function() {

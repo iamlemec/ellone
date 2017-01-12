@@ -186,10 +186,8 @@ function save_cell(cell) {
     ws.send(msg);
 
     // mark document as modified (cell not so)
-    if (cell.hasClass("modified")) {
-        body.addClass("modified");
-        cell.removeClass("modified");
-    }
+    body.addClass("modified");
+    cell.removeClass("modified");
 }
 
 // create cell
@@ -291,7 +289,10 @@ function freeze_cell(outer) {
     var base = unescape_html(text);
     outer.attr("base-text", base);
     outer.removeClass("editing");
-    save_cell(outer);
+    render_cell(outer);
+    if (outer.hasClass("modified")) {
+        save_cell(outer);
+    }
 }
 
 // start editing cell
@@ -346,8 +347,9 @@ function make_para(text, cid, prev, next, edit) {
 }
 
 // wrapper for cell rendering
-function render_cell(cid, html, defer) {
-    var outer = $(".cell[cid=" + cid + "]");
+function render_cell(outer, defer) {
+    var text = outer.attr("base-text");
+    var html = marktwo.parse(text);
     var box = $(html);
     outer.empty();
     outer.append(box);
@@ -571,14 +573,11 @@ function connect(query) {
                         var c = cells[i];
                         var outer = make_para(c["text"], c["cid"], c["prev"], c["next"]);
                         content.append(outer);
-                        render_cell(c["cid"], c["html"], true);
+                        render_cell(outer, true);
                     }
                     full_update();
                     active = content.children(".cell").first();
                     active.addClass("active");
-                } else if (cmd == "render") {
-                    var cont = json_data["content"];
-                    render_cell(cont["cid"], cont["html"], cont["defer"]);
                 }
             }
         };

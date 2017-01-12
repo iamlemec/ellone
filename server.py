@@ -351,16 +351,13 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             vcells = [{'cid': i,
                        'prev': c['prev'],
                        'next': c['next'],
-                       'text': c['body'],
-                       'html': parser.parse_html(c['body'])
+                       'text': c['body']
                       } for (i, c) in self.cells.items()]
             self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
         elif cmd == 'save':
             cid = int(cont['cid'])
             body = cont['body']
             self.cells[cid]['body'] = body
-            html = parser.parse_html(body)
-            self.write_message({'cmd': 'render', 'content': {'cid': cid, 'html': html}})
         elif cmd == 'create':
             newid = int(cont['newid'])
             prev = int(cont['prev'])

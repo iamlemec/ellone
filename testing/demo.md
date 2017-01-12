@@ -26,16 +26,17 @@ Text cells can be typed in verbatim. Create heading cells by prefacing them with
 
 Clicking on a cell, makes it the active cell. One can also move to the previous or next cell with the arrow keys. Creation and deletion of cells can also be accomplished with the mouse hover buttons.
 
-Footnotes can be created with a caret and text in square brackets, as in `^[footnote text]`. Their text will be displayed in a hover over and they will be automatically numbered from 1. For example, this is a footnote ^[The proof is left as an exercise to the reader. 😄]. And here is another ^[And my $\sin(x^2)$ axe! Yes, you can put math and even references @[eq1] in footnotes.].
+Footnotes can be created with a caret and text in square brackets, as in `^[footnote text]`. Their text will be displayed in a hover over and they will be automatically numbered from 1. For example, this is a footnote ^[The proof is left as an exercise to the reader. 😄]. And here is another ^[And my $\sin(x^2)$ axe! Yes, you can put math in footnotes and even @[eq1] references.].
 
 You can make inline code blocks with ` ` `. Multiline code blocks, similar to multiline equations, can be created by starting a cell with ` `` `, as in:
 
-``
+```
 def fib(n):
     if n > 0:
         return n*fib(n-1)
     else:
         return 1
+```
 
 # Math
 
