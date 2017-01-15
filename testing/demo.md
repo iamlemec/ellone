@@ -32,10 +32,10 @@ You can make inline code blocks with ` ` `. Multiline code blocks, similar to mu
 
 ```
 def fib(n):
-    if n > 0:
-        return n*fib(n-1)
-    else:
-        return 1
+   if n &gt; 0:
+       return n*fib(n-1)
+   else:
+       return 1
 ```
 
 # Math

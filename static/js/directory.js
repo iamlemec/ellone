@@ -24,7 +24,7 @@ function connect()
     WebSocket = MozWebSocket;
   }
   if ('WebSocket' in window) {
-    var ws_con = "ws://" + window.location.host + "/diredit/" + relpath;
+    var ws_con = "ws://" + window.location.host + "/__diredit/" + relpath;
     console.log(ws_con);
 
     ws = new WebSocket(ws_con);

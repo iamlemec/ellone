@@ -52,7 +52,7 @@ if use_auth:
             current_user = self.get_secure_cookie('user')
             print(current_user)
             if not current_user:
-                self.redirect('/auth/login/')
+                self.redirect('/__auth/login/')
                 return
             get0(self, *args)
         return get1
@@ -185,131 +185,34 @@ class DemoHandler(tornado.web.RequestHandler):
         shutil.copy(os.path.join('testing', 'Jahnke_gamma_function.png'), fullpath)
         self.redirect('/%s' % drand)
 
-class MarkdownHandler(tornado.web.RequestHandler):
+class ExportHandler(tornado.web.RequestHandler):
     @authenticated
     def post(self, rpath):
         (curdir, fname) = os.path.split(rpath)
-        fullpath = os.path.join(args.path, rpath)
+        fullpath = os.path.join(tmp_dir, rpath)
+        (base_name, ext) = os.path.splitext(fname)
+        ext = ext[1:]
 
         # read source
-        fid = open(fullpath, 'r')
+        if ext == 'md':
+            fmode = 'r'
+            ctype = 'text/markdown'
+        elif ext == 'html':
+            fmode = 'r'
+            ctype = 'text/html'
+        elif ext == 'tex':
+            fmode = 'r'
+            ctype = 'text/latex'
+        elif ext == 'pdf':
+            fmode = 'rb'
+            ctype = 'application/pdf'
+        fid = open(fullpath, fmode)
         text = fid.read()
 
         # post output
-        self.set_header('Content-Type', 'text/markdown')
+        self.set_header('Content-Type', ctype)
         self.set_header('Content-Disposition', 'attachment; filename=%s' % fname)
         self.write(text)
-    get = post
-
-class HtmlHandler(tornado.web.RequestHandler):
-    @authenticated
-    def post(self, rpath):
-        (curdir, fname) = os.path.split(rpath)
-        fullpath = os.path.join(args.path, rpath)
-
-        # generate html
-        fid = open(fullpath, 'r')
-        text = fid.read()
-        html = parser.convert_html(text)
-
-        # find new name
-        ret = re.match(r'(.*)\.md', fname)
-        if ret:
-            fname_new = ret.group(1)
-        else:
-            fname_new = fname
-
-        # post output
-        self.set_header('Content-Type', 'text/html')
-        self.set_header('Content-Disposition', 'attachment; filename=%s.html' % fname_new)
-        self.write(html)
-    get = post
-
-class LatexHandler(tornado.web.RequestHandler):
-    @authenticated
-    def post(self, rpath):
-        (curdir, fname) = os.path.split(rpath)
-        fullpath = os.path.join(args.path, rpath)
-
-        # generate latex
-        fid = open(fullpath, 'r')
-        text = fid.read()
-        latex = parser.convert_latex(text)
-
-        # find new name
-        ret = re.match(r'(.*)\.md', fname)
-        if ret:
-            fname_new = ret.group(1)
-        else:
-            fname_new = fname
-
-        # post output
-        self.set_header('Content-Type', 'text/latex')
-        self.set_header('Content-Disposition', 'attachment; filename=%s.tex' % fname_new)
-        self.write(latex)
-    get = post
-
-class PdfHandler(tornado.web.RequestHandler):
-    @authenticated
-    def post(self, rpath):
-        (rdir, fname) = os.path.split(rpath)
-        fullpath = os.path.join(args.path, rpath)
-
-        # generate latex
-        fid = open(fullpath, 'r')
-        text = fid.read()
-        latex = parser.convert_latex(text)
-
-        # create unique directory
-        comp_dir = os.path.join(tmp_dir, rand_hex())
-        os.mkdir(comp_dir)
-
-        # copy over images
-        # for img in images:
-        #     ret = re.search(r'(^|:)//(.*)', img)
-        #     if ret:
-        #         (rloc, ) = ret.groups()
-        #         (_, rname) = os.path.split(rloc)
-        #         urllib.urlretrieve(url, os.path.join(comp_dir, rname))
-        #     else:
-        #         if img[0] == '/':
-        #             ipath = img[1:]
-        #         else:
-        #             ipath = os.path.join(rdir, img)
-        #         shutil.copy(os.path.join(args.path, ipath), comp_dir)
-
-        # find new name
-        ret = re.match(r'(.*)\.md', fname)
-        if ret:
-            fname_new = ret.group(1)
-        else:
-            fname_new = fname
-
-        # write latex file
-        fname_tex = '%s.tex' % fname_new
-        ftex = open(os.path.join(comp_dir, fname_tex), 'w+')
-        ftex.write(latex)
-        ftex.close()
-
-        # compile latex file
-        cwd = os.getcwd()
-        os.chdir(comp_dir)
-        call(['pdflatex', '-interaction=nonstopmode', fname_tex])
-        call(['pdflatex', '-interaction=nonstopmode', fname_tex]) # to resolve references
-        os.chdir(cwd)
-
-        # read latex file
-        fname_pdf = '%s.pdf' % fname_new
-        fpdf = open(os.path.join(comp_dir, fname_pdf), 'rb')
-        data = fpdf.read()
-
-        # remove compilation directory
-        shutil.rmtree(comp_dir)
-
-        # post output
-        self.set_header('Content-Type', 'application/pdf')
-        self.set_header('Content-Disposition', 'attachment; filename=%s' % fname_pdf)
-        self.write(data)
     get = post
 
 class ContentHandler(tornado.websocket.WebSocketHandler):
@@ -382,10 +285,40 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             fid.write(output)
             fid.close()
             shutil.move(self.temppath, self.fullpath)
-        elif cmd == 'revert':
-            self.cells = read_cells(self.fullpath)
-            vcells = [{'cid': i, 'prev': c['prev'], 'next': c['next'], 'body': c['body']} for (i, c) in self.cells.items()]
-            self.write_message(json.dumps({'cmd': 'results', 'content': vcells}))
+        elif cmd == 'export':
+            fmt = cont['format']
+            data = cont['data']
+
+            # create unique directory
+            uuid = rand_hex()
+            exp_dir = os.path.join(tmp_dir, uuid)
+            os.mkdir(exp_dir)
+
+            # format specific
+            (name_base, name_ext) = os.path.splitext(self.fname)
+            if fmt == 'md':
+                name_new = '%s.md' % name_base
+            elif fmt == 'html':
+                name_new = '%s.html' % name_base
+            elif fmt == 'latex' or fmt == 'pdf':
+                name_new = '%s.tex' % name_base
+
+            # save file
+            fid = codecs.open(os.path.join(exp_dir, name_new), 'w+', encoding='utf-8')
+            fid.write(data)
+            fid.close()
+
+            # compilation for pdf
+            if fmt == 'pdf':
+                cwd = os.getcwd()
+                os.chdir(exp_dir)
+                call(['pdflatex', '-interaction=nonstopmode', name_new])
+                call(['pdflatex', '-interaction=nonstopmode', name_new]) # to resolve references
+                os.chdir(cwd)
+                name_new = '%s.pdf' % name_base
+
+            # reply with location
+            self.write_message(json.dumps({'cmd': 'serve', 'content': os.path.join(uuid, name_new)}))
 
 class FileHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -458,15 +391,12 @@ class FileHandler(tornado.websocket.WebSocketHandler):
 class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
-            (r'/auth/login/?', AuthLoginHandler),
-            (r'/auth/logout/?', AuthLogoutHandler),
-            (r'/upload/(.*)', UploadHandler),
-            (r'/markdown/(.+)', MarkdownHandler),
-            (r'/html/(.+)', HtmlHandler),
-            (r'/latex/(.+)', LatexHandler),
-            (r'/pdf/(.+)', PdfHandler),
-            (r'/elledit/(.*)', ContentHandler),
-            (r'/diredit/(.*)', FileHandler)
+            (r'/__auth/login/?', AuthLoginHandler),
+            (r'/__auth/logout/?', AuthLogoutHandler),
+            (r'/__upload/(.*)', UploadHandler),
+            (r'/__export/(.*)', ExportHandler),
+            (r'/__elledit/(.*)', ContentHandler),
+            (r'/__diredit/(.*)', FileHandler)
         ]
 
         if args.demo:

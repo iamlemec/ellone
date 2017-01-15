@@ -134,6 +134,12 @@ var apply_render = function(box, defer) {
 
 var render = function(defer) {
     console.log("rendering");
+    if (content.hasClass("markdown")) {
+        var md = content.html();
+        var html = marktwo.parse(md);
+        content.html(html);
+        content.removeClass("markdown");
+    }
     content.children().each(function() {
         var outer = $(this);
         apply_render(outer, defer);

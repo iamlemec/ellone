@@ -866,8 +866,8 @@ Renderer.prototype.html = function(html) {
 };
 
 Renderer.prototype.title = function(text) {
-  return '<title>' + text + '<title>';
-}
+  return '<title>' + text + '</title>\n';
+};
 
 Renderer.prototype.heading = function(text, level, raw) {
   return '<h'
@@ -964,18 +964,6 @@ Renderer.prototype.link = function(href, title, text) {
   return out;
 };
 
-/*
-Renderer.prototype.image = function(href, title, text) {
-  var out = '<figure><img src="' + href + '" alt="' + text + '"';
-  if (title) {
-    out += ' title="' + title + '"';
-  }
-  out += this.options.xhtml ? '/>' : '>';
-  out += '</figure>';
-  return out;
-};
-*/
-
 Renderer.prototype.text = function(text) {
   return text;
 };
@@ -987,9 +975,9 @@ Renderer.prototype.math = function(tex) {
 
 Renderer.prototype.equation = function(id, tex) {
   if (id) {
-    var out = '<equation id="' + id + '">' + tex + '</equation>';
+    var out = '<equation id="' + id + '">' + tex + '</equation>\n';
   } else {
-    var out = '<equation>' + tex + '</equation>';
+    var out = '<equation>' + tex + '</equation>\n';
   }
   return out;
 };
@@ -1005,8 +993,152 @@ Renderer.prototype.footnote = function(text) {
 };
 
 Renderer.prototype.image = function(title, href) {
-  var out = '<figure>\n' + '<img src="' + href + '">\n<figcaption>' + title + '</figcaption>\n</figure>';
+  var out = '<figure>\n' + '<img src="' + href + '">\n<figcaption>' + title + '</figcaption>\n</figure>\n';
   return out;
+}
+
+/**
+ * Latex Renderer
+ */
+
+function LatexRenderer(options) {
+  this.options = options || {};
+}
+
+LatexRenderer.prototype.code = function(code, lang, escaped) {
+  return '\\begin{quote}\n' + (escaped ? code : escape(code, true)) + '\n\\end{quote}\n';
+};
+
+LatexRenderer.prototype.blockquote = function(quote) {
+  return '\\begin{quote}\n' + quote + '\n\\end{quote}\n';
+};
+
+LatexRenderer.prototype.html = function(html) {
+  return html;
+};
+
+LatexRenderer.prototype.title = function(text) {
+  return '\\begin{center}\n{\\LARGE \\bf ' + text + '}\n\\vspace*{0.8cm}\n\\end{center}\n';
+};
+
+LatexRenderer.prototype.heading = function(text, level, raw) {
+  return '\\' + 'sub'.repeat(level) + 'section{' + text + '}\n';
+};
+
+LatexRenderer.prototype.hr = function() {
+  return '\\hrule\n';
+};
+
+LatexRenderer.prototype.list = function(body, ordered) {
+  var type = ordered ? 'enumerate' : 'itemize';
+  return '\\begin{' + type + '}\n' + body + '\\end{' + type + '}\n';
+};
+
+LatexRenderer.prototype.listitem = function(text) {
+  return '\\item ' + text + '\n';
+};
+
+LatexRenderer.prototype.paragraph = function(text) {
+  return text + '\n';
+};
+
+LatexRenderer.prototype.table = function(header, body) {
+  var ncols = header.match(/(^|[^\\])&/g).length;
+  return '\\begin{center}\n'
+    + '\\begin{tabular}{' + 'c'.repeat(ncols) + '}\n'
+    + header + '\n'
+    + '\\hline\n'
+    + body + '\n'
+    + '\\end{tabular}\n'
+    + '\\end{center}\n';
+};
+
+LatexRenderer.prototype.tablerow = function(content) {
+  var row = content.trimRight();
+  if (row.endsWith('&')) {
+    row = row.slice(0,-1).trimRight() + ' \\\\';
+  }
+  return row;
+};
+
+LatexRenderer.prototype.tablecell = function(content, flags) {
+  var cell;
+  if (flags.header) {
+    cell = '\\textbf{' + content + '}'
+  } else {
+    cell = content;
+  }
+  return cell + ' &';
+};
+
+// span level renderer
+LatexRenderer.prototype.strong = function(text) {
+  return '\\textbf{' + text + '}';
+};
+
+LatexRenderer.prototype.em = function(text) {
+  return '\\textit{' + text + '}';
+};
+
+LatexRenderer.prototype.codespan = function(text) {
+  var out = text.replace(/\^/g,'\\textasciicircum');
+  return '\\texttt{' + out + '}';
+};
+
+LatexRenderer.prototype.br = function() {
+  return '\\newline';
+};
+
+LatexRenderer.prototype.del = function(text) {
+  return '\\sout{' + text + '}';
+};
+
+LatexRenderer.prototype.link = function(href, title, text) {
+  if (this.options.sanitize) {
+    try {
+      var prot = decodeURIComponent(unescape(href))
+        .replace(/[^\w:]/g, '')
+        .toLowerCase();
+    } catch (e) {
+      return '';
+    }
+    if (prot.indexOf('javascript:') === 0 || prot.indexOf('vbscript:') === 0) {
+      return '';
+    }
+  }
+  return '\\href{' + href + '}{' + text + '}';
+};
+
+LatexRenderer.prototype.text = function(text) {
+  return text;
+};
+
+LatexRenderer.prototype.math = function(tex) {
+  return '$' + tex + '$';
+};
+
+LatexRenderer.prototype.equation = function(id, tex) {
+  if (id) {
+    var out = '\\begin{align} \\label{' + id + '}\n' + tex + '\n\\end{align}\n';
+  } else {
+    var out = '\\begin{align*}\n' + tex + '\n\\end{align*}\n';
+  }
+  return out;
+};
+
+LatexRenderer.prototype.ref = function(id) {
+  return '\\Cref{' + id + '}';
+};
+
+LatexRenderer.prototype.footnote = function(text) {
+  return '\\footnote{' + text + '}';
+};
+
+LatexRenderer.prototype.image = function(title, href) {
+  return '\\begin{figure}\n'
+    + '\\includegraphics[width=\\textwidth]{' + href + '}\n'
+    + '\\caption{' + title + '}\n'
+    + '\\end{figure}\n';
 }
 
 /**
@@ -1382,6 +1514,7 @@ marked.Parser = Parser;
 marked.parser = Parser.parse;
 
 marked.Renderer = Renderer;
+marked.LatexRenderer = LatexRenderer;
 
 marked.Lexer = Lexer;
 marked.lexer = Lexer.lex;
