@@ -135,7 +135,7 @@ var apply_render = function(box, defer) {
 var render = function(defer) {
     console.log("rendering");
     if (content.hasClass("markdown")) {
-        var md = content.html();
+        var md = content.text();
         var html = marktwo.parse(md);
         content.html(html);
         content.removeClass("markdown");

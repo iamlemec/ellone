@@ -297,9 +297,7 @@ function freeze_cell(outer) {
 
 // start editing cell
 function unfreeze_cell(outer) {
-    var base = outer.attr("base-text");
-    // var text = escape_html(base);
-    var text = base;
+    var text = outer.attr("base-text");
     var html = add_tags(text);
     var inner = $("<div>", {html: html, contentEditable: true});
     outer.addClass("editing");
