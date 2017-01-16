@@ -190,10 +190,10 @@ class ExportHandler(tornado.web.RequestHandler):
     def post(self, rpath):
         (curdir, fname) = os.path.split(rpath)
         fullpath = os.path.join(tmp_dir, rpath)
+
+        # determine content type
         (base_name, ext) = os.path.splitext(fname)
         ext = ext[1:]
-
-        # read source
         if ext == 'md':
             fmode = 'r'
             ctype = 'text/markdown'
@@ -206,6 +206,8 @@ class ExportHandler(tornado.web.RequestHandler):
         elif ext == 'pdf':
             fmode = 'rb'
             ctype = 'application/pdf'
+
+        # read source
         fid = open(fullpath, fmode)
         text = fid.read()
 
@@ -298,7 +300,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             (name_base, name_ext) = os.path.splitext(self.fname)
             if fmt == 'md':
                 name_new = '%s.md' % name_base
-            elif fmt == 'html':
+            elif fmt == 'html' or fmt == 'mdplus':
                 name_new = '%s.html' % name_base
             elif fmt == 'latex' or fmt == 'pdf':
                 name_new = '%s.tex' % name_base

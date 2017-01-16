@@ -298,7 +298,8 @@ function freeze_cell(outer) {
 // start editing cell
 function unfreeze_cell(outer) {
     var base = outer.attr("base-text");
-    var text = escape_html(base);
+    // var text = escape_html(base);
+    var text = base;
     var html = add_tags(text);
     var inner = $("<div>", {html: html, contentEditable: true});
     outer.addClass("editing");
@@ -368,8 +369,8 @@ function generate_markdown() {
     return md.trimRight();
 }
 
-// exporting to html
-var pre_html = `<!doctype html>
+// exporting to markdown in html
+var pre_mdplus = `<!doctype html>
 <html>
 
 <head>
@@ -384,9 +385,10 @@ var pre_html = `<!doctype html>
 <!-- <span id="marquee"></span> -->
 
 <div id="elltwo" class="markdown">
+
 `;
 
-var post_html = `
+var post_mdplus = `
 
 </div>
 
@@ -403,8 +405,48 @@ elltwo.init();
 
 </html>`;
 
+function generate_mdplus() {
+    var md = generate_markdown();
+    return pre_mdplus + md + post_mdplus;
+}
+
+// exporting to html
+var pre_html = `<!doctype html>
+<html>
+
+<head>
+
+<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+
+</head>
+
+<body>
+
+<!-- <span id="marquee"></span> -->
+
+<div id="elltwo">
+
+`;
+
+var post_html = `
+
+</div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+
+<script type="text/javascript">
+elltwo.init();
+</script>
+
+</body>
+
+</html>`;
+
 // construct html parser
-var opts_html = {'renderer': new marktwo.Renderer};
+var opts_html = marktwo.merge({}, marktwo.defaults, {'renderer': new marktwo.Renderer});
 var lexer_html = new marktwo.Lexer(opts_html);
 var parser_html = new marktwo.Parser(opts_html);
 function parse_html(src) {
@@ -414,7 +456,8 @@ function parse_html(src) {
 function generate_html() {
     console.log("getting html");
     var md = generate_markdown();
-    return pre_html + md + post_html;
+    var html = parse_html(md);
+    return pre_html + html.trim() + post_html;
 }
 
 // exporting to latex/pdf
@@ -444,7 +487,7 @@ var post_latex = `
 \\end{document}`;
 
 // construct latex parser
-var opts_latex = {'renderer': new marktwo.LatexRenderer};
+var opts_latex = marktwo.merge({}, marktwo.defaults, {'renderer': new marktwo.LatexRenderer});
 var lexer_latex = new marktwo.Lexer(opts_latex);
 var parser_latex = new marktwo.Parser(opts_latex);
 function parse_latex(src) {
@@ -453,15 +496,9 @@ function parse_latex(src) {
 
 function generate_latex() {
     console.log("getting latex");
-    var latex = '';
-    content.children().each(function() {
-        var outer = $(this);
-        var md = outer.attr("base-text");
-        latex += parse_latex(md);
-        latex += '\n';
-    });
-
-    return pre_latex + latex + post_latex;
+    var md = generate_markdown();
+    var latex = parse_latex(md);
+    return pre_latex + latex.trim() + post_latex;
 }
 
 // initialization code
@@ -482,6 +519,12 @@ function initialize() {
     $("#topbar-markdown").click(function() {
         var md = generate_markdown();
         var msg = JSON.stringify({"cmd": "export", "content": {"format": "md", "data": md}});
+        ws.send(msg);
+    });
+
+    $("#topbar-mdplus").click(function() {
+        var md = generate_mdplus();
+        var msg = JSON.stringify({"cmd": "export", "content": {"format": "mdplus", "data": md}});
         ws.send(msg);
     });
 
