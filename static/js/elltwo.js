@@ -24,6 +24,13 @@ var resolve_url = function(url) {
     return url;
 };
 
+var unescape_html = function(text) {
+    return text.replace(/&lt;/g, "<")
+               .replace(/&gt;/g, ">")
+               .replace(/&amp;/g, "&")
+               .replace(/&nbsp;/g, " ");
+};
+
 // rendering
 var apply_render = function(box, defer) {
     var new_section = false;
@@ -135,7 +142,7 @@ var apply_render = function(box, defer) {
 var render = function(defer) {
     console.log("rendering");
     if (content.hasClass("markdown")) {
-        var md = content.text();
+        var md = unescape_html(content.html());
         var html = marktwo.parse(md);
         content.html(html);
         content.removeClass("markdown");
@@ -285,6 +292,7 @@ if (marquee.length > 0) {
 // public interface
 return {
     init: init,
+    unescape_html: unescape_html,
     apply_render: apply_render,
     number_footnotes: number_footnotes,
     number_equations: number_equations,

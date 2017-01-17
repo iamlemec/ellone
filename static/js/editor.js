@@ -38,20 +38,6 @@ function add_tags(html) {
     return html.replace(/\n/g, "<br>");
 }
 
-function escape_html(text) {
-    return text.replace(/</g, "&lt;")
-               .replace(/>/g, "&gt;")
-               .replace(/&/g, "&amp;")
-               .replace(/  /g, " &nbsp;");
-};
-
-function unescape_html(text) {
-    return text.replace(/&lt;/g, "<")
-               .replace(/&gt;/g, ">")
-               .replace(/&amp;/g, "&")
-               .replace(/&nbsp;/g, " ");
-};
-
 // cell utils
 function get_inner(outer, jq) {
     var inner = outer.children().first();
@@ -286,7 +272,7 @@ function freeze_cell(outer) {
     var inner = get_inner(outer, true);
     var html = inner.html();
     var text = strip_tags(html);
-    var base = unescape_html(text);
+    var base = elltwo.unescape_html(text);
     outer.attr("base-text", base);
     outer.removeClass("editing");
     render_cell(outer);
