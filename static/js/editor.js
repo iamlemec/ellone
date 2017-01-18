@@ -346,6 +346,11 @@ function initialize() {
     // marquee box
     var marquee = $("#marquee");
     var help = $("#help");
+    if (marquee.length > 0) {
+        var span = $("<span>", {class: "latex"});
+        katex.render("\\ell^2", span[0], {throwOnError: false});
+        marquee.append(span);
+    }
     marquee.click(function() {
         help.slideToggle("fast");
     });

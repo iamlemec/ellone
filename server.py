@@ -126,7 +126,7 @@ class AuthLoginHandler(tornado.web.RequestHandler):
             self.redirect('/')
         else:
             error_msg = '?error=' + tornado.escape.url_escape('Login incorrect')
-            self.redirect('/auth/login/' + error_msg)
+            self.redirect('/__auth/login/' + error_msg)
 
     def set_current_user(self, user):
         if user:

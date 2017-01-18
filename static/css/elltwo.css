@@ -252,6 +252,12 @@
     left: 96px;
 }
 
+/* export overlay */
+
+#elltwo.overlay {
+    width: 1000px !important;
+}
+
 /* theme */
 
 #marquee {

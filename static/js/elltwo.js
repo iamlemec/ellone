@@ -24,11 +24,19 @@ var resolve_url = function(url) {
     return url;
 };
 
+function escape_html(text) {
+    return text.replace(/</g, "&lt;")
+               .replace(/>/g, "&gt;")
+               .replace(/&/g, "&amp;")
+               .replace(/  /g, " &nbsp;");
+};
+
 var unescape_html = function(text) {
     return text.replace(/&lt;/g, "<")
                .replace(/&gt;/g, ">")
                .replace(/&amp;/g, "&")
-               .replace(/&nbsp;/g, " ");
+               .replace(/&nbsp;/g, " ")
+               .replace(/&#39;/g, "'");
 };
 
 // rendering
@@ -143,14 +151,24 @@ var render = function(defer) {
     console.log("rendering");
     if (content.hasClass("markdown")) {
         var md = unescape_html(content.html());
-        var html = marktwo.parse(md);
-        content.html(html);
-        content.removeClass("markdown");
+        content.empty();
+        var cells = md.split('\n\n');
+        for (i in cells) {
+            var c = cells[i].trim();
+            var div = $("<div>", {class: "cell", "base-text": c, html: marktwo.parse(c)});
+            content.append(div);
+        }
+        content.children().each(function() {
+            var outer = $(this);
+            var inner = outer.children().first();
+            apply_render(inner, defer);
+        });
+    } else {
+        content.children().each(function() {
+            var outer = $(this);
+            apply_render(outer, defer);
+        });
     }
-    content.children().each(function() {
-        var outer = $(this);
-        apply_render(outer, defer);
-    });
 };
 
 var number_sections = function() {
@@ -296,8 +314,6 @@ var pre_mdplus = `<!doctype html>
 
 <body>
 
-<!-- <span id="marquee"></span> -->
-
 <div id="elltwo" class="markdown">
 
 `;
@@ -337,8 +353,6 @@ var pre_html = `<!doctype html>
 
 <body>
 
-<!-- <span id="marquee"></span> -->
-
 <div id="elltwo">
 
 `;
@@ -370,7 +384,7 @@ function parse_html(src) {
 function generate_html() {
     console.log("getting html");
     var md = generate_markdown();
-    var html = parse_html(md);
+    var html = unescape_html(parse_html(md));
     return pre_html + html.trim() + post_html;
 }
 
@@ -415,22 +429,44 @@ function generate_latex() {
     return pre_latex + latex.trim() + post_latex;
 }
 
+function display_export(fmt) {
+    var txt;
+    if ((fmt == 'md') || (fmt == 'markdown')) {
+        txt = generate_markdown();
+    } else if (fmt == 'mdplus') {
+        txt = generate_mdplus();
+    } else if (fmt == 'html') {
+        txt = generate_html();
+    } else if ((fmt == 'tex') || (fmt == 'latex')) {
+        txt = generate_latex();
+    } else {
+        txt = 'Format must be one of: md, markdown, mdplus, html, tex, latex.';
+    }
+
+    content.empty();
+    content.addClass("overlay");
+    var pre = $("<pre>");
+    content.append(pre);
+    pre.text(txt);
+}
+
 // render for static docs
 var init = function() {
     curdir = null;
+
     render(true);
     number_sections();
     number_equations();
     number_footnotes();
     resolve_references();
-}
 
-// optional marquee box
-var marquee = $("#marquee");
-if (marquee.length > 0) {
-    var span = $("<span>", {class: "latex"});
-    katex.render("\\ell^2", span[0], {throwOnError: false});
-    marquee.append(span);
+    if (content.hasClass("markdown")) {
+        var par = new URLSearchParams(location.search);
+        var exp = par.get('export');
+        if (exp != null) {
+            display_export(exp);
+        }
+    }
 }
 
 // public interface
