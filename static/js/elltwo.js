@@ -152,7 +152,7 @@ var render = function(defer) {
     if (content.hasClass("markdown")) {
         var md = unescape_html(content.html());
         content.empty();
-        var cells = md.split('\n\n');
+        var cells = md.trim().split('\n\n');
         for (i in cells) {
             var c = cells[i].trim();
             var div = $("<div>", {class: "cell", "base-text": c, html: marktwo.parse(c)});
