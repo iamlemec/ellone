@@ -12,7 +12,7 @@
 
 var block = {
   newline: /^\n+/,
-  code: /^( {4}[^\n]+\n*)+/,
+  code: /^`` *\n(?:[^\n]+(?:\n|$))+/,
   fences: noop,
   hr: /^( *[-*_]){3,} *(?:\n+|$)/,
   heading: /^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)/,
@@ -195,12 +195,10 @@ Lexer.prototype.token = function(src, top, bq) {
     // code
     if (cap = this.rules.code.exec(src)) {
       src = src.substring(cap[0].length);
-      cap = cap[0].replace(/^ {4}/gm, '');
+      cap = cap[0].substring(2).trim();
       this.tokens.push({
         type: 'code',
-        text: !this.options.pedantic
-          ? cap.replace(/\n+$/, '')
-          : cap
+        text: cap
       });
       continue;
     }
@@ -734,7 +732,7 @@ InlineLexer.prototype.output = function(src) {
     // code
     if (cap = this.rules.code.exec(src)) {
       src = src.substring(cap[0].length);
-      out += this.renderer.codespan(cap[2]);
+      out += this.renderer.codespan(cap[2].trim());
       continue;
     }
 

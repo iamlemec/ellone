@@ -19,6 +19,7 @@
     font-family: monospace;
     font-size: 15px;
     margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 body.editing #elltwo .cell.active {

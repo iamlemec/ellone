@@ -35,7 +35,8 @@ function strip_tags(html) {
 };
 
 function add_tags(html) {
-    return html.replace(/\n/g, "<br>");
+    return html.replace(/\n/g, "<br>")
+               .replace(/  /g, "&nbsp; ");
 }
 
 // cell utils

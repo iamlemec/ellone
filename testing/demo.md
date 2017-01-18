@@ -30,13 +30,12 @@ Footnotes can be created with a caret and text in square brackets, as in `^[foot
 
 You can make inline code blocks with ` ` `. Multiline code blocks, similar to multiline equations, can be created by starting and ending a cell with ` ``` `, as in:
 
-```
+``
 def fib(n):
-   if n > 0:
-       return n*fib(n-1)
-   else:
-       return 1
-```
+    if n > 0:
+        return n*fib(n-1)
+    else:
+        return 1
 
 # Math
 
