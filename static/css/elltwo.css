@@ -46,14 +46,14 @@
 /* paragraph cells */
 
 #elltwo p {
-    /*margin-top: 20px;*/
     min-height: 21px;
-    padding-left: 5px;
     white-space: pre-wrap;
     text-align: justify;
     line-height: 150%;
-    padding: 0px;
-    margin-top: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 /* equations */
@@ -61,8 +61,10 @@
 #elltwo .equation {
     position: relative;
     text-align: center;
-    margin-top: 30px;
-    margin-bottom: 30px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 #elltwo .equation-inner {
@@ -82,8 +84,10 @@
 
 #elltwo figure {
     text-align: center;
-    margin-top: 30px;
-    margin-bottom: 30px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 #elltwo figure > img {
@@ -100,14 +104,18 @@
 /* lists */
 
 #elltwo ul {
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     line-height: 1.5;
 }
 
 #elltwo ol {
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     line-height: 1.5;
 }
 
@@ -115,7 +123,8 @@
 
 #elltwo table {
   border-spacing: 0px;
-  margin: 20px auto 20px auto;
+  margin: 0px auto 0px auto;
+  padding: 20px 0px 20px 0px;
 }
 
 #elltwo table > thead > tr > th {
@@ -151,7 +160,8 @@
     background-color: #F1F1F1;
     padding: 10px;
     border-radius: 3px;
-    margin-top: 10px;
+    padding-top: 10px;
+    margin-top: 0px;
     margin-bottom: 0px;
     white-space: pre-wrap;
 }
@@ -165,7 +175,10 @@
 
 #elltwo .sec-title {
     font-weight: 600;
-    margin-top: 30px;
+    padding-top: 30px;
+    padding-bottom: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 #elltwo .sec-title:before {
@@ -272,8 +285,8 @@
     font-size: 35px;
     font-weight: 600;
     text-align: center !important;
-    margin-bottom: 40px;
-    border-bottom: 2px solid black;
+    padding-bottom: 40px;
+    /*border-bottom: 2px solid black;*/
 }
 
 #elltwo .sec-title.sec-lvl-1 {

@@ -6,10 +6,11 @@ import json
 import argparse
 import mimetypes
 from operator import itemgetter
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import codecs
 import random
 from subprocess import call
+from threading import Lock
 
 import tornado.ioloop
 import tornado.web
@@ -35,6 +36,9 @@ blank_doc = '#! Title\n\nBody text.'
 
 # randomization
 rand_hex = lambda: hex(random.getrandbits(128))[2:].zfill(32)
+
+# cell locking mechanisms (per file)
+locks = defaultdict(Lock)
 
 # authentication
 if use_auth:
@@ -67,13 +71,13 @@ def read_cells(fname):
         text = fid.read()
         fid.close()
     except:
-        text = ''
+        text = None
 
     # construct cell dictionary
     CellStruct = namedtuple('CellStruct', 'id body')
     tcells = map(str.strip, text.split('\n\n'))
     fcells = filter(len, tcells)
-    if fcells:
+    if fcells is not None:
         cells = {i: {'prev': i-1, 'next': i+1, 'body': s} for (i, s) in enumerate(fcells)}
         cells[max(cells.keys())]['next'] = -1
         cells[min(cells.keys())]['prev'] = -1
@@ -250,14 +254,14 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             print(e)
         data = json.loads(msg)
         (cmd, cont) = (data['cmd'], data['content'])
-        if cmd in ('fetch', 'revert'):
-            if cmd == 'revert':
-                self.cells = read_cells(self.fullpath)
-            vcells = [{'cid': i,
-                       'prev': c['prev'],
-                       'next': c['next'],
-                       'text': c['body']
-                      } for (i, c) in self.cells.items()]
+        if cmd == 'fetch':
+            self.cells = read_cells(self.fullpath)
+            vcells = [dict(c, cid=i) for (i, c) in self.cells.items()]
+            print(vcells)
+            self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
+        elif cmd == 'revert':
+            self.cells = read_cells(self.fullpath)
+            vcells = [dict(c, cid=i) for (i, c) in self.cells.items()]
             self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
         elif cmd == 'save':
             cid = int(cont['cid'])

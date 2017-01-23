@@ -9,8 +9,15 @@ var editor = (function() {
 var body = $("body");
 var content = $("#elltwo");
 
+// hard coded options
+var scrollSpeed = 100;
+var scrollFudge = 100;
+var canary_freq = 5000;
+
 // globals
 var ws;
+var active;
+var clipboard = [];
 
 // utils
 function max(arr) {
@@ -111,14 +118,20 @@ function get_caret_at_end(outer) {
     return (cpos == tlen);
 }
 
-// active cell manipulation
-var scrollSpeed = 300;
-var scrollFudge = 100;
-var active;
+// cell level selection
+function select_cell(cell, clear) {
+    if (clear) {
+        $(".cell.select").removeClass("select");
+    }
+    cell.addClass("select");
+}
 
+// active cell manipulation
 function activate_cell(cell) {
     // change css to new
-    active.removeClass("active");
+    if (active) {
+        active.removeClass("active");
+    }
     cell.addClass("active");
 
     // scroll cell into view
@@ -161,24 +174,8 @@ function activate_next() {
     }
 }
 
-// save cell to server
-function save_cell(cell) {
-    // get source text
-    var cid = cell.attr("cid");
-    var text = cell.attr("base-text");
-
-    // send to server
-    var msg = JSON.stringify({"cmd": "save", "content": {"cid": cid, "body": text}});
-    console.log(msg);
-    ws.send(msg);
-
-    // mark document as modified (cell not so)
-    body.addClass("modified");
-    cell.removeClass("modified");
-}
-
 // create cell
-function create_cell(cell, edit) {
+function insert_cell(cell, edit) {
     // generate id and stitch into linked list
     var newid = Math.max.apply(null, $(".cell").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
     var prev = cell.attr("cid");
@@ -188,7 +185,7 @@ function create_cell(cell, edit) {
     cell.attr("next", newid);
 
     // generate html
-    var outer = make_para("", newid, prev, next);
+    var outer = create_cell("", newid, prev, next);
     outer.insertAfter(cell);
 
     // activate cell
@@ -211,13 +208,28 @@ function create_cell(cell, edit) {
     return outer;
 }
 
-// delete cell
-function delete_cell(cell) {
-    var inner = get_inner(cell, true);
-    var is_section = inner.hasClass("sec-title");
-    var is_equation = inner.hasClass("equation");
-    var has_footnote = (inner.find("footnote").length == 0);
+// make ui for cell
+function create_cell(text, cid, prev, next) {
+    // insert into list
+    var outer = $("<div>", {class: "cell"});
+    outer.attr("cid", cid);
+    outer.attr("prev", prev);
+    outer.attr("next", next);
+    outer.attr("base-text", text);
 
+    // event handlers
+    outer.click(function(event) {
+        if (is_editing(body)) {
+            activate_cell(outer);
+            select_cell(outer, !event.ctrlKey);
+        }
+    });
+
+    return outer;
+}
+
+// delete cell
+function delete_cell(cell, defer) {
     // snip out of linked list
     prev = cell.attr("prev");
     next = cell.attr("next");
@@ -230,17 +242,8 @@ function delete_cell(cell) {
     cell.remove();
 
     // update globals
-    if (is_section) {
-        elltwo.number_sections();
-    }
-    if (is_equation) {
-        elltwo.number_equations();
-    }
-    if (has_footnote) {
-        elltwo.number_footnotes();
-    }
-    if (is_equation || is_section) {
-        elltwo.resolve_references();
+    if (!defer) {
+        full_update();
     }
 
     // inform server
@@ -253,18 +256,65 @@ function delete_cell(cell) {
     body.addClass("modified");
 }
 
-clipboard = "";
-function copy_cell(cell) {
-    clipboard = cell.attr("base-text");
+// cell cut/copy/paste
+function copy_selection() {
+    clipboard = [];
+    var sel = $(".cell.select");
+    sel.each(function() {
+        var c = $(this);
+        var text = c.attr("base-text");
+        clipboard.push(text);
+    });
+    return sel;
 }
 
-function paste_cell(cell) {
+function cut_selection() {
+    // copy source text
+    var sel = copy_selection();
+
+    // find next active cell
+    var succ = sel.last().next(".cell");
+    if (succ.length == 0) {
+        succ = sel.first().prev(".cell");
+    }
+
+    // remove content
+    sel.each(function() {
+        var c = $(this);
+        delete_cell(c, true);
+    });
+
+    // update references
+    full_update();
+
+    // choose active
+    activate_cell(succ);
+}
+
+function paste_clipboard() {
     if (clipboard.length == 0) {
         return;
     }
-    var outer = create_cell(cell, false);
-    outer.attr("base-text", clipboard);
-    save_cell(outer);
+    var prev = active;
+    for (i in clipboard) {
+        var text = clipboard[i];
+        var outer = insert_cell(prev, false);
+        outer.attr("base-text", text);
+        render_cell(outer);
+        save_cell(outer);
+        prev = outer;
+    }
+    select_cell(active, true);
+}
+
+// wrapper for cell rendering
+function render_cell(outer, defer) {
+    var text = outer.attr("base-text");
+    var html = marktwo.parse(text);
+    var box = $(html);
+    outer.empty();
+    outer.append(box);
+    elltwo.apply_render(box, defer);
 }
 
 // go into static mode
@@ -294,6 +344,23 @@ function unfreeze_cell(outer) {
         outer.addClass("modified");
     });
     set_caret_at_end(outer);
+    select_cell(outer, true);
+}
+
+// save cell to server
+function save_cell(cell) {
+    // get source text
+    var cid = cell.attr("cid");
+    var text = cell.attr("base-text");
+
+    // send to server
+    var msg = JSON.stringify({"cmd": "save", "content": {"cid": cid, "body": text}});
+    console.log(msg);
+    ws.send(msg);
+
+    // mark document as modified (cell not so)
+    body.addClass("modified");
+    cell.removeClass("modified");
 }
 
 // send to the server for storage
@@ -302,35 +369,6 @@ function save_document() {
     console.log(msg);
     ws.send(msg);
     body.removeClass("modified");
-}
-
-// make paragraph for cell
-function make_para(text, cid, prev, next) {
-    // insert into list
-    var outer = $("<div>", {class: "cell"});
-    outer.attr("cid", cid);
-    outer.attr("prev", prev);
-    outer.attr("next", next);
-    outer.attr("base-text", text);
-
-    // event handlers
-    outer.click(function(event) {
-        if (is_editing(body)) {
-            activate_cell(outer);
-        }
-    });
-
-    return outer;
-}
-
-// wrapper for cell rendering
-function render_cell(outer, defer) {
-    var text = outer.attr("base-text");
-    var html = marktwo.parse(text);
-    var box = $(html);
-    outer.empty();
-    outer.append(box);
-    elltwo.apply_render(box, defer);
 }
 
 // for deferred updating
@@ -431,10 +469,14 @@ function initialize() {
                     if (actEdit) {
                         clear_selection();
                     }
-                    if (is_editing(active)) {
+                    var newEdit = is_editing(active);
+                    if (newEdit) {
                         set_caret_at_end(active);
                     }
+                    select_cell(active, !event.shiftKey || actEdit || newEdit);
                     return false;
+                } else {
+                    select_cell(active, !event.shiftKey);
                 }
             } else if (keyCode == 40) { // down
                 if (actEdit) {
@@ -446,10 +488,14 @@ function initialize() {
                     if (actEdit) {
                         clear_selection();
                     }
-                    if (is_editing(active)) {
+                    var newEdit = is_editing(active);
+                    if (newEdit) {
                         set_caret_at_beg(active);
                     }
+                    select_cell(active, !event.shiftKey || actEdit || newEdit);
                     return false;
+                } else {
+                    select_cell(active, !event.shiftKey);
                 }
             } else if (keyCode == 87) { // w
                 if (!actEdit) {
@@ -463,14 +509,14 @@ function initialize() {
                 }
             } else if (keyCode == 79) { // o
                 if (!actEdit) {
-                    create_cell(active, true);
+                    insert_cell(active, true);
                     return false;
                 }
             } else if (keyCode == 13) { // return
                 if (actEdit) {
                     if (event.shiftKey) {
                         freeze_cell(active);
-                        create_cell(active, true);
+                        insert_cell(active, true);
                         return false;
                     }
                 }
@@ -496,19 +542,18 @@ function initialize() {
                     if (!activate_next()) {
                         activate_prev();
                     }
-                    copy_cell(outer);
-                    delete_cell(outer);
+                    cut_selection();
                     if (is_editing(active)) {
                         set_caret_at_end(active);
                     }
                 }
             } else if (keyCode == 67) { // c
                 if (event.shiftKey && !is_editing(active)) {
-                    copy_cell(active);
+                    copy_selection();
                 }
             } else if (keyCode == 80) { // p
                 if (event.shiftKey && !is_editing(active)) {
-                    paste_cell(active);
+                    paste_clipboard();
                 }
             } else if (keyCode == 83) { // s
                 if (event.ctrlKey || event.metaKey) {
@@ -523,7 +568,6 @@ function initialize() {
 }
 
 // keep alive magic
-freq = 5000;
 function keep_alive() {
     // console.log("heartbeet");
     if (ws.readyState == ws.CLOSED) {
@@ -531,7 +575,7 @@ function keep_alive() {
         delete(ws);
         connect(false);
     }
-    timeoutID = window.setTimeout(keep_alive, [freq]);
+    timeoutID = window.setTimeout(keep_alive, [canary_freq]);
 }
 
 // websockets
@@ -568,13 +612,14 @@ function connect(query) {
                     content.empty();
                     for (i in cells) {
                         var c = cells[i];
-                        var outer = make_para(c["text"], c["cid"], c["prev"], c["next"]);
+                        var outer = create_cell(c["body"], c["cid"], c["prev"], c["next"]);
                         content.append(outer);
                         render_cell(outer, true);
                     }
                     full_update();
-                    active = content.children(".cell").first();
-                    active.addClass("active");
+                    var first = content.children(".cell").first();
+                    activate_cell(first);
+                    select_cell(first, true);
                 } else if (cmd == "serve") {
                     window.location.replace("/__export/"+cont);
                 }
