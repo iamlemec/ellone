@@ -395,39 +395,50 @@ function initialize() {
     });
 
     // topbar button handlers
-    $("#topbar-export").click(function() {
-        $("#topbar-slide").slideToggle("fast");
-        $(this).toggleClass("expanded");
+    var expo_button = $("#topbar-export");
+    var expo_slide = $("#topbar-slide");
+    var toggle_expo = function() {
+        expo_slide.slideToggle("fast");
+        expo_button.toggleClass("expanded");
+    }
+
+    expo_button.click(function() {
+        toggle_expo();
     });
 
     $("#topbar-markdown").click(function() {
         var md = elltwo.generate_markdown();
         var msg = JSON.stringify({"cmd": "export", "content": {"format": "md", "data": md}});
         ws.send(msg);
+        toggle_expo();
     });
 
     $("#topbar-mdplus").click(function() {
         var md = elltwo.generate_mdplus();
         var msg = JSON.stringify({"cmd": "export", "content": {"format": "mdplus", "data": md}});
         ws.send(msg);
+        toggle_expo();
     });
 
     $("#topbar-html").click(function() {
         var html = elltwo.generate_html();
         var msg = JSON.stringify({"cmd": "export", "content": {"format": "html", "data": html}});
         ws.send(msg);
+        toggle_expo();
     });
 
     $("#topbar-latex").click(function() {
         var latex = elltwo.generate_latex();
         var msg = JSON.stringify({"cmd": "export", "content": {"format": "latex", "data": latex}});
         ws.send(msg);
+        toggle_expo();
     });
 
     $("#topbar-pdf").click(function() {
         var latex = elltwo.generate_latex();
         var msg = JSON.stringify({"cmd": "export", "content": {"format": "pdf", "data": latex}});
         ws.send(msg);
+        toggle_expo();
     });
 
     $("#topbar-save").click(function() {
@@ -596,7 +607,7 @@ function connect(query) {
                 var msg = JSON.stringify({"cmd": "fetch", "content": ""});
                 ws.send(msg);
             }
-            timeoutID = window.setTimeout(keep_alive, [freq]);
+            timeoutID = window.setTimeout(keep_alive, [canary_freq]);
         };
 
         ws.onmessage = function (evt) {
