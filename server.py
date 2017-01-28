@@ -111,7 +111,7 @@ def validate_path(relpath, base):
     relpath = os.path.join(base, relpath)
     abspath = os.path.abspath(relpath)
     normbase = os.path.normpath(base)
-    normpref = os.path.normpath(os.path.commonpath([abspath, normbase]))
+    normpref = os.path.normpath(os.path.commonprefix([abspath, normbase]))
     return (normpref == normbase) and (len(abspath) > len(normbase))
 
 # Tornado time
