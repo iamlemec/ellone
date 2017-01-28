@@ -107,6 +107,12 @@ def get_base_name(fname):
         fname_new = fname
     return fname_new
 
+def validate_path(relpath, base):
+    relpath = os.path.join(base, relpath)
+    abspath = os.path.abspath(relpath)
+    normbase = os.path.normpath(base)
+    return (os.path.commonpath([abspath, normbase]) == normbase) and (len(abspath) > len(normbase))
+
 # Tornado time
 class AuthLoginHandler(tornado.web.RequestHandler):
     def get(self):
@@ -361,13 +367,15 @@ class FileHandler(tornado.websocket.WebSocketHandler):
                 print('Not so fast!')
                 return
         elif cmd == 'create':
-            if '..' in cont or cont.startswith('/'):
-                print('No special directives allowed!')
+            if not validate_path(cont, self.curdir):
+                print('Path out of bounds!')
                 return
+
             fullpath = os.path.join(self.curdir, cont)
             if os.path.exists(fullpath):
                 print('File exists.')
                 return
+
             try:
                 if cont.endswith('/'):
                     os.mkdir(fullpath)
@@ -378,6 +386,10 @@ class FileHandler(tornado.websocket.WebSocketHandler):
             except:
                 print('Could not create file \'%s\'' % fullpath)
         elif cmd == 'delete':
+            if not validate_path(cont, self.curdir):
+                print('Path out of bounds!')
+                return
+
             fullpath = os.path.join(self.curdir, cont)
             if os.path.isdir(fullpath):
                 shutil.rmtree(fullpath)
