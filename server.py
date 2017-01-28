@@ -111,7 +111,8 @@ def validate_path(relpath, base):
     relpath = os.path.join(base, relpath)
     abspath = os.path.abspath(relpath)
     normbase = os.path.normpath(base)
-    return (os.path.commonpath([abspath, normbase]) == normbase) and (len(abspath) > len(normbase))
+    normpref = os.path.normpath(os.path.commonpath([abspath, normbase]))
+    return (normpref == normbase) and (len(abspath) > len(normbase))
 
 # Tornado time
 class AuthLoginHandler(tornado.web.RequestHandler):
