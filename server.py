@@ -108,11 +108,11 @@ def get_base_name(fname):
     return fname_new
 
 def validate_path(relpath, base):
-    relpath = os.path.join(base, relpath)
-    abspath = os.path.abspath(relpath)
-    normbase = os.path.normpath(base)
-    normpref = os.path.normpath(os.path.commonprefix([abspath, normbase]))
-    return (normpref == normbase) and (len(abspath) > len(normbase))
+    absbase = os.path.abspath(os.path.join(args.path, base))
+    abspath = os.path.abspath(os.path.join(absbase, relpath))
+    prefix = os.path.normpath(os.path.commonprefix([abspath, absbase]))
+    print(absbase, abspath, prefix)
+    return (prefix == absbase) and (len(abspath) > len(absbase))
 
 # Tornado time
 class AuthLoginHandler(tornado.web.RequestHandler):
