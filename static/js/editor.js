@@ -289,6 +289,7 @@ function cut_selection() {
 
     // choose active
     activate_cell(succ);
+    select_cell(succ, true);
 }
 
 function paste_clipboard() {
