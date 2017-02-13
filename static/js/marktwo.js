@@ -896,7 +896,7 @@ Renderer.prototype.listitem = function(text) {
   return '<li>' + text + '</li>\n';
 };
 
-Renderer.prototype.paragraph = function(text) {
+Renderer.prototype.paragraph = function(text, terse) {
   return '<p>' + text + '</p>\n\n';
 };
 
@@ -1037,8 +1037,12 @@ LatexRenderer.prototype.listitem = function(text) {
   return '\\item ' + text + '\n';
 };
 
-LatexRenderer.prototype.paragraph = function(text) {
-  return text + '\n\n';
+LatexRenderer.prototype.paragraph = function(text, terse) {
+  var out = text + '\n';
+  if (!terse) {
+    out += '\n';
+  }
+  return out;
 };
 
 LatexRenderer.prototype.table = function(header, body) {
@@ -1316,7 +1320,8 @@ Parser.prototype.tok = function() {
       return this.renderer.html(html);
     }
     case 'paragraph': {
-      return this.renderer.paragraph(this.inline.output(this.token.text));
+      var nextType = this.peek().type;
+      return this.renderer.paragraph(this.inline.output(this.token.text), (nextType == 'equation'));
     }
     case 'text': {
       return this.renderer.paragraph(this.parseText());
