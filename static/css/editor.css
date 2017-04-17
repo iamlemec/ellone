@@ -36,13 +36,22 @@ body.editing #elltwo .cell.select:not(.active) {
 
 /* top toolbar */
 
-#topbar {
-    font-family: Montserrat;
+#whitebar {
+    position: fixed;
+    height: 37px;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    z-index: 1;
+    background-color: white;
+    border-bottom: 1px solid #CCC;
 }
 
 #topbar {
+    font-family: Montserrat;
     position: fixed;
     right: 10px;
+    z-index: 2;
 }
 
 #topbar-control {
@@ -94,12 +103,17 @@ body.modified #topbar-reload {
 
 /* theme */
 
+#marquee {
+    z-index: 2;
+}
+
 #canary {
     position: fixed;
     font-family: monospace;
     font-size: 14px;
     left: 60px;
     top: 10px;
+    z-index: 2;
 }
 
 #help {
