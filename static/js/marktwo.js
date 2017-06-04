@@ -1352,7 +1352,7 @@ function escape_latex(tex) {
     return tex
       .replace(/#/g, '\\#')
       .replace(/&/g, '\\&')
-      .replace(/\$/g, '\\$')
+      // .replace(/\$/g, '\\$')
       .replace(/\^/g,'\\textasciicircum');
 }
 
