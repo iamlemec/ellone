@@ -4,10 +4,11 @@ Check out the live demo at: [dohan.io](http://dohan.io/)
 
 Elltwo is a web-enabled, cell-based document composition tool. It's geared towards people who, like myself, start developing ideas as snippets of text interspersed with equations. Could very well be useful to others though. The math rendering is taken care of by the wonderful KaTeX library. Notable features include:
 
-- Line-by-line (a la vim) Markdown editing
+- Cell-by-cell Markdown editing, rendered inline
 - Automatic equation, [sub]section, and footnote numbering
 - Equation referencing and footnotes with popup previews
 - Export to Markdown (ish), LaTeX, PDF, and HTML
+- Documents stored on disk as Markdown (ish) text files
 
 ![Elltwo demo](demo.gif)
 
