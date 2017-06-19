@@ -613,13 +613,15 @@ InlineLexer.prototype.output = function(src) {
     , text
     , href
     , cap
-    , tex;
+    , tex
+    , esc;
 
   while (src) {
     // escape
     if (cap = this.rules.escape.exec(src)) {
       src = src.substring(cap[0].length);
-      out += cap[1];
+      esc = cap[1];
+      out += this.renderer.escape(esc);
       continue;
     }
 
@@ -654,7 +656,7 @@ InlineLexer.prototype.output = function(src) {
           : this.mangle(cap[1]);
         href = this.mangle('mailto:') + text;
       } else {
-        text = escape(cap[1]);
+        text = cap[1];
         href = text;
       }
       out += this.renderer.link(href, null, text);
@@ -664,7 +666,7 @@ InlineLexer.prototype.output = function(src) {
     // url (gfm)
     if (!this.inLink && (cap = this.rules.url.exec(src))) {
       src = src.substring(cap[0].length);
-      text = escape(cap[1]);
+      text = cap[1];
       href = text;
       out += this.renderer.link(href, null, text);
       continue;
@@ -959,9 +961,13 @@ Renderer.prototype.link = function(href, title, text) {
   if (title) {
     out += ' title="' + title + '"';
   }
-  out += '>' + text + '</a>';
+  out += '>' + escape(text) + '</a>';
   return out;
 };
+
+Renderer.prototype.escape = function(esc) {
+  return escape(esc);
+}
 
 Renderer.prototype.text = function(text) {
   return escape(text);
@@ -1109,8 +1115,12 @@ LatexRenderer.prototype.link = function(href, title, text) {
       return '';
     }
   }
-  return '\\href{' + href + '}{' + text + '}';
+  return '\\href{' + href + '}{' + escape_latex(text) + '}';
 };
+
+LatexRenderer.prototype.escape = function(esc) {
+  return escape_latex(esc);
+}
 
 LatexRenderer.prototype.text = function(text) {
   return escape_latex(text);
@@ -1349,16 +1359,16 @@ function escape(html, encode) {
 }
 
 function escape_latex(tex) {
-    return tex
-      .replace(/#/g, '\\#')
-      .replace(/&/g, '\\&')
-      .replace(/%/g, '\\%')
-      .replace(/\$/g, '\\$')
-      .replace(/\^/g, '\\textasciicircum');
+  return tex
+    .replace(/#/g, '\\#')
+    .replace(/&/g, '\\&')
+    .replace(/%/g, '\\%')
+    .replace(/\$/g, '\\$')
+    .replace(/\^/g,'\\textasciicircum');
 }
 
 function unescape(html) {
-	// explicitly match decimal, hex, and named HTML entities
+  // explicitly match decimal, hex, and named HTML entities
   return html.replace(/&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/g, function(_, n) {
     n = n.toLowerCase();
     if (n === 'colon') return ':';

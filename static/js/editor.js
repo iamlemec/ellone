@@ -583,6 +583,7 @@ function initialize() {
 function keep_alive() {
     // console.log("heartbeet");
     if (ws.readyState == ws.CLOSED) {
+        console.log('reconnecting');
         $("#canary").text("connecting");
         delete(ws);
         connect(false);
