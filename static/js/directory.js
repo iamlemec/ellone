@@ -64,7 +64,7 @@ function connect()
     };
 
     ws.onclose = function() {
-      console.log('websocket closed');
+      console.log('websocket closed.');
     };
   } else {
     console.log('Sorry, your browser does not support websockets.');

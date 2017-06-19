@@ -18,6 +18,7 @@ var canary_freq = 5000;
 var ws;
 var active;
 var clipboard = [];
+var opened = false;
 
 // utils
 function max(arr) {
@@ -468,7 +469,7 @@ function initialize() {
 
         var keyCode = event.keyCode;
         var docEdit = is_editing(body);
-        var actEdit = is_editing(active);
+        var actEdit = (active != undefined) && is_editing(active);
 
         if (docEdit) {
             if (keyCode == 38) { // up
@@ -586,13 +587,13 @@ function keep_alive() {
         console.log('reconnecting');
         $("#canary").text("connecting");
         delete(ws);
-        connect(false);
+        connect();
     }
     timeoutID = window.setTimeout(keep_alive, [canary_freq]);
 }
 
 // websockets
-function connect(query) {
+function connect() {
     if ("MozWebSocket" in window) {
         WebSocket = MozWebSocket;
     }
@@ -605,7 +606,7 @@ function connect(query) {
         ws.onopen = function() {
             console.log("websocket connected!");
             $("#canary").text("connected");
-            if (query) {
+            if (!opened) {
                 var msg = JSON.stringify({"cmd": "fetch", "content": ""});
                 ws.send(msg);
             }
@@ -621,6 +622,7 @@ function connect(query) {
                 var cmd = json_data["cmd"];
                 var cont = json_data["content"];
                 if (cmd == "fetch") {
+                    opened = true;
                     var cells = json_data["content"];
                     content.empty();
                     for (i in cells) {
@@ -637,6 +639,10 @@ function connect(query) {
                     window.location.replace("/__export/"+cont);
                 }
             }
+        };
+
+        ws.onclose = function() {
+            console.log('websocket closed.');
         };
     } else {
         console.log("Sorry, your browser does not support websockets.");
@@ -656,7 +662,7 @@ return {
 
         // run
         initialize();
-        connect(true);
+        connect();
     }
 }
 

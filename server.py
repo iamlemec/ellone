@@ -71,13 +71,12 @@ def read_cells(fname):
         text = fid.read()
         fid.close()
     except:
-        text = None
+        text = 'Error reading file!'
 
     # construct cell dictionary
-    CellStruct = namedtuple('CellStruct', 'id body')
     tcells = map(str.strip, text.split('\n\n'))
-    fcells = filter(len, tcells)
-    if fcells is not None:
+    fcells = list(filter(len, tcells))
+    if len(fcells) > 0:
         cells = {i: {'prev': i-1, 'next': i+1, 'body': s} for (i, s) in enumerate(fcells)}
         cells[max(cells.keys())]['next'] = -1
         cells[min(cells.keys())]['prev'] = -1
@@ -87,11 +86,11 @@ def read_cells(fname):
 
 def gen_cells(cells):
     cur = [c for c in cells.values() if c['prev'] == -1]
-    if cur:
+    if len(cur) > 0:
         cur = cur[0]
     else:
         return
-    while cur:
+    while cur is not None:
         yield cur
         nextid = cur['next']
         cur = cells[nextid] if nextid != -1 else None
@@ -238,6 +237,13 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 
     def open(self, path):
         print('connection received: %s' % path)
+        if locks[path].acquire(blocking=False):
+            self.live = True
+        else:
+            self.live = False
+            self.close()
+            return
+        self.path = path
         (self.dirname, self.fname) = os.path.split(path)
         self.basename = get_base_name(self.fname)
         self.temppath = os.path.join(tmp_dir, self.fname)
@@ -246,6 +252,8 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         print('connection closing')
+        if self.live:
+            locks[self.path].release()
 
     def error_msg(self, error_code):
         if not error_code is None:
@@ -342,12 +350,20 @@ class FileHandler(tornado.websocket.WebSocketHandler):
 
     def open(self, relpath):
         print('connection received')
+        if locks[relpath].acquire(blocking=False):
+            self.live = True
+        else:
+            self.live = False
+            self.close()
+            return
         self.relpath = relpath
         self.curdir = os.path.join(args.path, self.relpath)
         (self.pardir, self.dirname) = os.path.split(self.curdir)
 
     def on_close(self):
         print('connection closing')
+        if self.live:
+            locks[self.relpath].release()
 
     def error_msg(self, error_code):
         if not error_code is None:
