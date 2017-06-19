@@ -15,16 +15,7 @@ Elltwo is a web-enabled, cell-based document composition tool. It's geared towar
 
 # Installing
 
-After cloning the repository locally, you'll want to fetch and build the latest version of KaTeX, which is hooked in as a submodule:
-
-```
-git submodule init
-git submodule update
-cd static/katex
-npm install
-```
-
-Naturally, this requires that you have `nodejs` and `npm` installed.
+After cloning the repository locally, you can run it right away.
 
 # Running
 
