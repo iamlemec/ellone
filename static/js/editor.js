@@ -431,14 +431,14 @@ function initialize() {
 
     $("#topbar-latex").click(function() {
         var latex = elltwo.generate_latex();
-        var msg = JSON.stringify({"cmd": "export", "content": {"format": "latex", "data": latex}});
+        var msg = JSON.stringify({"cmd": "export", "content": {"format": "latex", "data": latex["out"]}});
         ws.send(msg);
         toggle_expo();
     });
 
     $("#topbar-pdf").click(function() {
         var latex = elltwo.generate_latex();
-        var msg = JSON.stringify({"cmd": "export", "content": {"format": "pdf", "data": latex}});
+        var msg = JSON.stringify({"cmd": "export", "content": {"format": "pdf", "data": latex["out"], "deps": latex["deps"]}});
         ws.send(msg);
         toggle_expo();
     });

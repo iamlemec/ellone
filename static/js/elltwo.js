@@ -416,7 +416,7 @@ var post_latex = `
 \\end{document}`;
 
 // construct latex parser
-var opts_latex = marktwo.merge({}, marktwo.defaults, {'renderer': new marktwo.LatexRenderer});
+var opts_latex = marktwo.merge({}, marktwo.defaults, {'renderer': new marktwo.LatexRenderer, 'deps': true, 'flatten': true});
 var lexer_latex = new marktwo.Lexer(opts_latex);
 var parser_latex = new marktwo.Parser(opts_latex);
 function parse_latex(src) {
@@ -427,7 +427,8 @@ function generate_latex() {
     console.log("getting latex");
     var md = generate_markdown();
     var latex = parse_latex(md);
-    return pre_latex + latex.trim() + post_latex;
+    latex['out'] = pre_latex + latex['out'] + post_latex;
+    return latex;
 }
 
 function display_export(fmt) {

@@ -1148,6 +1148,9 @@ LatexRenderer.prototype.footnote = function(text) {
 };
 
 LatexRenderer.prototype.image = function(title, href) {
+  if (this.options.flatten) {
+    href = href.split('/').pop();
+  }
   return '\\begin{figure}\n'
     + '\\includegraphics[width=\\textwidth]{' + href + '}\n'
     + '\\caption{' + title + '}\n'
@@ -1184,13 +1187,18 @@ Parser.parse = function(src, options, renderer) {
 Parser.prototype.parse = function(src) {
   this.inline = new InlineLexer(src.links, this.options, this.renderer);
   this.tokens = src.reverse();
+  this.deps = [];
 
   var out = '';
   while (this.next()) {
     out += this.tok();
   }
 
-  return out;
+  if (this.options.deps) {
+    return {'out': out, 'deps': this.deps};
+  } else {
+    return out;
+  }
 };
 
 /**
@@ -1340,6 +1348,7 @@ Parser.prototype.tok = function() {
       return this.renderer.equation(this.token.id, this.token.tex);
     }
     case 'image': {
+      this.deps.push(this.token.href);
       return this.renderer.image(this.inline.output(this.token.title), this.token.href);
     }
   }
@@ -1527,7 +1536,9 @@ marked.defaults = {
   smartypants: false,
   headerPrefix: '',
   renderer: new Renderer,
-  xhtml: false
+  xhtml: false,
+  deps: false,
+  flatten: false
 };
 
 /**

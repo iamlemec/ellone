@@ -247,6 +247,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         (self.dirname, self.fname) = os.path.split(path)
         self.basename = get_base_name(self.fname)
         self.temppath = os.path.join(tmp_dir, self.fname)
+        self.fulldir = os.path.join(args.path, self.dirname)
         self.fullpath = os.path.join(args.path, path)
         self.cells = read_cells(self.fullpath)
 
@@ -309,6 +310,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         elif cmd == 'export':
             fmt = cont['format']
             data = cont['data']
+            deps = cont.get('deps', [])
 
             # create unique directory
             uuid = rand_hex()
@@ -331,6 +333,17 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 
             # compilation for pdf
             if fmt == 'pdf':
+                for fp in deps:
+                    if re.search(fp, r'(^|:)//') is None:
+                        if fp.startswith('/'):
+                            fp = os.path.join(args.path, fp);
+                        else:
+                            fp = os.path.join(self.fulldir, fp)
+                        if validate_path(fp, args.path):
+                            shutil.copy(fp, exp_dir)
+                        else:
+                            print('%s: Path out of bounds!' % fp)
+                            continue
                 cwd = os.getcwd()
                 os.chdir(exp_dir)
                 call(['pdflatex', '-interaction=nonstopmode', name_new])
