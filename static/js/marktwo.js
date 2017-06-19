@@ -1038,7 +1038,7 @@ LatexRenderer.prototype.listitem = function(text) {
 };
 
 LatexRenderer.prototype.paragraph = function(text, terse) {
-  var out = escape_latex(text) + '\n';
+  var out = text + '\n';
   if (!terse) {
     out += '\n';
   }
@@ -1352,8 +1352,9 @@ function escape_latex(tex) {
     return tex
       .replace(/#/g, '\\#')
       .replace(/&/g, '\\&')
+      .replace(/%/g, '\\%')
       .replace(/\$/g, '\\$')
-      .replace(/\^/g,'\\textasciicircum');
+      .replace(/\^/g, '\\textasciicircum');
 }
 
 function unescape(html) {
