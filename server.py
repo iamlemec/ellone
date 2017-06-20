@@ -231,6 +231,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
         print('initializing')
         self.cells = {}
+        self.live = False
 
     def allow_draft76(self):
         return True
@@ -239,10 +240,6 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         print('connection received: %s' % path)
         if locks[path].acquire(blocking=False):
             self.live = True
-        else:
-            self.live = False
-            self.close()
-            return
         self.path = path
         (self.dirname, self.fname) = os.path.split(path)
         self.basename = get_base_name(self.fname)
@@ -264,17 +261,22 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             print('error code not found')
 
     def on_message(self, msg):
-        try:
-            print('received message: %s' % msg)
-        except Exception as e:
-            print(e)
+        print('received message: %s' % msg)
+
         data = json.loads(msg)
         (cmd, cont) = (data['cmd'], data['content'])
+
+        if not self.live:
+            print('%s Locked' % self.path)
+            if cmd not in ['fetch', 'export']:
+                return
+
         if cmd == 'fetch':
+            rcmd = 'fetch' if self.live else 'readonly'
             self.cells = read_cells(self.fullpath)
             vcells = [dict(c, cid=i) for (i, c) in self.cells.items()]
             print(vcells)
-            self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
+            self.write_message(json.dumps({'cmd': rcmd, 'content': vcells}))
         elif cmd == 'revert':
             self.cells = read_cells(self.fullpath)
             vcells = [dict(c, cid=i) for (i, c) in self.cells.items()]
@@ -357,6 +359,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 class FileHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
         print('initializing')
+        self.live = False
 
     def allow_draft76(self):
         return True
@@ -365,10 +368,6 @@ class FileHandler(tornado.websocket.WebSocketHandler):
         print('connection received')
         if locks[relpath].acquire(blocking=False):
             self.live = True
-        else:
-            self.live = False
-            self.close()
-            return
         self.relpath = relpath
         self.curdir = os.path.join(args.path, self.relpath)
         (self.pardir, self.dirname) = os.path.split(self.curdir)
@@ -386,12 +385,16 @@ class FileHandler(tornado.websocket.WebSocketHandler):
             print('error code not found')
 
     def on_message(self, msg):
-        try:
-            print('received message: %s' % msg)
-        except Exception as e:
-            print(e)
+        print('received message: %s' % msg)
+
         data = json.loads(msg)
         (cmd, cont) = (data['cmd'], data['content'])
+
+        if not self.live:
+            print('%s Locked' % self.relpath)
+            if cmd not in ['list']:
+                return
+
         if cmd == 'list':
             if args.demo and self.relpath == '':
                 print('Not so fast!')
@@ -433,7 +436,7 @@ class FileHandler(tornado.websocket.WebSocketHandler):
         docs = [f for (f, t) in zip(files, dtype) if not t and f.endswith('.md')]
         misc = [f for (f, t) in zip(files, dtype) if not t and not f.endswith('.md')]
         cont = {'dirs': dirs, 'docs': docs, 'misc': misc}
-        self.write_message(json.dumps({'cmd': 'results', 'content': cont}))
+        self.write_message(json.dumps({'cmd': 'results', 'content': cont, 'readonly': not self.live}))
 
 # tornado content handlers
 class Application(tornado.web.Application):

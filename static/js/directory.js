@@ -1,5 +1,7 @@
 // Elltwo editor
 
+var body = $('body');
+
 function make_entry(type,name) {
   var entry = $("<div>",{class:"entry"});
   entry.addClass(type);
@@ -43,7 +45,8 @@ function connect()
       if (json_data) {
         var cmd = json_data['cmd'];
         var cont = json_data['content'];
-        if (cmd == 'results') {
+        var ro = json_data['readonly'];
+        if ((cmd == 'results') || (cmd == 'readonly')) {
           $(".directory .entry.dir").remove();
           $(".directory .entry.doc").remove();
           $(".directory .entry.misc").remove();
@@ -59,6 +62,9 @@ function connect()
             var entry = make_entry("misc",name);
             entry.insertBefore(tools);
           });
+          if (!ro) {
+            body.addClass('editing');
+          }
         }
       }
     };
@@ -91,6 +97,9 @@ function initialize() {
   }
 
   create.click(function() {
+    if (!body.hasClass('editing')) {
+        return;
+    }
     var entry = $("<div>",{class: "entry"});
     var input = $("<input>");
     input.keydown(function(event) {
@@ -107,7 +116,9 @@ function initialize() {
   });
 
   $(".upload").click(function() {
-    $('#fake-input').click();
+    if (body.hasClass('editing')) {
+      $('#fake-input').click();
+    }
   });
 
   $("#fake-input").change(function() {

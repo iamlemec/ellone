@@ -460,7 +460,9 @@ function initialize() {
     });
 
     $("#topbar-editing").click(function() {
-        body.toggleClass("editing");
+        if (!body.hasClass("locked")) {
+            body.toggleClass("editing");
+        }
     });
 
     // vim-like controls :)
@@ -615,13 +617,13 @@ function connect() {
 
         ws.onmessage = function (evt) {
             var msg = evt.data;
-            // console.log("Received: " + msg);
+            console.log("Received: " + msg);
 
             var json_data = JSON.parse(msg);
             if (json_data) {
                 var cmd = json_data["cmd"];
                 var cont = json_data["content"];
-                if (cmd == "fetch") {
+                if ((cmd == "fetch") || (cmd == "readonly")) {
                     opened = true;
                     var cells = json_data["content"];
                     content.empty();
@@ -635,6 +637,11 @@ function connect() {
                     var first = content.children(".cell").first();
                     activate_cell(first);
                     select_cell(first, true);
+                    if (cmd == "fetch") {
+                        body.addClass("editing");
+                    } else {
+                        body.addClass("locked");
+                    }
                 } else if (cmd == "serve") {
                     window.location.replace("/__export/"+cont);
                 }
