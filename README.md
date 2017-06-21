@@ -23,7 +23,7 @@ After cloning the repository locally, you can run it right away.
 From the main directory:
 
 ```
-python3 editor.py --port=8500 --path=testing
+python3 server.py --port=8500 --path=testing
 ```
 
 Then navigate to:
