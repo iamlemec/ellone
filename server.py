@@ -16,8 +16,6 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
-import parser
-
 # parse input arguments
 ap = argparse.ArgumentParser(description='Elltwo Server.')
 ap.add_argument('--path', type=str, default='testing', help='path for markdown files')
