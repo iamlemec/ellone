@@ -7,14 +7,14 @@ This is an example of a document written using the $\ell^2$ (ell-two) typesettin
 Here is a list of the keyboard common keyboard commands:
 
 - `up/down`: move active cell
-- `w`: edit active cell
-- `o`: create new cell after active (and edit)
-- `esc`: render cell contents
-- `shift+enter`: render cell and create new one (= `esc` then `o`)
+- **`w`: enter edit mode on active cell**
+- **`esc`: leave edit mode on active cell**
+- `o`: create new cell after active one (and edit)
+- `shift+enter`: leave edit mode and create new cell (= `esc` then `o`)
 - `D`: delete cell
-- `C`: copy a cell
+- `C`: copy cell
 - `P`: paste copied cell
-- `ctrl+s`: save document
+- **`ctrl+s`: save document**
 
 As in the above, unordered lists can be created with consecutive lines in a cell starting with `-`, while ordered lists use `+`.
 
