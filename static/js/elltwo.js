@@ -452,10 +452,7 @@ function display_export(fmt) {
     pre.text(txt);
 }
 
-// render for static docs
-var init = function() {
-    curdir = null;
-
+var load = function() {
     render(true);
     number_sections();
     number_equations();
@@ -468,6 +465,22 @@ var init = function() {
         if (exp != null) {
             display_export(exp);
         }
+    }
+}
+
+// render for static docs
+var init = function() {
+    curdir = null;
+
+    var file = content.attr('data-markdown');
+    if (file != undefined) {
+        $.get(file, function(data) {
+            content.text(data);
+            content.addClass('markdown');
+            load();
+        });
+    } else {
+        load();
     }
 }
 
