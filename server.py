@@ -3,6 +3,7 @@ import shutil
 import sys
 import re
 import json
+import socket
 import argparse
 import mimetypes
 from operator import itemgetter
@@ -11,26 +12,53 @@ import codecs
 import random
 from subprocess import call
 from threading import Lock
+import webbrowser
+import operator
 
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
+# source directory
+elldir = os.path.dirname(os.path.realpath(__file__))
+template_dir = os.path.join(elldir, 'templates')
+static_dir = os.path.join(elldir, 'static')
+
+# get free port
+def get_open_port():
+    s = socket.socket()
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
 # parse input arguments
 ap = argparse.ArgumentParser(description='Elltwo Server.')
-ap.add_argument('--path', type=str, default='testing', help='path for markdown files')
-ap.add_argument('--port', type=int, default=8500, help='port to serve on')
+ap.add_argument('--path', type=str, default='.', help='path for markdown files')
+ap.add_argument('--port', type=int, default=0, help='port to serve on')
 ap.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
 ap.add_argument('--demo', action='store_true', help='run in demo mode')
 ap.add_argument('--auth', type=str, default=None)
 ap.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
+ap.add_argument('--browser', action='store_true', help='open browser to portal')
 args = ap.parse_args()
 
 # others
 use_auth = not (args.demo or args.auth is None)
+port = args.port if args.port != 0 else get_open_port()
 local_libs = args.local_libs
 tmp_dir = 'temp'
 blank_doc = '#! Title\n\nBody text.'
+
+# base directory
+basedir = os.path.abspath(args.path)
+if os.path.isdir(basedir):
+    basefile = None
+else:
+    (basedir, basefile) = os.path.split(basedir)
+
+# print state
+print('serving %s on http://%s:%s' % (basedir, args.ip, port))
 
 # randomization
 rand_hex = lambda: hex(random.getrandbits(128))[2:].zfill(32)
@@ -104,12 +132,13 @@ def get_base_name(fname):
         fname_new = fname
     return fname_new
 
-def validate_path(relpath, base):
-    absbase = os.path.abspath(os.path.join(args.path, base))
+def validate_path(relpath, base, weak=False):
+    absbase = os.path.abspath(base)
     abspath = os.path.abspath(os.path.join(absbase, relpath))
     prefix = os.path.normpath(os.path.commonprefix([abspath, absbase]))
-    print(absbase, abspath, prefix)
-    return (prefix == absbase) and (len(abspath) > len(absbase))
+    op = operator.ge if weak else operator.gt
+    valid = (prefix == absbase) and op(len(abspath), len(absbase))
+    return abspath if valid else None
 
 # Tornado time
 class AuthLoginHandler(tornado.web.RequestHandler):
@@ -157,11 +186,16 @@ class PathHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self, path):
         (pardir, fname) = os.path.split(path)
-        fpath = os.path.join(args.path, path)
+        fpath = validate_path(path, basedir)
+        if fpath is None:
+            print('Path out of bounds!')
+            return
         if os.path.isdir(fpath):
             self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=args.demo)
         elif os.path.isfile(fpath):
-            if fname.endswith('.md') or '.' not in fname:
+            (_, ext) = os.path.splitext(fname)
+            print(ext)
+            if ext in ('.md', '.rst', ''):
                 self.render('editor.html', path=path, curdir=pardir, fname=fname, local_libs=local_libs)
             else:
                 (mime_type, encoding) = mimetypes.guess_type(path)
@@ -177,7 +211,11 @@ class UploadHandler(tornado.web.RequestHandler):
     def post(self, rpath):
         file = self.request.files['payload'][0]
         fname = file['filename']
-        plocal = os.path.join(args.path, rpath, fname)
+        rname = os.path.join(rpath, fname)
+        plocal = validate_path(rname, basedir)
+        if plocal is None:
+            print('Path out of bounds!')
+            return
         if os.path.isdir(plocal):
             print('Directory exists!')
             return
@@ -187,7 +225,7 @@ class UploadHandler(tornado.web.RequestHandler):
 class DemoHandler(tornado.web.RequestHandler):
     def get(self):
         drand = rand_hex()
-        fullpath = os.path.join(args.path, drand)
+        fullpath = os.path.join(basedir, drand)
         os.mkdir(fullpath)
         shutil.copy(os.path.join('testing', 'demo.md'), fullpath)
         shutil.copy(os.path.join('testing', 'Jahnke_gamma_function.png'), fullpath)
@@ -196,8 +234,11 @@ class DemoHandler(tornado.web.RequestHandler):
 class ExportHandler(tornado.web.RequestHandler):
     @authenticated
     def post(self, rpath):
-        (curdir, fname) = os.path.split(rpath)
-        fullpath = os.path.join(tmp_dir, rpath)
+        fullpath = validate_path(rpath, tmp_dir)
+        if fullpath is None:
+            print('Path out of bounds!')
+            return
+        (curdir, fname) = os.path.split(fullpath)
 
         # determine content type
         (base_name, ext) = os.path.splitext(fname)
@@ -236,20 +277,23 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 
     def open(self, path):
         print('connection received: %s' % path)
-        if locks[path].acquire(blocking=False):
+        self.fullpath = validate_path(path, basedir)
+        if self.fullpath is None:
+            print('Path out of bounds!')
+            self.close()
+            return
+        if locks[self.fullpath].acquire(blocking=False):
             self.live = True
         self.path = path
-        (self.dirname, self.fname) = os.path.split(path)
+        (self.fulldir, self.fname) = os.path.split(self.fullpath)
         self.basename = get_base_name(self.fname)
         self.temppath = os.path.join(tmp_dir, self.fname)
-        self.fulldir = os.path.join(args.path, self.dirname)
-        self.fullpath = os.path.join(args.path, path)
         self.cells = read_cells(self.fullpath)
 
     def on_close(self):
         print('connection closing')
         if self.live:
-            locks[self.path].release()
+            locks[self.fullpath].release()
 
     def error_msg(self, error_code):
         if not error_code is None:
@@ -336,11 +380,12 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
                 for fp in deps:
                     if re.search(fp, r'(^|:)//') is None:
                         if fp.startswith('/'):
-                            fp = os.path.join(args.path, fp);
+                            fp = os.path.join(basedir, fp);
                         else:
                             fp = os.path.join(self.fulldir, fp)
-                        if validate_path(fp, args.path):
-                            shutil.copy(fp, exp_dir)
+                        fpv = validate_path(fp, basedir)
+                        if fpv is not None:
+                            shutil.copy(fpv, exp_dir)
                         else:
                             print('%s: Path out of bounds!' % fp)
                             continue
@@ -364,16 +409,20 @@ class FileHandler(tornado.websocket.WebSocketHandler):
 
     def open(self, relpath):
         print('connection received')
-        if locks[relpath].acquire(blocking=False):
-            self.live = True
         self.relpath = relpath
-        self.curdir = os.path.join(args.path, self.relpath)
+        self.curdir = validate_path(self.relpath, basedir, weak=True)
+        if self.curdir is None:
+            print('Path out of bounds!')
+            self.close()
+            return
+        if locks[self.curdir].acquire(blocking=False):
+            self.live = True
         (self.pardir, self.dirname) = os.path.split(self.curdir)
 
     def on_close(self):
         print('connection closing')
         if self.live:
-            locks[self.relpath].release()
+            locks[self.curdir].release()
 
     def error_msg(self, error_code):
         if not error_code is None:
@@ -398,11 +447,11 @@ class FileHandler(tornado.websocket.WebSocketHandler):
                 print('Not so fast!')
                 return
         elif cmd == 'create':
-            if not validate_path(cont, self.curdir):
+            fullpath = validate_path(cont, self.curdir)
+            if fullpath is None:
                 print('Path out of bounds!')
                 return
 
-            fullpath = os.path.join(self.curdir, cont)
             if os.path.exists(fullpath):
                 print('File exists.')
                 return
@@ -417,11 +466,11 @@ class FileHandler(tornado.websocket.WebSocketHandler):
             except:
                 print('Could not create file \'%s\'' % fullpath)
         elif cmd == 'delete':
-            if not validate_path(cont, self.curdir):
+            fullpath = validate_path(cont, self.curdir)
+            if fullpath is None:
                 print('Path out of bounds!')
                 return
 
-            fullpath = os.path.join(self.curdir, cont)
             if os.path.isdir(fullpath):
                 shutil.rmtree(fullpath)
             else:
@@ -461,14 +510,17 @@ class Application(tornado.web.Application):
 
         settings = dict(
             app_name='Elltwo Editor',
-            template_path='templates',
-            static_path='static',
+            template_path=template_dir,
+            static_path=static_dir,
             cookie_secret=cookie_secret
         )
 
         tornado.web.Application.__init__(self, handlers, debug=True, **settings)
 
+if args.browser:
+    webbrowser.open('http://%s:%s/%s' % (args.ip, port, basefile or ''))
+
 # create server
 application = Application()
-application.listen(args.port, address=args.ip)
+application.listen(port, address=args.ip)
 tornado.ioloop.IOLoop.current().start()

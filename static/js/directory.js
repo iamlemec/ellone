@@ -46,7 +46,7 @@ function connect()
         var cmd = json_data['cmd'];
         var cont = json_data['content'];
         var ro = json_data['readonly'];
-        if ((cmd == 'results') || (cmd == 'readonly')) {
+        if (cmd == 'results') {
           $(".directory .entry.dir").remove();
           $(".directory .entry.doc").remove();
           $(".directory .entry.misc").remove();
@@ -130,7 +130,7 @@ function initialize() {
     var formData = new FormData($(this)[0]);
 
     $.ajax({
-      url: '/upload/' + dirname,
+      url: '/__upload/' + dirname,
       type: 'POST',
       data: formData,
       contentType: false,
@@ -141,7 +141,7 @@ function initialize() {
         ws.send(msg);
       },
       error: function(resp) {
-        alert(resp);
+        console.log('nothing selected');
       }
     });
 

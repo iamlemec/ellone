@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+SOURCE="${BASH_SOURCE[0]}"
+SOURCE="$(readlink "$SOURCE")"
+DIR="$(dirname "$SOURCE")"
+
+if [ $# -eq 0 ]; then
+    python3 "$DIR/server.py" --browser
+else
+    python3 "$DIR/server.py" --browser --path="$1"
+fi
