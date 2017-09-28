@@ -4,10 +4,11 @@ Check out the live demo at: [dohan.io](http://dohan.io/)
 
 Elltwo is a web-enabled, cell-based document composition tool. It's geared towards people who, like myself, start developing ideas as snippets of text interspersed with equations. Could very well be useful to others though. The math rendering is taken care of by the wonderful KaTeX library. Notable features include:
 
-- Line-by-line (a la vim) Markdown editing
+- Cell-by-cell Markdown editing, rendered inline
 - Automatic equation, [sub]section, and footnote numbering
 - Equation referencing and footnotes with popup previews
 - Export to Markdown (ish), LaTeX, PDF, and HTML
+- Documents stored on disk as Markdown (ish) text files
 
 ![Elltwo demo](demo.gif)
 
@@ -15,23 +16,14 @@ Elltwo is a web-enabled, cell-based document composition tool. It's geared towar
 
 # Installing
 
-After cloning the repository locally, you'll want to fetch and build the latest version of KaTeX, which is hooked in as a submodule:
-
-```
-git submodule init
-git submodule update
-cd static/katex
-npm install
-```
-
-Naturally, this requires that you have `nodejs` and `npm` installed.
+After cloning the repository locally, you can run it right away.
 
 # Running
 
 From the main directory:
 
 ```
-python3 editor.py --port=8500 --path=testing
+python3 server.py --port=8500 --path=testing
 ```
 
 Then navigate to:

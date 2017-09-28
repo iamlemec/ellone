@@ -12,6 +12,7 @@
     position: relative;
     border-left: 1px solid #FFF;
     padding-left: 10px;
+    padding-right: 10px;
 }
 
 #elltwo .cell.editing {
@@ -129,3 +130,20 @@ body.modified #topbar-reload {
     padding: 3px;
     cursor: default;
 }
+
+/* dark theme */
+
+/*
+
+#elltwo {
+    background-color: #070908;
+    color: #E7F3FD;
+}
+
+body {
+    background-color: #070908;
+    color: #E7F3FD;
+}
+
+*/
+

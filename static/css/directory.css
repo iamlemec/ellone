@@ -108,6 +108,10 @@ html {
   background-color: #DEDEDE;
 }
 
+body:not(.editing) .directory .create {
+  background-color: #DEDEDE;
+}
+
 .directory .upload {
   display: table-cell;
   vertical-align: middle;
@@ -115,6 +119,10 @@ html {
   text-align: center;
   font-size: 20px;
   width: 50%;
+}
+
+body:not(.editing) .directory .upload {
+  background-color: #DEDEDE;
 }
 
 .directory .upload:hover {
@@ -157,7 +165,7 @@ html {
   background-color: red;
 }
 
-.entry:hover .delbox {
+body.editing .entry:hover .delbox {
   display: block;
 }
 

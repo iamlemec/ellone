@@ -1,5 +1,7 @@
 // Elltwo editor
 
+var body = $('body');
+
 function make_entry(type,name) {
   var entry = $("<div>",{class:"entry"});
   entry.addClass(type);
@@ -43,6 +45,7 @@ function connect()
       if (json_data) {
         var cmd = json_data['cmd'];
         var cont = json_data['content'];
+        var ro = json_data['readonly'];
         if (cmd == 'results') {
           $(".directory .entry.dir").remove();
           $(".directory .entry.doc").remove();
@@ -59,12 +62,15 @@ function connect()
             var entry = make_entry("misc",name);
             entry.insertBefore(tools);
           });
+          if (!ro) {
+            body.addClass('editing');
+          }
         }
       }
     };
 
     ws.onclose = function() {
-      console.log('websocket closed');
+      console.log('websocket closed.');
     };
   } else {
     console.log('Sorry, your browser does not support websockets.');
@@ -91,6 +97,9 @@ function initialize() {
   }
 
   create.click(function() {
+    if (!body.hasClass('editing')) {
+        return;
+    }
     var entry = $("<div>",{class: "entry"});
     var input = $("<input>");
     input.keydown(function(event) {
@@ -107,7 +116,9 @@ function initialize() {
   });
 
   $(".upload").click(function() {
-    $('#fake-input').click();
+    if (body.hasClass('editing')) {
+      $('#fake-input').click();
+    }
   });
 
   $("#fake-input").change(function() {
@@ -119,7 +130,7 @@ function initialize() {
     var formData = new FormData($(this)[0]);
 
     $.ajax({
-      url: '/upload/' + dirname,
+      url: '/__upload/' + dirname,
       type: 'POST',
       data: formData,
       contentType: false,
@@ -130,7 +141,7 @@ function initialize() {
         ws.send(msg);
       },
       error: function(resp) {
-        alert(resp);
+        console.log('nothing selected');
       }
     });
 

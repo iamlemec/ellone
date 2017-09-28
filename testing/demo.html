@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+
+<head>
+
+<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+
+</head>
+
+<body>
+
+<!-- <span id="marquee"></span> -->
+
+<div id="elltwo">
+
+<title>Sample <tex>\ell^2</tex> Document</title>
+
+<p>This is an example of a document written using the <tex>\ell^2</tex> (ell-two) typesetting system. Basic elements of markdown syntax are supported, as are certain extensions geared toward academic writing.</p>
+
+<h1>Commands</h1>
+
+<p>Here is a list of the keyboard common keyboard commands:</p>
+
+<ul>
+<li><code>up/down</code>: move active cell</li>
+<li><code>w</code>: edit active cell</li>
+<li><code>o</code>: create new cell after active (and edit)</li>
+<li><code>esc</code>: render cell contents</li>
+<li><code>shift+enter</code>: render cell and create new one (= <code>esc</code> then <code>o</code>)</li>
+<li><code>D</code>: delete cell</li>
+<li><code>ctrl+s</code>: save document</li>
+</ul>
+
+<p>As in the above, unordered lists can be created with consecutive lines in a cell starting with <code>-</code>, while ordered lists use <code>+</code>.</p>
+
+<p>Code blocks <code>hi there</code> and</p>
+
+<pre><code>big code block
+multiline now
+</code></pre>
+<h1>Cell Directives</h1>
+
+<p>Text cells can be typed in verbatim. Create heading cells by prefacing them with any appropriate number of <code>#</code>'s. Image cells must be separate but otherwise use the same syntax as regular markdown: <code>![url](caption)</code></p>
+
+<figure><img src="Jahnke_gamma_function.png"><figcaption>Ye Olde Gamma Function</figcaption></figure>
+
+<p>Clicking on a cell, makes it the active cell. One can also move to the previous or next cell with the arrow keys. Creation and deletion of cells can also be accomplished with the mouse hover buttons.</p>
+
+<p>Footnotes can be created with a caret and text in square brackets, as in <code>^[footnote text]</code>. Their text will be displayed in a hover over and they will be automatically numbered from 1. For example, this is a footnote <footnote>The proof is left as an exercise to the reader. 😄</footnote>. And here is another <footnote>And my <tex>\sin(x^2)</tex> axe! You can even reference <ref>eq1</ref> inside.</footnote>.</p>
+
+<p>Inline code is denoted with <code>`</code> and multiline code blocks are done by starting a cell with <code>``</code>.</p>
+
+<h1>Math</h1>
+
+<p>Math is rendered using KaTeX and supports much of TeX style syntax. It can be displayed inline with matching pairs of <code>$</code> signs, as in <tex>x \in \{1,2,\ldots\}</tex> or in display style by starting the line with <code>$$</code></p>
+
+<equation id="eq1">\int_0^{\infty} \exp(-x^2)\ dx = \frac{\sqrt{\pi}}{2}</equation>
+
+<p>This makes debugging equation errors considerably easier. On top of that, KaTeX now even supports subexpression error display</p>
+
+<equation>x^2 = \frac{y^2 + \sqrt{\elm^3}}{2}</equation>
+
+<p>Equations can be numbered with semi-arbitrary labels as in <code>[eq1]</code>, and referenced similarly with <code>@[eq1]</code>, for example <ref>eq1</ref>.</p>
+
+<p>Here is a multiline, aligned equation</p>
+
+<equation>\ell_{t+1}^{\gamma} & = \frac{w_{t+t}\tilde{\eta}_{t+1}}{1+G_{t+1}/\theta_{t+1}} \\
+\kappa r_t^{\eta} & = \frac{Z_{t+1}^{\frac{1+\gamma}{\gamma}}}{R} \mathbb{E} \left[ \alpha \left(\frac{w_{t+1}}{r_t}\right)^{\rho} \left[ \frac{w_{t+1}}{1+G_{t+1}/\theta_{t+1}} \right]^{\frac{1}{\gamma}} \right]</equation>
+
+<h1>Exporting</h1>
+
+<p>Documents can be exported to a variety of formats:</p>
+
+<ul>
+<li>Markdown (ish): simply the concatenation of all cell inputs</li>
+<li>HTML: an intermediate language that allows for portable viewing, although + uses external javascript libraries</li>
+<li>LaTeX: naturally we cannot capture all the richness of latex in this environment, but it's a start</li>
+<li>PDF: auto-compiled version of the previous.</li>
+</ul>
+
+</div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+<script type="text/javascript">elltwo.init();</script>
+
+</body>
+
+</html>
