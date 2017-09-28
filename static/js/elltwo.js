@@ -451,10 +451,7 @@ function display_export(fmt) {
     pre.text(txt);
 }
 
-// render for static docs
-var init = function() {
-    curdir = null;
-
+function render_all() {
     render(true);
     number_sections();
     number_equations();
@@ -467,6 +464,21 @@ var init = function() {
         if (exp != null) {
             display_export(exp);
         }
+    }
+}
+
+// render for static docs
+var init = function(path) {
+    curdir = null;
+
+    if (path != undefined) {
+        $.get(path, function(data) {
+            console.log(data);
+            content.html(data);
+            render_all();
+        });
+    } else {
+        render_all();
     }
 }
 
