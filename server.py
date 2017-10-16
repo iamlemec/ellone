@@ -47,7 +47,7 @@ args = ap.parse_args()
 use_auth = not (args.demo or args.auth is None)
 port = args.port if args.port != 0 else get_open_port()
 local_libs = args.local_libs
-tmp_dir = 'temp'
+tmp_dir = '/tmp'
 blank_doc = '#! Title\n\nBody text.'
 
 # base directory

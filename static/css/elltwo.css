@@ -185,6 +185,13 @@
     content: attr(sec-num) " ";
 }
 
+/* references */
+
+#elltwo .biblio {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
 /* popups */
 
 #elltwo .popup-outer {

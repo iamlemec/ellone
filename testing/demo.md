@@ -37,6 +37,8 @@ def fib(n):
     else:
         return 1
 
+See the model of @[ref1] for more details.
+
 # Math
 
 Math is rendered using KaTeX and supports much of TeX style syntax. It can be displayed inline, as in $x \in \{1,2,\ldots\}$ or in display style
@@ -68,3 +70,17 @@ Documents can be exported to a variety of formats:
 + HTML: an intermediate language that allows for portable viewing, although uses external javascript libraries
 + LaTeX: naturally we cannot capture all the richness of latex in this environment, but it's a start
 + PDF: auto-compiled version of the previous.
+
+# References
+
+@@ ref1
+title: Innovating Firms and Aggregate Innovation
+authors: Tok Jakob Klette; Samuel Kortum
+year: 2004
+journal: Journal of Political Economy
+
+@@ ref2
+title: Innovating Firms and Aggregate Inovation
+authors: Tok Jakob Klette; Samuel Kortum; Ufuk Akcigit
+year: 2007
+journal: American Economic Review

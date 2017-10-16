@@ -27,7 +27,8 @@ var block = {
   text: /^[^\n]+/,
   equation: /^\$\$ *(?:\[([\w-]+)\])? *((?:[^\n]+\n?)*)(?:\n+|$)/,
   title: /^#! *([^\n]*)(?:\n+|$)/,
-  image: /^!\[(inside)\]\(href\)/
+  image: /^!\[(inside)\]\(href\)/,
+  biblio: /^@@ *([\w-]+) *\n?((?:[^\n]+\n?)*)(?:\n+|$)/
 };
 
 block._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
@@ -189,6 +190,25 @@ Lexer.prototype.token = function(src, top, bq) {
         id: cap[1],
         tex: cap[2]
       })
+      continue;
+    }
+
+    // bibliographic info
+    if (cap = this.rules.biblio.exec(src)) {
+      src = src.substring(cap[0].length);
+      var bib = {
+        type: 'biblio',
+        id: cap[1],
+      }
+      var lines = cap[2].split('\n');
+      for (i in lines) {
+        var line = lines[i];
+        if (line.includes(':')) {
+          var kv = lines[i].split(':', 2);
+          bib[kv[0]] = kv[1].trim();
+        }
+      }
+      this.tokens.push(bib);
       continue;
     }
 
@@ -1002,6 +1022,16 @@ Renderer.prototype.image = function(title, href) {
   return out;
 }
 
+Renderer.prototype.biblio = function(id, info) {
+  var out = '<biblio id="' + id + '"';
+  for (k in info) {
+    var v = info[k];
+    out += ' ' + k + '="' + v + '"';
+  }
+  out += '/>\n';
+  return out;
+}
+
 /**
  * Latex Renderer
  */
@@ -1350,6 +1380,12 @@ Parser.prototype.tok = function() {
     case 'image': {
       this.deps.push(this.token.href);
       return this.renderer.image(this.inline.output(this.token.title), this.token.href);
+    }
+    case 'biblio': {
+      var id = this.token.id;
+      delete this.token['type'];
+      delete this.token['id'];
+      return this.renderer.biblio(id, this.token);
     }
   }
 };

@@ -39,12 +39,32 @@ var unescape_html = function(text) {
                .replace(/&#39;/g, "'");
 };
 
+var oxford = function(clist) {
+    var out = "";
+    var ncl = clist.length;
+    for (i in clist) {
+        c = clist[i];
+        if (i == 0) {
+            out += c;
+        } else if (i == ncl - 1) {
+            if (ncl > 2) {
+                out += ",";
+            }
+            out += " and " + c;
+        } else {
+            out += ", " + c;
+        }
+    }
+    return out;
+}
+
 // rendering
 var apply_render = function(box, defer) {
     var new_section = false;
     var new_equation = false;
     var new_footnote = false;
     var new_reference = false;
+    var new_biblio = false;
 
     // final substitutions
     var tag = box[0].tagName;
@@ -124,6 +144,37 @@ var apply_render = function(box, defer) {
         eq.append(div_inner);
         box.replaceWith(eq);
         box = eq;
+    }
+
+    if (tag == "BIBLIO") {
+        new_biblio = true;
+
+        var id = box.attr("id");
+        var authors = box.attr("authors");
+        var title = box.attr("title");
+        var year = box.attr("year");
+        var journal = box.attr("journal");
+
+        // parse authors
+        var authlist = authors.split(";");
+        var authtext = [];
+        for (i in authlist) {
+            var auth = authlist[i];
+            if (i == 0) {
+                var names = auth.split(" ")
+                authtext.push(names.pop() + ", " + names.join(" "));
+            } else {
+                authtext.push(auth);
+            }
+        }
+        authtext = oxford(authtext);
+
+        // construct cite line
+        var text = authtext + ". " + year + ". \"" + title + ".\" " + "<i>" + journal + ".</i>";
+
+        var bref = $("<div>", {class: "biblio", id: id, html: text, authors: authors, title: title, year: year});
+        box.replaceWith(bref);
+        box = bref;
     }
 
     // recalculate sections, equations, and references
@@ -269,6 +320,22 @@ var resolve_references = function(box) {
             ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
             ref.removeClass("error");
             var popup = $("<div>", {class: "popup sec-popup", html: targ.html()});
+            attach_popup(ref, popup);
+        } else if (targ.hasClass("biblio")) {
+            var authors = targ.attr("authors");
+            var title = targ.attr("title");
+            var year = targ.attr("year");
+            var authtext = [];
+            var authlist = authors.split(";");
+            for (i in authlist) {
+                var auth = authlist[i];
+                var names = auth.split(" ");
+                authtext.push(names.pop());
+            }
+            authtext = oxford(authtext);
+            ref.html("<a href=\"#" + label + "\">" + authtext + " (" + year + ")</a>");
+            ref.removeClass("error");
+            var popup = $("<div>", {class: "popup bib-popup", html: targ.html()});
             attach_popup(ref, popup);
         } else {
             ref.html(label);

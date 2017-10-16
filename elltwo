@@ -3,6 +3,7 @@
 SOURCE="${BASH_SOURCE[0]}"
 SOURCE="$(readlink "$SOURCE")"
 DIR="$(dirname "$SOURCE")"
+ORIG="$PWD"
 
 if [ $# -eq 0 ]; then
     python3 "$DIR/server.py" --browser
