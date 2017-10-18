@@ -15,7 +15,7 @@ var block = {
   code: /^`` *\n(?:[^\n]+(?:\n|$))+/,
   fences: noop,
   hr: /^( *[-*_]){3,} *(?:\n+|$)/,
-  heading: /^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)/,
+  heading: /^ *(#{1,6})(\*?) *([^\n]+?) *#* *(?:\n+|$)/,
   nptable: noop,
   lheading: /^([^\n]+)\n *(=|-){2,} *(?:\n+|$)/,
   blockquote: /^( *>[^\n]+(\n(?!def)[^\n]+)*\n*)+/,
@@ -89,7 +89,7 @@ block.normal = merge({}, block);
 block.gfm = merge({}, block.normal, {
   fences: /^ *(`{3,}|~{3,})[ \.]*(\S+)? *\n([\s\S]*?)\s*\1 *(?:\n+|$)/,
   paragraph: /^/,
-  heading: /^ *(#{1,6}) +([^\n]+?) *#* *(?:\n+|$)/
+  heading: /^ *(#{1,6})(\*?) +([^\n]+?) *#* *(?:\n+|$)/
 });
 
 block.gfm.paragraph = replace(block.paragraph)
@@ -261,7 +261,8 @@ Lexer.prototype.token = function(src, top, bq) {
       this.tokens.push({
         type: 'heading',
         depth: cap[1].length,
-        text: cap[2]
+        number: cap[2].length == 0,
+        text: cap[3]
       });
       continue;
     }
@@ -891,18 +892,16 @@ Renderer.prototype.title = function(text) {
   return '<title>' + text + '</title>\n\n';
 };
 
-Renderer.prototype.heading = function(text, level, raw) {
-  return '<h'
-    + level
-    + ' id="'
-    + this.options.headerPrefix
-    + raw.toLowerCase().replace(/[^\w]+/g, '-')
-    + '">'
-    + text
-    + '</h'
-    + level
-    + '>\n'
-    + '\n';
+Renderer.prototype.heading = function(text, level, raw, number) {
+  outp = '';
+  outp += '<h' + level;
+  outp += ' id="' + this.options.headerPrefix + raw.toLowerCase().replace(/[^\w]+/g, '-') + '"';
+  if (!number) { outp += ' class="nonumber"'; }
+  outp += '>'
+  outp += text
+  outp += '</h' + level + '>\n'
+  outp += '\n';
+  return outp;
 };
 
 Renderer.prototype.hr = function() {
@@ -1280,7 +1279,9 @@ Parser.prototype.tok = function() {
       return this.renderer.heading(
         this.inline.output(this.token.text),
         this.token.depth,
-        this.token.text);
+        this.token.text,
+        this.token.number
+      );
     }
     case 'code': {
       return this.renderer.code(this.token.text,

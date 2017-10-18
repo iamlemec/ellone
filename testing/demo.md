@@ -71,7 +71,7 @@ Documents can be exported to a variety of formats:
 + LaTeX: naturally we cannot capture all the richness of latex in this environment, but it's a start
 + PDF: auto-compiled version of the previous.
 
-# References
+#* References
 
 @@ ref1
 title: Innovating Firms and Aggregate Innovation
