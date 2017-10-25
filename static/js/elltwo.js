@@ -109,7 +109,13 @@ var apply_render = function(box, defer) {
         var tex = $(this);
         var src = tex.text();
         var span = $("<span>", {class: "latex"});
-        katex.render(src, span[0], {throwOnError: false});
+        try {
+          katex.render(src, span[0]);
+        } catch (e) {
+          console.log(box.text());
+          console.log(src);
+          console.log(e);
+        }
         return span;
     });
 
@@ -250,6 +256,12 @@ var number_equations = function() {
     });
 };
 
+var number_figures = function() {
+}
+
+var number_tables = function() {
+}
+
 // for a hover event and scale factor (of the realized object), generate appropriate css
 var get_offset = function(parent, popup, event) {
     var rects = parent[0].getClientRects();
@@ -316,6 +328,12 @@ var resolve_references = function(box) {
             var popup = $("<div>", {class: "popup eqn-popup", html: targ.children(".equation-inner").html()});
             attach_popup(ref, popup);
         } else if (targ.hasClass("sec-title")) {
+            var sec_num = targ.attr("sec-num");
+            ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
+            ref.removeClass("error");
+            var popup = $("<div>", {class: "popup sec-popup", html: targ.html()});
+            attach_popup(ref, popup);
+        } else if (targ.hasClass("figure")) {
             var sec_num = targ.attr("sec-num");
             ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
             ref.removeClass("error");
@@ -539,9 +557,10 @@ function render_all() {
 var init = function(path) {
     curdir = null;
 
+    console.log(path);
     if (path != undefined) {
         $.get(path, function(data) {
-            console.log(data);
+            // console.log(data);
             content.html(data);
             render_all();
         });

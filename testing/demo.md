@@ -37,8 +37,6 @@ def fib(n):
     else:
         return 1
 
-See the model of @[ref1] for more details.
-
 # Math
 
 Math is rendered using KaTeX and supports much of TeX style syntax. It can be displayed inline, as in $x \in \{1,2,\ldots\}$ or in display style
@@ -71,16 +69,8 @@ Documents can be exported to a variety of formats:
 + LaTeX: naturally we cannot capture all the richness of latex in this environment, but it's a start
 + PDF: auto-compiled version of the previous.
 
-#* References
+This is a test $x^2$
 
-@@ ref1
-title: Innovating Firms and Aggregate Innovation
-authors: Tok Jakob Klette; Samuel Kortum
-year: 2004
-journal: Journal of Political Economy
+$$ [eq2] \int f(x) dx
 
-@@ ref2
-title: Innovating Firms and Aggregate Inovation
-authors: Tok Jakob Klette; Samuel Kortum; Ufuk Akcigit
-year: 2007
-journal: American Economic Review
+This is a reference @[eq2]

@@ -15,7 +15,7 @@ var block = {
   code: /^`` *\n(?:[^\n]+(?:\n|$))+/,
   fences: noop,
   hr: /^( *[-*_]){3,} *(?:\n+|$)/,
-  heading: /^ *(#{1,6})(\*?) *([^\n]+?) *#* *(?:\n+|$)/,
+  heading: /^ *(#{1,6})(\*?) *(?:refid)? *([^\n]+?) *#* *(?:\n+|$)/,
   nptable: noop,
   lheading: /^([^\n]+)\n *(=|-){2,} *(?:\n+|$)/,
   blockquote: /^( *>[^\n]+(\n(?!def)[^\n]+)*\n*)+/,
@@ -33,10 +33,15 @@ var block = {
 
 block._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
 block._href = /\s*<?([\s\S]*?)>?(?:\s+['"]([\s\S]*?)['"])?\s*/;
+block._refid = /\[([\w-]+)\]/
 
 block.image = replace(block.image)
   ('inside', block._inside)
   ('href', block._href)
+  ();
+
+block.heading = replace(block.heading)
+  ('refid', block._refid)
   ();
 
 block.bullet = /(?:[*+-]|\d+\.)/;
@@ -89,7 +94,6 @@ block.normal = merge({}, block);
 block.gfm = merge({}, block.normal, {
   fences: /^ *(`{3,}|~{3,})[ \.]*(\S+)? *\n([\s\S]*?)\s*\1 *(?:\n+|$)/,
   paragraph: /^/,
-  heading: /^ *(#{1,6})(\*?) +([^\n]+?) *#* *(?:\n+|$)/
 });
 
 block.gfm.paragraph = replace(block.paragraph)
@@ -115,15 +119,7 @@ function Lexer(options) {
   this.tokens = [];
   this.tokens.links = {};
   this.options = options || marked.defaults;
-  this.rules = block.normal;
-
-  if (this.options.gfm) {
-    if (this.options.tables) {
-      this.rules = block.tables;
-    } else {
-      this.rules = block.gfm;
-    }
-  }
+  this.rules = block.tables;
 }
 
 /**
@@ -226,9 +222,17 @@ Lexer.prototype.token = function(src, top, bq) {
     // image
     if (cap = this.rules.image.exec(src)) {
       src = src.substring(cap[0].length);
+      var title = cap[1];
+      var tag;
+      if (title.includes(':')) {
+        var ret = title.split(':');
+        title = ret[1];
+        tag = ret[0];
+      }
       this.tokens.push({
         type: 'image',
-        title: cap[1],
+        tag: tag,
+        title: title,
         href: cap[2]
       });
       continue;
@@ -262,7 +266,8 @@ Lexer.prototype.token = function(src, top, bq) {
         type: 'heading',
         depth: cap[1].length,
         number: cap[2].length == 0,
-        text: cap[3]
+        refid: cap[3],
+        text: cap[4]
       });
       continue;
     }
@@ -523,7 +528,7 @@ var inline = {
   br: /^ {2,}\n(?!\s*$)/,
   del: noop,
   text: /^[\s\S]+?(?=[\\<!\[_*`\$\^@]| {2,}\n|$)/,
-  math: /^\$([\s\S]+?)\$/,
+  math: /^\$((?:\\\$|[\s\S])+?)\$/,
   ref: /^@\[([\w-]+?)\]/,
   footnote: /^\^\[(inside)\]/
 };
@@ -892,10 +897,10 @@ Renderer.prototype.title = function(text) {
   return '<title>' + text + '</title>\n\n';
 };
 
-Renderer.prototype.heading = function(text, level, raw, number) {
+Renderer.prototype.heading = function(text, level, refid, number) {
   outp = '';
   outp += '<h' + level;
-  outp += ' id="' + this.options.headerPrefix + raw.toLowerCase().replace(/[^\w]+/g, '-') + '"';
+  outp += ' id="' + refid + '"';
   if (!number) { outp += ' class="nonumber"'; }
   outp += '>'
   outp += text
@@ -1016,8 +1021,14 @@ Renderer.prototype.footnote = function(text) {
   return out;
 };
 
-Renderer.prototype.image = function(title, href) {
-  var out = '<figure>\n' + '<img src="' + href + '">\n<figcaption>' + title + '</figcaption>\n</figure>\n\n';
+Renderer.prototype.image = function(title, href, tag) {
+  // console.log(title, href, tag);
+  if (tag != undefined) {
+    tagtxt = ' id="' + tag + '"';
+  } else {
+    tagtxt = '';
+  }
+  var out = '<figure' + tagtxt + '>\n' + '<img src="' + href + '">\n<figcaption>' + title + '</figcaption>\n</figure>\n\n';
   return out;
 }
 
@@ -1279,7 +1290,7 @@ Parser.prototype.tok = function() {
       return this.renderer.heading(
         this.inline.output(this.token.text),
         this.token.depth,
-        this.token.text,
+        this.token.refid,
         this.token.number
       );
     }
@@ -1380,7 +1391,7 @@ Parser.prototype.tok = function() {
     }
     case 'image': {
       this.deps.push(this.token.href);
-      return this.renderer.image(this.inline.output(this.token.title), this.token.href);
+      return this.renderer.image(this.inline.output(this.token.title), this.token.href, this.token.tag);
     }
     case 'biblio': {
       var id = this.token.id;
@@ -1597,6 +1608,8 @@ marked.InlineLexer = InlineLexer;
 marked.inlineLexer = InlineLexer.output;
 
 marked.parse = marked;
+
+marked.block = block;
 
 if (typeof module !== 'undefined' && typeof exports === 'object') {
   module.exports = marked;
