@@ -256,10 +256,37 @@ var number_equations = function() {
     });
 };
 
+var number_footnotes = function() {
+    console.log("numbering footnotes");
+    var n_footnotes = 0;
+    content.find(".footnote").each(function () {
+        var fnote = $(this);
+        var num = fnote.children(".number");
+        var foot_num = ++n_footnotes;
+        num.text(foot_num);
+    });
+};
+
 var number_figures = function() {
+  console.log("numbering figures");
+  var n_figures = 0;
+  content.find("figure.image:not(nonumber)").each(function () {
+      var fig = $(this);
+      var cap = fig.children("figcaption");
+      var fig_num = ++n_figures;
+      cap.attr("fig-num", fig_num);
+  });
 }
 
 var number_tables = function() {
+  console.log("numbering tables");
+  var n_tables = 0;
+  content.find("figure.table:not(nonumber)").each(function () {
+      var tab = $(this);
+      var cap = tab.children("figcaption");
+      var tab_num = ++n_tables;
+      cap.attr("tab-num", tab_num);
+  });
 }
 
 // for a hover event and scale factor (of the realized object), generate appropriate css
@@ -333,11 +360,23 @@ var resolve_references = function(box) {
             ref.removeClass("error");
             var popup = $("<div>", {class: "popup sec-popup", html: targ.html()});
             attach_popup(ref, popup);
-        } else if (targ.hasClass("figure")) {
-            var sec_num = targ.attr("sec-num");
-            ref.html("<a href=\"#" + label + "\">Section " + sec_num + "</a>");
+        } else if (targ.hasClass("image")) {
+            var cap = targ.children("figcaption");
+            var fig_num = cap.attr("fig-num");
+            ref.html("<a href=\"#" + label + "\">Figure " + fig_num + "</a>");
             ref.removeClass("error");
-            var popup = $("<div>", {class: "popup sec-popup", html: targ.html()});
+            var clone = targ.clone();
+            clone.removeAttr("id");
+            var popup = $("<div>", {class: "popup fig-popup"}).append(clone);
+            attach_popup(ref, popup);
+        } else if (targ.hasClass("table")) {
+            var cap = targ.children("figcaption");
+            var tab_num = cap.attr("tab-num");
+            ref.html("<a href=\"#" + label + "\">Table " + tab_num + "</a>");
+            ref.removeClass("error");
+            var clone = targ.clone();
+            clone.removeAttr("id");
+            var popup = $("<div>", {class: "popup tab-popup"}).append(clone);
             attach_popup(ref, popup);
         } else if (targ.hasClass("biblio")) {
             var authors = targ.attr("authors");
@@ -359,18 +398,6 @@ var resolve_references = function(box) {
             ref.html(label);
             ref.addClass("error");
         }
-    });
-};
-
-// renumber footnotes
-var number_footnotes = function() {
-    console.log("numbering footnotes");
-    var n_footnotes = 0;
-    content.find(".footnote").each(function () {
-        var fnote = $(this);
-        var num = fnote.children(".number");
-        var foot_num = ++n_footnotes;
-        num.text(foot_num);
     });
 };
 
@@ -542,6 +569,8 @@ function render_all() {
     number_sections();
     number_equations();
     number_footnotes();
+    number_figures();
+    number_tables();
     resolve_references();
 
     if (content.hasClass("markdown")) {
@@ -560,7 +589,6 @@ var init = function(path) {
     console.log(path);
     if (path != undefined) {
         $.get(path, function(data) {
-            // console.log(data);
             content.html(data);
             render_all();
         });

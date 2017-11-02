@@ -27,13 +27,14 @@ var block = {
   text: /^[^\n]+/,
   equation: /^\$\$ *(?:\[([\w-]+)\])? *((?:[^\n]+\n?)*)(?:\n+|$)/,
   title: /^#! *([^\n]*)(?:\n+|$)/,
-  image: /^!\[(inside)\]\(href\)/,
-  biblio: /^@@ *([\w-]+) *\n?((?:[^\n]+\n?)*)(?:\n+|$)/
+  image: /^!\[(inside)\]\(href\)(?:\n+|$)/,
+  biblio: /^@@ *(?:refid) *\n?((?:[^\n]+\n?)*)(?:\n+|$)/,
+  figure: /^@(!|\|) *(?:\[([\w-]+)\]) *([^\n]+)\n((?:[^\n]+\n?)*)(?:\n+|$)/
 };
 
 block._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
 block._href = /\s*<?([\s\S]*?)>?(?:\s+['"]([\s\S]*?)['"])?\s*/;
-block._refid = /\[([\w-]+)\]/
+block._refid = /\[([\w-]+)\]/;
 
 block.image = replace(block.image)
   ('inside', block._inside)
@@ -185,7 +186,35 @@ Lexer.prototype.token = function(src, top, bq) {
         type: 'equation',
         id: cap[1],
         tex: cap[2]
-      })
+      });
+      continue;
+    }
+
+    // image
+    if (cap = this.rules.image.exec(src)) {
+      src = src.substring(cap[0].length);
+      this.tokens.push({
+        type: 'image',
+        alt: cap[1],
+        href: cap[2]
+      });
+      continue;
+    }
+
+    // figure
+    if (cap = this.rules.figure.exec(src)) {
+      src = src.substring(cap[0].length);
+      var ftype = (cap[1] == '!') ? 'image' : 'table';
+      this.tokens.push({
+        type: 'figure_start',
+        ftype: ftype,
+        tag: cap[2],
+        title: cap[3]
+      });
+      this.token(cap[4], top, bq);
+      this.tokens.push({
+        type: 'figure_end'
+      });
       continue;
     }
 
@@ -215,25 +244,6 @@ Lexer.prototype.token = function(src, top, bq) {
       this.tokens.push({
         type: 'code',
         text: cap
-      });
-      continue;
-    }
-
-    // image
-    if (cap = this.rules.image.exec(src)) {
-      src = src.substring(cap[0].length);
-      var title = cap[1];
-      var tag;
-      if (title.includes(':')) {
-        var ret = title.split(':');
-        title = ret[1];
-        tag = ret[0];
-      }
-      this.tokens.push({
-        type: 'image',
-        tag: tag,
-        title: title,
-        href: cap[2]
       });
       continue;
     }
@@ -927,7 +937,7 @@ Renderer.prototype.paragraph = function(text, terse) {
 };
 
 Renderer.prototype.table = function(header, body) {
-  return '<table>\n'
+  var out = '<table>\n'
     + '<thead>\n'
     + header
     + '</thead>\n'
@@ -936,6 +946,7 @@ Renderer.prototype.table = function(header, body) {
     + '</tbody>\n'
     + '</table>\n'
     + '\n';
+  return out;
 };
 
 Renderer.prototype.tablerow = function(content) {
@@ -1021,14 +1032,21 @@ Renderer.prototype.footnote = function(text) {
   return out;
 };
 
-Renderer.prototype.image = function(title, href, tag) {
-  // console.log(title, href, tag);
+Renderer.prototype.image = function(href, alt) {
+  var out = '\n<img src="' + href + '" alt="' + alt + '">';
+  return out;
+}
+
+Renderer.prototype.figure = function(ftype, tag, title, body) {
+  var tagtxt = '';
   if (tag != undefined) {
     tagtxt = ' id="' + tag + '"';
-  } else {
-    tagtxt = '';
   }
-  var out = '<figure' + tagtxt + '>\n' + '<img src="' + href + '">\n<figcaption>' + title + '</figcaption>\n</figure>\n\n';
+  var captxt = '';
+  if (title != undefined) {
+    captxt = '\n<figcaption>' + title + '</figcaption>';
+  }
+  var out = '<figure class="' + ftype + '"' + tagtxt + '>' + body + captxt + '\n</figure>\n\n';
   return out;
 }
 
@@ -1332,7 +1350,18 @@ Parser.prototype.tok = function() {
 
         body += this.renderer.tablerow(cell);
       }
-      return this.renderer.table(header, body);
+
+      var table = this.renderer.table(header, body);
+      if ((this.token.tag != undefined) || (this.token.caption != undefined)) {
+        return this.renderer.figure(
+          'table',
+          this.token.tag,
+          this.inline.output(this.token.caption),
+          table
+        );
+      } else {
+        return table;
+      }
     }
     case 'blockquote_start': {
       var body = '';
@@ -1391,7 +1420,17 @@ Parser.prototype.tok = function() {
     }
     case 'image': {
       this.deps.push(this.token.href);
-      return this.renderer.image(this.inline.output(this.token.title), this.token.href, this.token.tag);
+      return this.renderer.image(this.token.href, this.token.alt);
+    }
+    case 'figure_start': {
+      var ftype = this.token.ftype;
+      var tag = this.token.tag;
+      var title = this.token.title;
+      var body = '';
+      while (this.next().type !== 'figure_end') {
+        body += this.tok();
+      }
+      return this.renderer.figure(ftype, tag, title, body);
     }
     case 'biblio': {
       var id = this.token.id;

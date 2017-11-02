@@ -90,7 +90,11 @@
     margin-bottom: 0px;
 }
 
-#elltwo figure > img {
+#elltwo figure * {
+    text-align: center;
+}
+
+#elltwo img {
     max-width: 100%;
     height: auto;
 }
@@ -99,6 +103,14 @@
     text-align: center;
     font-style: italic;
     margin-top: 0px;
+}
+
+#elltwo figure.image > figcaption:not(nonumber):before {
+    content: "Figure " attr(fig-num) ": ";
+}
+
+#elltwo figure.table > figcaption:not(nonumber):before {
+    content: "Table " attr(tab-num) ": ";
 }
 
 /* lists */
@@ -122,15 +134,15 @@
 /* tables */
 
 #elltwo table {
-  border-spacing: 0px;
-  margin: 0px auto 0px auto;
-  padding: 20px 0px 20px 0px;
+    border-spacing: 0px;
+    margin: 0px auto 0px auto;
+    padding: 20px 0px 20px 0px;
 }
 
 #elltwo table > thead > tr > th {
     border-bottom: 2px solid black;
     padding: 5px 20px 5px 5px;
-    text-align: left;
+    /*text-align: left;*/
     font-variant: small-caps;
 }
 
@@ -198,7 +210,7 @@
     display: none;
     position: absolute;
     z-index: 2;
-    opacity: 0.90;
+    /*opacity: 0.90;*/
     cursor: auto;
 }
 
@@ -220,6 +232,10 @@
     margin-bottom: 8px;
 }
 
+#elltwo .popup a {
+    color: rgba(53, 122, 232, 0.8);
+}
+
 #elltwo .popup:after {
     position: absolute;
     top: 100%;
@@ -239,6 +255,28 @@
     max-width: none;
     padding-top: 5px;
     padding-bottom: 5px;
+}
+
+#elltwo .fig-popup {
+    width: 500px;
+}
+
+#elltwo .fig-popup figure {
+    margin: 0px;
+    padding: 0px;
+}
+
+#elltwo .tab-popup {
+    max-width: 500px;
+}
+
+#elltwo .tab-popup figure {
+    margin: 0px;
+    padding: 0px;
+}
+
+#elltwo .tab-popup table {
+    padding: 0px;
 }
 
 /* footnotes */

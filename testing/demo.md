@@ -22,6 +22,7 @@ As in the above, unordered lists can be created with consecutive lines in a cell
 
 Text cells can be typed in verbatim. Create heading cells by prefacing them with any appropriate number of `#`'s. Image cells must be separate but otherwise use the same syntax as regular markdown: `![url](caption)`
 
+@! [gamma_func] Ye Olde Gamma Function
 ![Ye Olde Gamma Function](Jahnke_gamma_function.png)
 
 Clicking on a cell, makes it the active cell. One can also move to the previous or next cell with the arrow keys. Creation and deletion of cells can also be accomplished with the mouse hover buttons.
@@ -53,12 +54,27 @@ Equations can be numbered with semi-arbitrary labels as in `[eq1]`, and referenc
 
 One can include tables using standard Markdown syntax. Here is an example
 
+@| [cities] Populations and areas of major world metropolitan areas.
 | City | Country | Population (m) | Area (km${}^2$) |
 |:---- |:------- |:---------- |:-------------------- |
 | Seoul | South Korea | 10 | 605 |
 | Tokyo | Japan | 14 | 2,188 |
 | Lagos | Nigeria | 16 | 1,171 |
 | New York | USA | 8 | 469 |
+
+This is a reference to @[cities].
+
+# Figures
+
+Here is a numbered figure
+
+@! [test_image] This is a non-image figure.
+Buncha **rando** content here!
+
+@| [test_table] This is an image table.
+![Ye Old Gamma Function](Jahnke_gamma_function.png)
+
+This is a reference to @[test_image].
 
 # Exporting
 
