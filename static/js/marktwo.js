@@ -45,6 +45,10 @@ block.heading = replace(block.heading)
   ('refid', block._refid)
   ();
 
+block.biblio = replace(block.biblio)
+  ('refid', block._refid)
+  ();
+
 block.bullet = /(?:[*+-]|\d+\.)/;
 block.item = /^( *)(bull) [^\n]*(?:\n(?!\1bull )[^\n]*)*/;
 block.item = replace(block.item, 'gm')
@@ -229,8 +233,10 @@ Lexer.prototype.token = function(src, top, bq) {
       for (i in lines) {
         var line = lines[i];
         if (line.includes(':')) {
-          var kv = lines[i].split(':', 2);
-          bib[kv[0]] = kv[1].trim();
+          var kv = lines[i].split(':');
+          var key = kv[0];
+          var val = kv.slice(1).join(':').trim();
+          bib[key] = val;
         }
       }
       this.tokens.push(bib);
@@ -650,7 +656,9 @@ InlineLexer.prototype.output = function(src) {
     , href
     , cap
     , tex
-    , esc;
+    , esc
+    , id
+    , alt;
 
   while (src) {
     // escape

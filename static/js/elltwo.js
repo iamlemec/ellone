@@ -8,6 +8,35 @@ var elltwo = (function() {
 // find outer box
 var content = $("#elltwo");
 
+// configuation
+var defaults = {
+    "reference": function(authors, year) {
+        var reftext = authors;
+        if (year != undefined) {
+            reftext += " (" + year + ")";
+        }
+        return reftext;
+    }
+};
+var config = {};
+
+var merge = function(obj) {
+    var i = 1;
+    var target;
+    var key;
+
+    for (; i < arguments.length; i++) {
+      target = arguments[i];
+      for (key in target) {
+        if (Object.prototype.hasOwnProperty.call(target, key)) {
+          obj[key] = target[key];
+        }
+      }
+    }
+
+    return obj;
+}
+
 // urls
 var resolve_url = function(url) {
     if (curdir != null) {
@@ -64,6 +93,8 @@ var apply_render = function(box, defer) {
     var new_equation = false;
     var new_footnote = false;
     var new_reference = false;
+    var new_figure = false;
+    var new_table = false;
     var new_biblio = false;
 
     // final substitutions
@@ -76,7 +107,7 @@ var apply_render = function(box, defer) {
         box = div;
     }
 
-    if ((tag[0] == "H") && (tag.length == 2)) {
+    if (/H[1-6]/.test(tag)) {
         new_section = true;
         box.addClass("sec-title");
         var lvl = parseInt(tag[1]);
@@ -152,33 +183,82 @@ var apply_render = function(box, defer) {
         box = eq;
     }
 
+    if (tag == "FIGURE") {
+        if (box.hasClass("image")) {
+            new_figure = true;
+        }
+        if (box.hasClass("table")) {
+            new_table = true;
+        }
+    }
+
     if (tag == "BIBLIO") {
         new_biblio = true;
 
         var id = box.attr("id");
+        var inst = box.attr("institution");
         var authors = box.attr("authors");
+        var shortname = box.attr("shortname");
         var title = box.attr("title");
         var year = box.attr("year");
         var journal = box.attr("journal");
+        var note = box.attr("note");
 
         // parse authors
-        var authlist = authors.split(";");
-        var authtext = [];
-        for (i in authlist) {
-            var auth = authlist[i];
-            if (i == 0) {
-                var names = auth.split(" ")
-                authtext.push(names.pop() + ", " + names.join(" "));
-            } else {
-                authtext.push(auth);
+        var authtext;
+        var lasttext;
+        if (inst != undefined) {
+            authtext = inst;
+            lasttext = inst;
+        } else {
+            var fulllist = authors.split(";");
+            var authlist = [];
+            var lastlist = [];
+            for (i in fulllist) {
+                var auth = fulllist[i];
+                var names = auth.split(" ");
+                var lname = names.pop();
+                if (names.length > 0) {
+                    fname = lname + ", " + names.join(" ");
+                } else {
+                    fname = lname;
+                }
+                if (i == 0) {
+                    authlist.push(fname);
+                    lastlist.push(lname);
+                } else {
+                    authlist.push(auth);
+                    lastlist.push(lname);
+                }
             }
+            authtext = oxford(authlist);
+            lasttext = oxford(lastlist);
         }
-        authtext = oxford(authtext);
 
         // construct cite line
-        var text = authtext + ". " + year + ". \"" + title + ".\" " + "<i>" + journal + ".</i>";
+        var text = authtext + ". ";
+        if (year != undefined) {
+            text += year + ". ";
+        }
+        if (title != undefined) {
+            text += "\"" + title + ".\" ";
+        }
+        if (journal != undefined) {
+            text += "<i>" + journal + ".</i> ";
+        }
+        if (note != undefined) {
+            text += note + ".";
+        }
 
-        var bref = $("<div>", {class: "biblio", id: id, html: text, authors: authors, title: title, year: year});
+        // construct reference text
+        if (shortname != undefined) {
+            refname = shortname;
+        } else {
+            refname = lasttext;
+        }
+        reftext = config["reference"](refname, year);
+
+        var bref = $("<div>", {class: "biblio", id: id, html: text, reftext: reftext});
         box.replaceWith(bref);
         box = bref;
     }
@@ -194,7 +274,13 @@ var apply_render = function(box, defer) {
         if (new_footnote) {
             number_footnotes();
         }
-        if (new_section || new_equation) {
+        if (new_figure) {
+            number_figures();
+        }
+        if (new_table) {
+            number_tables();
+        }
+        if (new_section || new_equation || new_figure || new_table || new_biblio) {
             resolve_references();
         } else {
             if (new_reference) {
@@ -206,7 +292,7 @@ var apply_render = function(box, defer) {
 
 var render = function(defer) {
     console.log("rendering");
-    if (content.hasClass("markdown")) {
+    if (config["markdown"]) {
         var md = unescape_html(content.html());
         content.empty();
         var cells = md.trim().split('\n\n');
@@ -379,18 +465,8 @@ var resolve_references = function(box) {
             var popup = $("<div>", {class: "popup tab-popup"}).append(clone);
             attach_popup(ref, popup);
         } else if (targ.hasClass("biblio")) {
-            var authors = targ.attr("authors");
-            var title = targ.attr("title");
-            var year = targ.attr("year");
-            var authtext = [];
-            var authlist = authors.split(";");
-            for (i in authlist) {
-                var auth = authlist[i];
-                var names = auth.split(" ");
-                authtext.push(names.pop());
-            }
-            authtext = oxford(authtext);
-            ref.html("<a href=\"#" + label + "\">" + authtext + " (" + year + ")</a>");
+            reftext = targ.attr("reftext");
+            ref.html("<a href=\"#" + label + "\">" + reftext + "</a>");
             ref.removeClass("error");
             var popup = $("<div>", {class: "popup bib-popup", html: targ.html()});
             attach_popup(ref, popup);
@@ -564,18 +640,22 @@ function display_export(fmt) {
     pre.text(txt);
 }
 
-function render_all() {
-    render(true);
+function full_update() {
     number_sections();
     number_equations();
     number_footnotes();
     number_figures();
     number_tables();
     resolve_references();
+}
 
-    if (content.hasClass("markdown")) {
+function render_all() {
+    render(true);
+    full_update();
+
+    if (config["markdown"]) {
         var par = new URLSearchParams(location.search);
-        var exp = par.get('export');
+        var exp = par.get("export");
         if (exp != null) {
             display_export(exp);
         }
@@ -583,13 +663,14 @@ function render_all() {
 }
 
 // render for static docs
-var init = function(path) {
+var init = function(opts) {
     curdir = null;
+    config = merge({}, defaults, opts || {});
 
-    console.log(path);
-    if (path != undefined) {
-        $.get(path, function(data) {
-            content.html(data);
+    console.log(config);
+    if ("markdown" in config) {
+        $.get(config["markdown"], function(data) {
+            content.text(data);
             render_all();
         });
     } else {
@@ -600,11 +681,15 @@ var init = function(path) {
 // public interface
 return {
     init: init,
+    escape_html: escape_html,
     unescape_html: unescape_html,
     apply_render: apply_render,
+    full_update: full_update,
     number_footnotes: number_footnotes,
     number_equations: number_equations,
     number_sections: number_sections,
+    number_figures: number_figures,
+    number_tables: number_tables,
     resolve_references: resolve_references,
     generate_markdown: generate_markdown,
     generate_mdplus: generate_mdplus,

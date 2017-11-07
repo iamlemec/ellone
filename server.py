@@ -80,7 +80,6 @@ if use_auth:
     def authenticated(get0):
         def get1(self, *args):
             current_user = self.get_secure_cookie('user')
-            print(current_user)
             if not current_user:
                 self.redirect('/__auth/login/')
                 return
@@ -167,7 +166,6 @@ class AuthLoginHandler(tornado.web.RequestHandler):
 
     def set_current_user(self, user):
         if user:
-            print(user)
             self.set_secure_cookie('user', tornado.escape.json_encode(user))
         else:
             self.clear_cookie('user')
@@ -194,7 +192,6 @@ class PathHandler(tornado.web.RequestHandler):
             self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=args.demo)
         elif os.path.isfile(fpath):
             (_, ext) = os.path.splitext(fname)
-            print(ext)
             if ext in ('.md', '.rst', ''):
                 self.render('editor.html', path=path, curdir=pardir, fname=fname, local_libs=local_libs)
             else:

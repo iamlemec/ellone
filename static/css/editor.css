@@ -13,6 +13,7 @@
     border-left: 1px solid #FFF;
     padding-left: 10px;
     padding-right: 10px;
+    width: 100%;
 }
 
 #elltwo .cell.editing {
@@ -21,6 +22,14 @@
     font-size: 15px;
     padding-top: 10px;
     padding-bottom: 10px;
+}
+
+#elltwo .cell textarea {
+    border: 0;
+    outline: 0;
+    resize: none;
+    overflow: hidden;
+    width: 100%;
 }
 
 body.editing #elltwo .cell.active {

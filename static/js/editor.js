@@ -29,24 +29,6 @@ function min(arr) {
     return Math.min.apply(null, arr);
 };
 
-// escaping
-function strip_tags(html) {
-    if (html.startsWith("<div>")) {
-        html = html.replace(/<div>/, "");
-    }
-    return html.replace(/<div ?.*?>/g, "\n")
-               .replace(/<\/div>/g, "")
-               .replace(/<br>/g, "\n")
-               .replace(/\n+/g, "\n")
-               .replace(/<span ?.*?>/g, "")
-               .replace(/<\/span>/g, "");
-};
-
-function add_tags(html) {
-    return html.replace(/\n/g, "<br>")
-               .replace(/  /g, "&nbsp; ");
-}
-
 // cell utils
 function get_inner(outer, jq) {
     var inner = outer.children().first();
@@ -68,55 +50,52 @@ function clear_selection() {
 
 function set_caret_at_beg(outer) {
     var inner = get_inner(outer);
-    var range = document.createRange();
-    range.setStart(inner, 0);
-    range.collapse(false);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
     inner.focus();
+    inner.setSelectionRange(0, 0);
 }
 
 function set_caret_at_end(outer) {
     var inner = get_inner(outer);
-    var range = document.createRange();
-    range.selectNodeContents(inner);
-    range.collapse(false);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
+    var len = inner.value.length;
     inner.focus();
-}
-
-function get_caret_position(inner) {
-    sel = window.getSelection();
-    if (sel.rangeCount > 0) {
-        var range = window.getSelection().getRangeAt(0);
-        var preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(inner);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        caretOffset = preCaretRange.toString().length;
-    }
-    return caretOffset;
+    inner.setSelectionRange(len, len);
 }
 
 function get_caret_at_beg(outer) {
     var inner = get_inner(outer);
-    var cpos = get_caret_position(inner);
+    var cpos = inner.selectionStart;
     return (cpos == 0);
-}
-
-function get_cell_empty(outer) {
-    var inner = get_inner(outer);
-    var tlen = inner.textContent.length;
-    return (tlen == 0);
 }
 
 function get_caret_at_end(outer) {
     var inner = get_inner(outer);
-    var cpos = get_caret_position(inner);
-    var tlen = inner.textContent.length;
+    var cpos = inner.selectionStart;
+    var tlen = inner.value.length;
     return (cpos == tlen);
+}
+
+function get_cell_empty(outer) {
+    var inner = get_inner(outer);
+    var tlen = inner.value.length;
+    return (tlen == 0);
+}
+
+function autoresize(el) {
+    function resize() {
+        el.rows = 1;
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight+'px';
+    }
+    /* 0-timeout to get the already changed text */
+    function delayedResize() {
+        window.setTimeout(resize, 0);
+    }
+    el.addEventListener('input', resize, false);
+    el.addEventListener('cut', delayedResize, false);
+    el.addEventListener('paste', delayedResize, false);
+    el.addEventListener('drop', delayedResize, false);
+    el.addEventListener('keydown', delayedResize, false);
+    delayedResize();
 }
 
 // cell level selection
@@ -244,7 +223,7 @@ function delete_cell(cell, defer) {
 
     // update globals
     if (!defer) {
-        full_update();
+        elltwo.full_update();
     }
 
     // inform server
@@ -286,7 +265,7 @@ function cut_selection() {
     });
 
     // update references
-    full_update();
+    elltwo.full_update();
 
     // choose active
     activate_cell(succ);
@@ -323,10 +302,8 @@ function render_cell(outer, defer) {
 function freeze_cell(outer) {
     clear_selection();
     var inner = get_inner(outer, true);
-    var html = inner.html();
-    var text = strip_tags(html);
-    var base = elltwo.unescape_html(text);
-    outer.attr("base-text", base);
+    var text = inner.val();
+    outer.attr("base-text", text);
     outer.removeClass("editing");
     render_cell(outer);
     if (outer.hasClass("modified")) {
@@ -337,8 +314,9 @@ function freeze_cell(outer) {
 // start editing cell
 function unfreeze_cell(outer) {
     var text = outer.attr("base-text");
-    var html = add_tags(text);
-    var inner = $("<div>", {html: html, contentEditable: true});
+    var inner = $("<textarea>");
+    inner.val(text);
+    autoresize(inner[0]);
     outer.addClass("editing");
     outer.empty();
     outer.append(inner);
@@ -371,15 +349,6 @@ function save_document() {
     console.log(msg);
     ws.send(msg);
     body.removeClass("modified");
-}
-
-// for deferred updating
-function full_update() {
-    console.log("rendering");
-    elltwo.number_sections();
-    elltwo.number_equations();
-    elltwo.number_footnotes();
-    elltwo.resolve_references();
 }
 
 // initialization code
@@ -548,7 +517,7 @@ function initialize() {
                         return false;
                     }
                 }
-                if (!$(event.target).attr("contentEditable")) {
+                if (!$(event.target).is("textarea")) {
                     event.preventDefault();
                 }
             } else if (keyCode == 68) { // d
@@ -633,7 +602,7 @@ function connect() {
                         content.append(outer);
                         render_cell(outer, true);
                     }
-                    full_update();
+                    elltwo.full_update();
                     var first = content.children(".cell").first();
                     activate_cell(first);
                     select_cell(first, true);
