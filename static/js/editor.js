@@ -520,7 +520,7 @@ function initialize() {
                 if (!$(event.target).is("textarea")) {
                     event.preventDefault();
                 }
-            } else if (keyCode == 68) { // d
+            } else if (keyCode == 88) { // x
                 if (event.shiftKey && !is_editing(active)) {
                     outer = active;
                     if (!activate_next()) {
@@ -535,7 +535,7 @@ function initialize() {
                 if (event.shiftKey && !is_editing(active)) {
                     copy_selection();
                 }
-            } else if (keyCode == 80) { // p
+            } else if (keyCode == 86) { // v
                 if (event.shiftKey && !is_editing(active)) {
                     paste_clipboard();
                 }

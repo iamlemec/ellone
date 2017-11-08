@@ -918,7 +918,7 @@ Renderer.prototype.title = function(text) {
 Renderer.prototype.heading = function(text, level, refid, number) {
   outp = '';
   outp += '<h' + level;
-  outp += ' id="' + refid + '"';
+  if (refid != undefined) { outp += ' id="' + refid + '"'; }
   if (!number) { outp += ' class="nonumber"'; }
   outp += '>'
   outp += text

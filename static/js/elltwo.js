@@ -202,6 +202,8 @@ var apply_render = function(box, defer) {
         var title = box.attr("title");
         var year = box.attr("year");
         var journal = box.attr("journal");
+        var doi = box.attr("doi");
+        var url = box.attr("url");
         var note = box.attr("note");
 
         // parse authors
@@ -245,6 +247,12 @@ var apply_render = function(box, defer) {
         }
         if (journal != undefined) {
             text += "<i>" + journal + ".</i> ";
+        }
+        if (url != undefined) {
+            text += "<a href=\"" + url + "\">" + url + "</a>. ";
+        }
+        if (doi != undefined) {
+            text += "DOI: <a href=\"http://doi.org/" + doi + "\">" + doi + "</a>. ";
         }
         if (note != undefined) {
             text += note + ".";
