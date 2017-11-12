@@ -2,15 +2,117 @@
 *  Elltwo standalone
 */
 
-// begin module
+/*
+ * Data
+ */
+
+export_pre = {
+mdplus: `<!doctype html>
+<html>
+
+<head>
+
+<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+
+</head>
+
+<body>
+
+<div id="elltwo" class="markdown">
+
+`,
+html: `<!doctype html>
+<html>
+
+<head>
+
+<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+
+</head>
+
+<body>
+
+<div id="elltwo">
+
+`,
+latex: `\\documentclass[12pt]{article}
+
+\\usepackage{amsmath}
+\\usepackage{amssymb}
+\\usepackage[utf8]{inputenc}
+\\usepackage{parskip}
+\\usepackage{graphicx}
+\\usepackage[colorlinks,linkcolor=blue]{hyperref}
+\\usepackage{cleveref}
+\\usepackage{listings}
+\\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
+
+\\Crefformat{equation}{#2Equation~#1#3}
+
+\\setlength{\\parindent}{0cm}
+\\setlength{\\parskip}{0.5cm}
+\\renewcommand{\\baselinestretch}{1.1}
+
+\\begin{document}
+
+`
+};
+
+export_post = {
+mdplus: `
+
+</div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+
+<script type="text/javascript">
+elltwo.init();
+</script>
+
+</body>
+
+</html>`,
+html: `
+
+</div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+
+<script type="text/javascript">
+elltwo.init({
+    markdown: true
+});
+</script>
+
+</body>
+
+</html>`,
+latex: `
+\\end{document}`
+};
+
+/*
+ * Elltwo Module
+ */
+
 var elltwo = (function() {
 
 // find outer box
 var content = $("#elltwo");
 
-// configuation
+/*
+ * configuration
+ */
+
 var defaults = {
-    curdir: null,
     reference: function(authors, year) {
         var reftext = authors;
         if (year != undefined) {
@@ -38,29 +140,16 @@ function merge(obj) {
     return obj;
 }
 
-// urls
-function resolve_url(url) {
-    var curdir = config["curdir"];
-    if (curdir != null) {
-        if (url.search("(^|:)//") == -1) {
-            if (url[0] != "/") {
-                if (curdir.length == 0) {
-                    url = "/" + url;
-                } else {
-                    url = "/" + curdir + "/" + url;
-                }
-            }
-        }
-    }
-    return url;
-};
+/*
+ * rendering commands
+ */
 
 function escape_html(text) {
     return text.replace(/</g, "&lt;")
                .replace(/>/g, "&gt;")
                .replace(/&/g, "&amp;")
                .replace(/  /g, " &nbsp;");
-};
+}
 
 function unescape_html(text) {
     return text.replace(/&lt;/g, "<")
@@ -68,7 +157,7 @@ function unescape_html(text) {
                .replace(/&amp;/g, "&")
                .replace(/&nbsp;/g, " ")
                .replace(/&#39;/g, "'");
-};
+}
 
 function oxford(clist) {
     var out = "";
@@ -121,7 +210,7 @@ function apply_render(box, defer) {
     box.find("img").each(function() {
         var img = $(this);
         var src = img.attr("src");
-        img.attr("src", resolve_url(src));
+        img.attr("src", src);
     });
 
     // handle footnotes
@@ -298,31 +387,11 @@ function apply_render(box, defer) {
             }
         }
     }
-};
+}
 
-function render(defer) {
-    console.log("rendering");
-    if ("markdown" in config) {
-        var md = unescape_html(content.html());
-        content.empty();
-        var cells = md.trim().split('\n\n');
-        for (i in cells) {
-            var c = cells[i].trim();
-            var div = $("<div>", {class: "cell", "base-text": c, html: marktwo.parse(c)});
-            content.append(div);
-        }
-        content.children().each(function() {
-            var outer = $(this);
-            var inner = outer.children().first();
-            apply_render(inner, defer);
-        });
-    } else {
-        content.children().each(function() {
-            var outer = $(this);
-            apply_render(outer, defer);
-        });
-    }
-};
+/*
+ * numbering functions
+ */
 
 function number_sections() {
     console.log("numbering sections");
@@ -337,7 +406,7 @@ function number_sections() {
         var lab = sec_num.slice(1, lvl+1).join(".");
         sec.attr("sec-num", lab);
     });
-};
+}
 
 function number_equations() {
     console.log("numbering equations");
@@ -350,7 +419,7 @@ function number_equations() {
         num.html(eqn_num);
         eqn_num++;
     });
-};
+}
 
 function number_footnotes() {
     console.log("numbering footnotes");
@@ -361,7 +430,7 @@ function number_footnotes() {
         var foot_num = ++n_footnotes;
         num.text(foot_num);
     });
-};
+}
 
 function number_figures() {
   console.log("numbering figures");
@@ -384,6 +453,10 @@ function number_tables() {
       cap.attr("tab-num", tab_num);
   });
 }
+
+/*
+ * popup functions
+ */
 
 // for a hover event and scale factor (of the realized object), generate appropriate css
 function get_offset(parent, popup, event) {
@@ -409,7 +482,7 @@ function get_offset(parent, popup, event) {
     var pos_y = -pop_height;
 
     return {x: pos_x, y: pos_y};
-};
+}
 
 // attach a popup to parent
 function attach_popup(parent, popup) {
@@ -433,7 +506,7 @@ function attach_popup(parent, popup) {
             window.clearTimeout(tid);
         });
     });
-};
+}
 
 function resolve_references(box) {
     console.log("resolving references");
@@ -485,7 +558,11 @@ function resolve_references(box) {
             ref.addClass("error");
         }
     });
-};
+}
+
+/*
+ * exporting function
+ */
 
 // exporting to markdown
 function generate_markdown() {
@@ -500,137 +577,51 @@ function generate_markdown() {
 }
 
 // exporting to markdown in html
-var pre_mdplus = `<!doctype html>
-<html>
-
-<head>
-
-<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
-
-</head>
-
-<body>
-
-<div id="elltwo" class="markdown">
-
-`;
-
-var post_mdplus = `
-
-</div>
-
-<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
-
-<script type="text/javascript">
-elltwo.init();
-</script>
-
-</body>
-
-</html>`;
-
 function generate_mdplus() {
     var md = generate_markdown();
-    return pre_mdplus + md + post_mdplus;
+    return export_pre["mdplus"] + md + export_post["mdplus"];
 }
 
-// exporting to html
-var pre_html = `<!doctype html>
-<html>
-
-<head>
-
-<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
-
-</head>
-
-<body>
-
-<div id="elltwo">
-
-`;
-
-var post_html = `
-
-</div>
-
-<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
-
-<script type="text/javascript">
-elltwo.init({
-    markdown: true
-});
-</script>
-
-</body>
-
-</html>`;
-
 // construct html parser
-var opts_html = marktwo.merge({}, marktwo.defaults, {'renderer': new marktwo.Renderer});
+var opts_html = marktwo.merge({}, marktwo.defaults, {
+    renderer: new marktwo.Renderer
+});
 var lexer_html = new marktwo.Lexer(opts_html);
 var parser_html = new marktwo.Parser(opts_html);
 function parse_html(src) {
     return parser_html.parse(lexer_html.lex(src));
 }
 
+// exporting to html
 function generate_html() {
     console.log("getting html");
     var md = generate_markdown();
     var html = unescape_html(parse_html(md));
-    return pre_html + html.trim() + post_html;
+    return export_pre["html"] + html.trim() + export_post["html"];
 }
 
-// exporting to latex/pdf
-var pre_latex = `\\documentclass[12pt]{article}
-
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage[utf8]{inputenc}
-\\usepackage{parskip}
-\\usepackage{graphicx}
-\\usepackage[colorlinks,linkcolor=blue]{hyperref}
-\\usepackage{cleveref}
-\\usepackage{listings}
-\\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
-
-\\Crefformat{equation}{#2Equation~#1#3}
-
-\\setlength{\\parindent}{0cm}
-\\setlength{\\parskip}{0.5cm}
-\\renewcommand{\\baselinestretch}{1.1}
-
-\\begin{document}
-
-`;
-
-var post_latex = `
-\\end{document}`;
-
 // construct latex parser
-var opts_latex = marktwo.merge({}, marktwo.defaults, {'renderer': new marktwo.LatexRenderer, 'deps': true, 'flatten': true});
+var opts_latex = marktwo.merge({}, marktwo.defaults, {
+    renderer: new marktwo.LatexRenderer,
+    deps: true,
+    flatten: true
+});
 var lexer_latex = new marktwo.Lexer(opts_latex);
 var parser_latex = new marktwo.Parser(opts_latex);
 function parse_latex(src) {
     return parser_latex.parse(lexer_latex.lex(src));
 }
 
+// exporting to latex/pdf
 function generate_latex() {
     console.log("getting latex");
     var md = generate_markdown();
     var latex = parse_latex(md);
-    latex['out'] = pre_latex + latex['out'] + post_latex;
+    latex['out'] = export_pre["latex"] + latex['out'] + export_post["latex"];
     return latex;
 }
 
+// export dispatcher
 function display_export(fmt) {
     var txt;
     if ((fmt == 'md') || (fmt == 'markdown')) {
@@ -650,6 +641,34 @@ function display_export(fmt) {
     var pre = $("<pre>");
     content.append(pre);
     pre.text(txt);
+}
+
+/*
+ * high level functions
+ */
+
+function render(defer) {
+    console.log("rendering");
+    if ("markdown" in config) {
+        var md = unescape_html(content.html());
+        content.empty();
+        var cells = md.trim().split('\n\n');
+        for (i in cells) {
+            var c = cells[i].trim();
+            var div = $("<div>", {class: "cell", "base-text": c, html: marktwo.parse(c)});
+            content.append(div);
+        }
+        content.children().each(function() {
+            var outer = $(this);
+            var inner = outer.children().first();
+            apply_render(inner, defer);
+        });
+    } else {
+        content.children().each(function() {
+            var outer = $(this);
+            apply_render(outer, defer);
+        });
+    }
 }
 
 function full_update() {

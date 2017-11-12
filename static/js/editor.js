@@ -571,7 +571,7 @@ function keep_alive() {
 }
 
 // websockets
-function connect() {
+function connect(path) {
     if ("MozWebSocket" in window) {
         WebSocket = MozWebSocket;
     }
@@ -640,15 +640,12 @@ function disconnect() {
 
 // public interface
 return {
-    init: function(curdir) {
+    init: function(path) {
         console.log(path);
-        elltwo.update_config({
-            curdir: curdir
-        });
 
         // run
         initialize();
-        connect();
+        connect(path);
     }
 }
 

@@ -193,7 +193,7 @@ class PathHandler(tornado.web.RequestHandler):
         elif os.path.isfile(fpath):
             (_, ext) = os.path.splitext(fname)
             if ext in ('.md', '.rst', ''):
-                self.render('editor.html', path=path, curdir=pardir, fname=fname, local_libs=local_libs)
+                self.render('editor.html', path=path, fname=fname, local_libs=local_libs)
             else:
                 (mime_type, encoding) = mimetypes.guess_type(path)
                 if mime_type:
