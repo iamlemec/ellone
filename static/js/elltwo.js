@@ -10,7 +10,8 @@ var content = $("#elltwo");
 
 // configuation
 var defaults = {
-    "reference": function(authors, year) {
+    curdir: null,
+    reference: function(authors, year) {
         var reftext = authors;
         if (year != undefined) {
             reftext += " (" + year + ")";
@@ -18,9 +19,9 @@ var defaults = {
         return reftext;
     }
 };
-var config = {};
+var config = defaults;
 
-var merge = function(obj) {
+function merge(obj) {
     var i = 1;
     var target;
     var key;
@@ -38,7 +39,8 @@ var merge = function(obj) {
 }
 
 // urls
-var resolve_url = function(url) {
+function resolve_url(url) {
+    var curdir = config["curdir"];
     if (curdir != null) {
         if (url.search("(^|:)//") == -1) {
             if (url[0] != "/") {
@@ -60,7 +62,7 @@ function escape_html(text) {
                .replace(/  /g, " &nbsp;");
 };
 
-var unescape_html = function(text) {
+function unescape_html(text) {
     return text.replace(/&lt;/g, "<")
                .replace(/&gt;/g, ">")
                .replace(/&amp;/g, "&")
@@ -68,7 +70,7 @@ var unescape_html = function(text) {
                .replace(/&#39;/g, "'");
 };
 
-var oxford = function(clist) {
+function oxford(clist) {
     var out = "";
     var ncl = clist.length;
     for (i in clist) {
@@ -88,7 +90,7 @@ var oxford = function(clist) {
 }
 
 // rendering
-var apply_render = function(box, defer) {
+function apply_render(box, defer) {
     var new_section = false;
     var new_equation = false;
     var new_footnote = false;
@@ -298,9 +300,9 @@ var apply_render = function(box, defer) {
     }
 };
 
-var render = function(defer) {
+function render(defer) {
     console.log("rendering");
-    if (config["markdown"]) {
+    if ("markdown" in config) {
         var md = unescape_html(content.html());
         content.empty();
         var cells = md.trim().split('\n\n');
@@ -322,7 +324,7 @@ var render = function(defer) {
     }
 };
 
-var number_sections = function() {
+function number_sections() {
     console.log("numbering sections");
     var sec_num = Array();
     sec_num[0] = "";
@@ -337,7 +339,7 @@ var number_sections = function() {
     });
 };
 
-var number_equations = function() {
+function number_equations() {
     console.log("numbering equations");
 
     eqn_num = 1;
@@ -350,7 +352,7 @@ var number_equations = function() {
     });
 };
 
-var number_footnotes = function() {
+function number_footnotes() {
     console.log("numbering footnotes");
     var n_footnotes = 0;
     content.find(".footnote").each(function () {
@@ -361,7 +363,7 @@ var number_footnotes = function() {
     });
 };
 
-var number_figures = function() {
+function number_figures() {
   console.log("numbering figures");
   var n_figures = 0;
   content.find("figure.image:not(nonumber)").each(function () {
@@ -372,7 +374,7 @@ var number_figures = function() {
   });
 }
 
-var number_tables = function() {
+function number_tables() {
   console.log("numbering tables");
   var n_tables = 0;
   content.find("figure.table:not(nonumber)").each(function () {
@@ -384,7 +386,7 @@ var number_tables = function() {
 }
 
 // for a hover event and scale factor (of the realized object), generate appropriate css
-var get_offset = function(parent, popup, event) {
+function get_offset(parent, popup, event) {
     var rects = parent[0].getClientRects();
     var mouseX = event.clientX;
     var mouseY = event.clientY;
@@ -410,7 +412,7 @@ var get_offset = function(parent, popup, event) {
 };
 
 // attach a popup to parent
-var attach_popup = function(parent, popup) {
+function attach_popup(parent, popup) {
     var pop_out = $("<div>", {class: "popup-outer"});
     pop_out.append(popup);
     parent.append(pop_out);
@@ -433,7 +435,7 @@ var attach_popup = function(parent, popup) {
     });
 };
 
-var resolve_references = function(box) {
+function resolve_references(box) {
     console.log("resolving references");
     if (box == null) {
         box = content;
@@ -563,7 +565,9 @@ var post_html = `
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
 
 <script type="text/javascript">
-elltwo.init();
+elltwo.init({
+    markdown: true
+});
 </script>
 
 </body>
@@ -661,7 +665,7 @@ function render_all() {
     render(true);
     full_update();
 
-    if (config["markdown"]) {
+    if ("markdown" in config) {
         var par = new URLSearchParams(location.search);
         var exp = par.get("export");
         if (exp != null) {
@@ -670,25 +674,33 @@ function render_all() {
     }
 }
 
-// render for static docs
-var init = function(opts) {
-    curdir = null;
+function update_config(opts) {
     config = merge({}, defaults, opts || {});
+}
+
+// render for static docs
+function init(opts) {
+    if (opts != undefined) {
+        update_config(opts);
+    }
 
     console.log(config);
     if ("markdown" in config) {
-        $.get(config["markdown"], function(data) {
-            content.text(data);
-            render_all();
-        });
-    } else {
-        render_all();
+        var mdsrc = config["markdown"];
+        if (typeof(mdsrc) == "string") {
+            $.get(mdsrc, function(data) {
+                content.text(data);
+            });
+        }
     }
+
+    render_all();
 }
 
 // public interface
 return {
     init: init,
+    update_config: update_config,
     escape_html: escape_html,
     unescape_html: unescape_html,
     apply_render: apply_render,

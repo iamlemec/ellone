@@ -6,7 +6,9 @@
 var editor = (function() {
 
 // find outer box
+var html = $("html");
 var body = $("body");
+var whitebar = $("#whitebar");
 var content = $("#elltwo");
 
 // hard coded options
@@ -106,6 +108,21 @@ function select_cell(cell, clear) {
     cell.addClass("select");
 }
 
+// scroll cell into view
+function ensure_visible(cell) {
+    var cell_top = cell.offset().top;
+    var cell_bot = cell_top + cell.height();
+    var page_top = window.scrollY + whitebar.height();
+    var page_bot = window.scrollY + window.innerHeight;
+    if (cell_top < page_top + scrollFudge) {
+        html.stop();
+        html.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
+    } else if (cell_bot > page_bot - scrollFudge) {
+        html.stop();
+        html.animate({scrollTop: cell_bot - window.innerHeight + scrollFudge}, scrollSpeed);
+    }
+}
+
 // active cell manipulation
 function activate_cell(cell) {
     // change css to new
@@ -114,18 +131,8 @@ function activate_cell(cell) {
     }
     cell.addClass("active");
 
-    // scroll cell into view
-    var cell_top = cell.offset().top;
-    var cell_bot = cell_top + cell.height();
-    var page_top = window.scrollY;
-    var page_bot = page_top + window.innerHeight;
-    if (cell_top < page_top) {
-        body.stop();
-        body.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
-    } else if (cell_bot > page_bot) {
-        body.stop();
-        body.animate({scrollTop: cell_bot - window.innerHeight + scrollFudge}, scrollSpeed);
-    }
+    // scroll view
+    ensure_visible(cell);
 
     // change focus
     cell.focus();
@@ -633,8 +640,11 @@ function disconnect() {
 
 // public interface
 return {
-    init: function() {
+    init: function(curdir) {
         console.log(path);
+        elltwo.update_config({
+            curdir: curdir
+        });
 
         // run
         initialize();
