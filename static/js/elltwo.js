@@ -19,7 +19,7 @@ mdplus: `<!doctype html>
 
 <body>
 
-<div id="elltwo" class="markdown">
+<div id="elltwo">
 
 `,
 html: `<!doctype html>
@@ -27,7 +27,7 @@ html: `<!doctype html>
 
 <head>
 
-<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="http://localhost/elltwo/static/css/elltwo.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
 
 </head>
@@ -71,7 +71,9 @@ mdplus: `
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
 
 <script type="text/javascript">
-elltwo.init();
+elltwo.init({
+    markdown: true
+});
 </script>
 
 </body>
@@ -83,19 +85,18 @@ html: `
 
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+<script type="text/javascript" src="http://localhost/elltwo/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://localhost/elltwo/static/js/elltwo.js"></script>
 
 <script type="text/javascript">
-elltwo.init({
-    markdown: true
-});
+elltwo.init();
 </script>
 
 </body>
 
 </html>`,
 latex: `
+
 \\end{document}`
 };
 
@@ -188,16 +189,14 @@ function apply_render(box, defer) {
     var new_table = false;
     var new_biblio = false;
 
-    // final substitutions
-    var tag = box[0].tagName;
-
     // handle sections
-    if (tag == "TITLE") {
+    if (box.is("title")) {
         var div = $("<div>", {class: "doc-title", html: box.text()});
         box.replaceWith(div);
         box = div;
     }
 
+    var tag = box.prop("tagName");
     if (/H[1-6]/.test(tag)) {
         new_section = true;
         box.addClass("sec-title");
@@ -214,45 +213,43 @@ function apply_render(box, defer) {
     });
 
     // handle footnotes
-    box.find("footnote").replaceWith(function() {
+    box.find(".footnote").each(function() {
         new_footnote = true;
         var fnote = $(this);
-        var text = fnote.html();
-        var span = $("<span>", {class: "footnote"});
+        var cont = fnote.html();
         var num = $("<span>", {class: "number"});
-        var popup = $("<div>", {class: "popup footnote-popup", html: text});
-        span.append(num);
-        attach_popup(span, popup);
-        return span;
+        var popup = $("<div>", {class: "popup footnote-popup", html: cont});
+        fnote.empty();
+        fnote.append(num);
+        attach_popup(fnote, popup);
     });
 
     // handle inline latex
-    box.find("tex").replaceWith(function() {
+    box.find(".latex").each(function() {
         var tex = $(this);
         var src = tex.text();
-        var span = $("<span>", {class: "latex"});
+        tex.empty();
         try {
-          katex.render(src, span[0]);
+          katex.render(src, tex[0]);
         } catch (e) {
           console.log(box.text());
           console.log(src);
           console.log(e);
         }
-        return span;
     });
 
     // handle references
-    box.find("ref").replaceWith(function() {
+    box.find(".reference").each(function() {
         new_reference = true;
         var ref = $(this);
         var targ = ref.text();
-        var span = $("<span>", {class: "reference", target: targ});
-        return span;
+        ref.attr("target", targ);
     });
 
     // typeset disyplay equations
-    if (tag == "EQUATION") {
+    if (box.hasClass("equation")) {
         var src = box.text();
+        box.empty();
 
         var num_div = $("<div>", {class: "equation-number"});
         var div_inner = $("<div>", {class: "equation-inner"});
@@ -260,21 +257,16 @@ function apply_render(box, defer) {
         var tex = "\\begin{aligned}\n" + src + "\n\\end{aligned}";
         katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
 
-        var eq = $("<div>", {class: "equation"});
-        var id = box.attr("id");
-        if (id != null) {
+        if (box.attr("id") != undefined) {
             new_equation = true;
-            eq.addClass("numbered");
-            eq.attr("id", id);
+            box.addClass("numbered");
         }
 
-        eq.append(num_div);
-        eq.append(div_inner);
-        box.replaceWith(eq);
-        box = eq;
+        box.append(num_div);
+        box.append(div_inner);
     }
 
-    if (tag == "FIGURE") {
+    if (box.is("figure")) {
         if (box.hasClass("image")) {
             new_figure = true;
         }
@@ -283,7 +275,7 @@ function apply_render(box, defer) {
         }
     }
 
-    if (tag == "BIBLIO") {
+    if (box.hasClass("biblio")) {
         new_biblio = true;
 
         var id = box.attr("id");
@@ -596,7 +588,7 @@ function parse_html(src) {
 function generate_html() {
     console.log("getting html");
     var md = generate_markdown();
-    var html = unescape_html(parse_html(md));
+    var html = parse_html(md);
     return export_pre["html"] + html.trim() + export_post["html"];
 }
 
@@ -617,7 +609,7 @@ function generate_latex() {
     console.log("getting latex");
     var md = generate_markdown();
     var latex = parse_latex(md);
-    latex['out'] = export_pre["latex"] + latex['out'] + export_post["latex"];
+    latex['out'] = export_pre["latex"] + latex['out'].trim() + export_post["latex"];
     return latex;
 }
 

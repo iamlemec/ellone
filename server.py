@@ -382,7 +382,10 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
                             fp = os.path.join(self.fulldir, fp)
                         fpv = validate_path(fp, basedir)
                         if fpv is not None:
-                            shutil.copy(fpv, exp_dir)
+                            try:
+                                shutil.copy(fpv, exp_dir)
+                            except FileNotFoundError:
+                                print('%s: File not found!' % fpv)
                         else:
                             print('%s: Path out of bounds!' % fp)
                             continue

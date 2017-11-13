@@ -31,6 +31,12 @@ function min(arr) {
     return Math.min.apply(null, arr);
 };
 
+function get_ids(cells) {
+    return cells.map(function() {
+        return $(this).attr("cid");
+    }).toArray();
+}
+
 // cell utils
 function get_inner(outer, jq) {
     var inner = outer.children().first();
@@ -141,8 +147,8 @@ function activate_cell(cell) {
     active = cell;
 }
 
-function activate_prev() {
-    var prev = active.prev(".cell");
+function activate_prev(cell) {
+    var prev = (cell || active).prev(".cell");
     if (prev.length > 0) {
         activate_cell(prev);
         return true;
@@ -151,8 +157,8 @@ function activate_prev() {
     }
 }
 
-function activate_next() {
-    var next = active.next(".cell");
+function activate_next(cell) {
+    var next = (cell || active).next(".cell");
     if (next.length > 0) {
         activate_cell(next);
         return true;
@@ -164,7 +170,7 @@ function activate_next() {
 // create cell
 function insert_cell(cell, edit) {
     // generate id and stitch into linked list
-    var newid = Math.max.apply(null, $(".cell").map(function() { return $(this).attr("cid"); }).toArray()) + 1;
+    var newid = max(get_ids($(".cell"))) + 1;
     var prev = cell.attr("cid");
     var next = cell.attr("next");
     var cnext = $(".cell[cid="+next+"]");
@@ -208,7 +214,7 @@ function create_cell(text, cid, prev, next) {
     outer.click(function(event) {
         if (is_editing(body)) {
             activate_cell(outer);
-            select_cell(outer, !event.ctrlKey);
+            select_cell(outer, true);
         }
     });
 
@@ -255,9 +261,14 @@ function copy_selection() {
     return sel;
 }
 
-function cut_selection() {
+function cut_selection(copy) {
     // copy source text
-    var sel = copy_selection();
+    var sel;
+    if (copy) {
+        sel = copy_selection();
+    } else {
+        sel = $(".cell.select");
+    }
 
     // find next active cell
     var succ = sel.last().next(".cell");
@@ -527,13 +538,10 @@ function initialize() {
                 if (!$(event.target).is("textarea")) {
                     event.preventDefault();
                 }
-            } else if (keyCode == 88) { // x
+            } else if ((keyCode == 88) || (keyCode == 68)) { // x or d
                 if (event.shiftKey && !is_editing(active)) {
-                    outer = active;
-                    if (!activate_next()) {
-                        activate_prev();
-                    }
-                    cut_selection();
+                    var copy = (keyCode == 88);
+                    cut_selection(copy);
                     if (is_editing(active)) {
                         set_caret_at_end(active);
                     }

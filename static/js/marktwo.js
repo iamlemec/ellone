@@ -1017,26 +1017,28 @@ Renderer.prototype.text = function(text) {
 };
 
 Renderer.prototype.math = function(tex) {
-  var out = '<tex>' + tex + '</tex>';
+  var out = '<span class="latex">' + tex + '</span>';
   return out;
 };
 
 Renderer.prototype.equation = function(id, tex) {
-  if (id) {
-    var out = '<equation id="' + id + '">\n' + tex + '</equation>\n\n';
-  } else {
-    var out = '<equation>\n' + tex + '</equation>\n\n';
+  out = '<div class="equation"';
+  if (id != undefined) {
+    out += ' id="' + id + '"';
   }
+  out += '>\n'
+  out += tex
+  out += '</div>\n\n';
   return out;
 };
 
 Renderer.prototype.ref = function(id) {
-  var out = '<ref>' + id + '</ref>';
+  var out = '<span class="reference">' + id + '</span>';
   return out;
 };
 
 Renderer.prototype.footnote = function(text) {
-  var out = '<footnote>' + text + '</footnote>';
+  var out = '<span class="footnote">' + text + '</span>';
   return out;
 };
 
@@ -1059,12 +1061,12 @@ Renderer.prototype.figure = function(ftype, tag, title, body) {
 }
 
 Renderer.prototype.biblio = function(id, info) {
-  var out = '<biblio id="' + id + '"';
+  var out = '<div class="biblio" id="' + id + '"';
   for (k in info) {
     var v = info[k];
     out += ' ' + k + '="' + v + '"';
   }
-  out += '/>\n';
+  out += '></div>\n';
   return out;
 }
 
@@ -1092,8 +1094,10 @@ LatexRenderer.prototype.title = function(text) {
   return '\\begin{center}\n{\\LARGE \\bf ' + text + '}\n\\vspace*{0.8cm}\n\\end{center}\n\n';
 };
 
-LatexRenderer.prototype.heading = function(text, level, raw) {
-  return '\\' + 'sub'.repeat(level-1) + 'section{' + text + '}\n\n';
+LatexRenderer.prototype.heading = function(text, level, raw, number) {
+  var env = 'sub'.repeat(level-1) + 'section';
+  var star = number ? '' : '*';
+  return '\\' + env + star + '{' + text + '}\n\n';
 };
 
 LatexRenderer.prototype.hr = function() {
@@ -1118,14 +1122,18 @@ LatexRenderer.prototype.paragraph = function(text, terse) {
 };
 
 LatexRenderer.prototype.table = function(header, body) {
-  var ncols = header.match(/(^|[^\\])&/g).length + 1;
-  return '\\begin{center}\n'
-    + '\\begin{tabular}{' + 'c'.repeat(ncols) + '}\n'
+  var amps = header.match(/(?!\\)&/g);
+  var ncols;
+  if (amps == undefined) {
+    ncols = 1;
+  } else {
+    ncols = amps.length + 1;
+  }
+  return '\\begin{tabular}{' + 'c'.repeat(ncols) + '}\n'
     + header
     + '\\hline\n'
     + body
     + '\\end{tabular}\n'
-    + '\\end{center}\n'
     + '\n';
 };
 
@@ -1181,7 +1189,7 @@ LatexRenderer.prototype.link = function(href, title, text) {
       return '';
     }
   }
-  return '\\href{' + href + '}{' + escape_latex(text) + '}';
+  return '\\href{' + escape_latex(href) + '}{' + escape_latex(text) + '}';
 };
 
 LatexRenderer.prototype.escape = function(esc) {
@@ -1213,15 +1221,37 @@ LatexRenderer.prototype.footnote = function(text) {
   return '\\footnote{' + text + '}';
 };
 
-LatexRenderer.prototype.image = function(title, href) {
+LatexRenderer.prototype.image = function(href, alt) {
   if (this.options.flatten) {
     href = href.split('/').pop();
   }
-  return '\\begin{figure}\n'
-    + '\\includegraphics[width=\\textwidth]{' + href + '}\n'
-    + '\\caption{' + title + '}\n'
-    + '\\end{figure}\n'
-    + '\n';
+  return '\\includegraphics[width=\\textwidth]{' + href + '}\n\n';
+}
+
+LatexRenderer.prototype.figure = function(ftype, tag, title, body) {
+  var typetxt = ftype;
+  if (typetxt == 'image') {
+      typetxt = 'figure';
+  } else if (typetxt == 'table') {
+      typetxt = 'table';
+  }
+  var tagtxt = '';
+  if (tag != undefined) {
+    tagtxt = '\\label{' + tag + '}\n';
+  }
+  var captxt = '';
+  if (title != undefined) {
+    captxt = '\\caption{' + title + '}\n';
+  }
+  return '\\begin{' + typetxt + '}\n'
+    + '\\begin{center}\n'
+    + tagtxt + body + captxt
+    + '\\end{center}\n'
+    + '\\end{' + typetxt + '}\n\n';
+}
+
+LatexRenderer.prototype.biblio = function(id, info) {
+  return id + '\n\n';
 }
 
 /**
@@ -1359,17 +1389,7 @@ Parser.prototype.tok = function() {
         body += this.renderer.tablerow(cell);
       }
 
-      var table = this.renderer.table(header, body);
-      if ((this.token.tag != undefined) || (this.token.caption != undefined)) {
-        return this.renderer.figure(
-          'table',
-          this.token.tag,
-          this.inline.output(this.token.caption),
-          table
-        );
-      } else {
-        return table;
-      }
+      return this.renderer.table(header, body);
     }
     case 'blockquote_start': {
       var body = '';
@@ -1468,6 +1488,7 @@ function escape_latex(tex) {
     .replace(/&/g, '\\&')
     .replace(/%/g, '\\%')
     .replace(/\$/g, '\\$')
+    .replace(/_/g, '\\_')
     .replace(/\^/g,'\\textasciicircum');
 }
 
