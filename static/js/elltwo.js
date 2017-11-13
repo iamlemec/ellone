@@ -701,11 +701,12 @@ function init(opts) {
         if (typeof(mdsrc) == "string") {
             $.get(mdsrc, function(data) {
                 content.text(data);
+                render_all();
             });
         }
+    } else {
+        render_all();
     }
-
-    render_all();
 }
 
 // public interface
