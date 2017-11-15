@@ -699,6 +699,7 @@ function init(opts) {
         update_config(opts);
     }
 
+    console.log("init");
     console.log(config);
     if ("markdown" in config) {
         var mdsrc = config["markdown"];
@@ -707,10 +708,11 @@ function init(opts) {
                 content.text(data);
                 render_all();
             });
+            return;
         }
-    } else {
-        render_all();
     }
+
+    render_all();
 }
 
 // public interface
