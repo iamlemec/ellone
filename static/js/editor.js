@@ -190,9 +190,7 @@ function insert_cell(cell, edit) {
     }
 
     // notify server
-    var msg = JSON.stringify({"cmd": "create", "content": {"newid": newid, "prev": prev, "next": next}});
-    console.log(msg);
-    ws.send(msg);
+    send_command("create", {"newid": newid, "prev": prev, "next": next});
 
     // mark document modified
     body.addClass("modified");
@@ -241,9 +239,7 @@ function delete_cell(cell, defer) {
 
     // inform server
     var cid = cell.attr("cid");
-    var msg = JSON.stringify({"cmd": "delete", "content": {"cid": cid, "prev": prev, "next": next}});
-    console.log(msg);
-    ws.send(msg);
+    send_command("delete", {"cid": cid, "prev": prev, "next": next});
 
     // mark document modified
     body.addClass("modified");
@@ -352,9 +348,7 @@ function save_cell(cell) {
     var text = cell.attr("base-text");
 
     // send to server
-    var msg = JSON.stringify({"cmd": "save", "content": {"cid": cid, "body": text}});
-    console.log(msg);
-    ws.send(msg);
+    send_command("save", {"cid": cid, "body": text});
 
     // mark document as modified (cell not so)
     body.addClass("modified");
@@ -363,9 +357,8 @@ function save_cell(cell) {
 
 // send to the server for storage
 function save_document() {
-    var msg = JSON.stringify({"cmd": "write", "content": ""});
-    console.log(msg);
-    ws.send(msg);
+    console.log("saving document");
+    send_command("write");
     body.removeClass("modified");
 }
 
@@ -397,36 +390,31 @@ function initialize() {
 
     $("#topbar-markdown").click(function() {
         var md = elltwo.generate_markdown();
-        var msg = JSON.stringify({"cmd": "export", "content": {"format": "md", "data": md}});
-        ws.send(msg);
+        send_command("export", {"format": "md", "data": md});
         toggle_expo();
     });
 
     $("#topbar-mdplus").click(function() {
         var md = elltwo.generate_mdplus();
-        var msg = JSON.stringify({"cmd": "export", "content": {"format": "mdplus", "data": md}});
-        ws.send(msg);
+        send_command("export", {"format": "mdplus", "data": md});
         toggle_expo();
     });
 
     $("#topbar-html").click(function() {
         var html = elltwo.generate_html();
-        var msg = JSON.stringify({"cmd": "export", "content": {"format": "html", "data": html}});
-        ws.send(msg);
+        send_command("export", {"format": "html", "data": html});
         toggle_expo();
     });
 
     $("#topbar-latex").click(function() {
         var latex = elltwo.generate_latex();
-        var msg = JSON.stringify({"cmd": "export", "content": {"format": "latex", "data": latex["out"]}});
-        ws.send(msg);
+        send_command("export", {"format": "latex", "data": latex["out"]});
         toggle_expo();
     });
 
     $("#topbar-pdf").click(function() {
         var latex = elltwo.generate_latex();
-        var msg = JSON.stringify({"cmd": "export", "content": {"format": "pdf", "data": latex["out"], "deps": latex["deps"]}});
-        ws.send(msg);
+        send_command("export", {"format": "pdf", "data": latex["out"], "deps": latex["deps"]});
         toggle_expo();
     });
 
@@ -435,15 +423,12 @@ function initialize() {
     });
 
     $("#topbar-revert").click(function() {
-        var msg = JSON.stringify({"cmd": "revert", "content": ""});
-        console.log(msg);
-        ws.send(msg);
+        send_command("revert");
         body.removeClass("modified");
     });
 
     $("#topbar-reload").click(function() {
-        var msg = JSON.stringify({"cmd": "fetch", "content": ""});
-        ws.send(msg);
+        send_command("fetch");
     });
 
     $("#topbar-editing").click(function() {
@@ -578,6 +563,12 @@ function keep_alive() {
     timeoutID = window.setTimeout(keep_alive, [canary_freq]);
 }
 
+function send_command(cmd, cont) {
+    if (cont == undefined) cont = "";
+    var msg = JSON.stringify({"cmd": cmd, "content": cont});
+    ws.send(msg);
+}
+
 // websockets
 function connect(path) {
     if ("MozWebSocket" in window) {
@@ -593,15 +584,14 @@ function connect(path) {
             console.log("websocket connected!");
             $("#canary").text("connected");
             if (!opened) {
-                var msg = JSON.stringify({"cmd": "fetch", "content": ""});
-                ws.send(msg);
+                send_command("fetch");
             }
             timeoutID = window.setTimeout(keep_alive, [canary_freq]);
         };
 
         ws.onmessage = function (evt) {
             var msg = evt.data;
-            console.log("Received: " + msg);
+            // console.log("Received: " + msg);
 
             var json_data = JSON.parse(msg);
             if (json_data) {

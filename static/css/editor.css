@@ -31,6 +31,7 @@
     resize: none;
     overflow: hidden;
     width: 100%;
+    color: black;
 }
 
 body.editing #elltwo .cell.active {

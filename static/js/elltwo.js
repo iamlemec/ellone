@@ -255,7 +255,11 @@ function apply_render(box, defer) {
         var div_inner = $("<div>", {class: "equation-inner"});
 
         var tex = "\\begin{aligned}\n" + src + "\n\\end{aligned}";
-        katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
+        try {
+            katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
+        } catch (e) {
+            console.log(e);
+        }
 
         if (box.attr("id") != undefined) {
             new_equation = true;
