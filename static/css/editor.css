@@ -32,6 +32,8 @@
     overflow: hidden;
     width: 100%;
     color: black;
+    font-size: 17px;
+    font-family: monospace;
 }
 
 body.editing #elltwo .cell.active {

@@ -406,8 +406,7 @@ function number_sections() {
 
 function number_equations() {
     console.log("numbering equations");
-
-    eqn_num = 1;
+    var eqn_num = 1;
     content.find(".equation.numbered").each(function() {
         var eqn = $(this);
         var num = eqn.children(".equation-number");
