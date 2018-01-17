@@ -613,7 +613,7 @@ function generate_latex() {
     var md = generate_markdown();
     var latex = parse_latex(md);
     latex['out'] = export_pre["latex"] + latex['out'].trim() + export_post["latex"];
-    return latex;
+    return latex['out'];
 }
 
 // export dispatcher
