@@ -90,3 +90,5 @@ This is a test $x^2$
 $$ [eq2] \int f(x) dx
 
 This is a reference @[eq2].
+
+Testing macros: $\pder{x}{y}$.

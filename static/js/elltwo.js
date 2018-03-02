@@ -1,106 +1,4 @@
 /*
-*  Elltwo standalone
-*/
-
-/*
- * Data
- */
-
-export_pre = {
-mdplus: `<!doctype html>
-<html>
-
-<head>
-
-<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
-
-</head>
-
-<body>
-
-<div id="elltwo">
-
-`,
-html: `<!doctype html>
-<html>
-
-<head>
-
-<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
-
-</head>
-
-<body>
-
-<div id="elltwo">
-
-`,
-latex: `\\documentclass[12pt]{article}
-
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage[utf8]{inputenc}
-\\usepackage{parskip}
-\\usepackage{graphicx}
-\\usepackage[colorlinks,linkcolor=blue]{hyperref}
-\\usepackage{cleveref}
-\\usepackage{listings}
-\\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
-
-\\Crefformat{equation}{#2Equation~#1#3}
-
-\\setlength{\\parindent}{0cm}
-\\setlength{\\parskip}{0.5cm}
-\\renewcommand{\\baselinestretch}{1.1}
-
-\\begin{document}
-
-`
-};
-
-export_post = {
-mdplus: `
-
-</div>
-
-<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
-
-<script type="text/javascript">
-elltwo.init({
-    markdown: true
-});
-</script>
-
-</body>
-
-</html>`,
-html: `
-
-</div>
-
-<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
-
-<script type="text/javascript">
-elltwo.init();
-</script>
-
-</body>
-
-</html>`,
-latex: `
-
-\\end{document}`
-};
-
-/*
  * Elltwo Module
  */
 
@@ -230,7 +128,7 @@ function apply_render(box, defer) {
         var src = tex.text();
         tex.empty();
         try {
-          katex.render(src, tex[0]);
+          katex.render(src, tex[0], {macros: config["macros"]});
         } catch (e) {
           console.log(box.text());
           console.log(src);
@@ -256,9 +154,15 @@ function apply_render(box, defer) {
 
         var tex = "\\begin{aligned}\n" + src + "\n\\end{aligned}";
         try {
-            katex.render(tex, div_inner[0], {displayMode: true, throwOnError: false});
+            katex.render(tex, div_inner[0], {displayMode: true, macros: config["macros"]});
         } catch (e) {
-            console.log(e);
+            var err_div = $("<div>", {class: "math-error"});
+            var err_code = $("<div>", {class: "math-code", text: src});
+            var err_msg = $("<div>", {class: "err-msg", text: e.message});
+            err_div.append(err_code);
+            err_div.append(err_msg);
+            div_inner.append(err_div);
+            e1 = e;
         }
 
         if (box.attr("id") != undefined) {
@@ -555,82 +459,36 @@ function resolve_references(box) {
     });
 }
 
-/*
- * exporting function
- */
+function generate_export(fmt) {
+    console.log('exporting', fmt);
 
-// exporting to markdown
-function generate_markdown() {
-    console.log("getting markdown");
+    // get pure markdown
     var md = '';
     content.children().each(function() {
         var outer = $(this);
         md += outer.attr("base-text");
         md += '\n\n';
     });
-    return md.trimRight();
-}
+    var txt = md.trimRight();
 
-// exporting to markdown in html
-function generate_mdplus() {
-    var md = generate_markdown();
-    return export_pre["mdplus"] + md + export_post["mdplus"];
-}
-
-// construct html parser
-var opts_html = marktwo.merge({}, marktwo.defaults, {
-    renderer: new marktwo.Renderer
-});
-var lexer_html = new marktwo.Lexer(opts_html);
-var parser_html = new marktwo.Parser(opts_html);
-function parse_html(src) {
-    return parser_html.parse(lexer_html.lex(src));
-}
-
-// exporting to html
-function generate_html() {
-    console.log("getting html");
-    var md = generate_markdown();
-    var html = parse_html(md);
-    return export_pre["html"] + html.trim() + export_post["html"];
-}
-
-// construct latex parser
-var opts_latex = marktwo.merge({}, marktwo.defaults, {
-    renderer: new marktwo.LatexRenderer,
-    deps: true,
-    flatten: true
-});
-var lexer_latex = new marktwo.Lexer(opts_latex);
-var parser_latex = new marktwo.Parser(opts_latex);
-function parse_latex(src) {
-    return parser_latex.parse(lexer_latex.lex(src));
-}
-
-// exporting to latex/pdf
-function generate_latex() {
-    console.log("getting latex");
-    var md = generate_markdown();
-    var latex = parse_latex(md);
-    latex['out'] = export_pre["latex"] + latex['out'].trim() + export_post["latex"];
-    return latex;
-}
-
-// export dispatcher
-function display_export(fmt) {
-    var txt;
+    // convert to proper format
     if ((fmt == 'md') || (fmt == 'markdown')) {
-        txt = generate_markdown();
     } else if (fmt == 'mdplus') {
-        txt = generate_mdplus();
+        txt = generate_mdplus(txt);
     } else if (fmt == 'html') {
-        txt = generate_html();
+        txt = generate_html(txt);
     } else if ((fmt == 'tex') || (fmt == 'latex')) {
-        txt = generate_latex();
+        txt = generate_latex(txt);
     } else {
         txt = 'Format must be one of: md, markdown, mdplus, html, tex, latex.';
     }
 
+    return txt;
+}
+
+// export dispatcher
+function display_export(fmt) {
+    var txt = generate_export(fmt);
     content.empty();
     content.addClass("overlay");
     var pre = $("<pre>");
@@ -700,6 +558,7 @@ function init(opts) {
 
     console.log("init");
     console.log(config);
+
     if ("markdown" in config) {
         var mdsrc = config["markdown"];
         if (typeof(mdsrc) == "string") {
@@ -718,8 +577,6 @@ function init(opts) {
 return {
     init: init,
     update_config: update_config,
-    escape_html: escape_html,
-    unescape_html: unescape_html,
     apply_render: apply_render,
     full_update: full_update,
     number_footnotes: number_footnotes,
@@ -728,11 +585,9 @@ return {
     number_figures: number_figures,
     number_tables: number_tables,
     resolve_references: resolve_references,
-    generate_markdown: generate_markdown,
-    generate_mdplus: generate_mdplus,
-    generate_html: generate_html,
-    generate_latex: generate_latex
-}
+    generate_export: generate_export,
+    display_export: display_export
+};
 
 // end module
 })();

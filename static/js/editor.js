@@ -304,12 +304,26 @@ function paste_clipboard() {
 
 // wrapper for cell rendering
 function render_cell(outer, defer) {
+    // parse markdown
     var text = outer.attr("base-text");
     var html = marktwo.parse(text);
+
+    // insert intermediate
     var box = $(html);
     outer.empty();
     outer.append(box);
+
+    // elltwo render
     elltwo.apply_render(box, defer);
+
+    // post-render
+    box.find("a.internal").each(function() {
+        var link = $(this);
+        var href = link.attr("href");
+        link.removeClass("internal");
+        link.addClass("card");
+        send_command("card", {"link": href});
+    });
 }
 
 // go into static mode
@@ -389,31 +403,31 @@ function initialize() {
     });
 
     $("#topbar-markdown").click(function() {
-        var md = elltwo.generate_markdown();
+        var md = elltwo.generate_export('md');
         send_command("export", {"format": "md", "data": md});
         toggle_expo();
     });
 
     $("#topbar-mdplus").click(function() {
-        var md = elltwo.generate_mdplus();
-        send_command("export", {"format": "mdplus", "data": md});
+        var mdplus = elltwo.generate_export('mdplus');
+        send_command("export", {"format": "mdplus", "data": mdplus});
         toggle_expo();
     });
 
     $("#topbar-html").click(function() {
-        var html = elltwo.generate_html();
+        var html = elltwo.generate_export('html');
         send_command("export", {"format": "html", "data": html});
         toggle_expo();
     });
 
     $("#topbar-latex").click(function() {
-        var latex = elltwo.generate_latex();
+        var latex = elltwo.generate_export('latex');
         send_command("export", {"format": "latex", "data": latex["out"]});
         toggle_expo();
     });
 
     $("#topbar-pdf").click(function() {
-        var latex = elltwo.generate_latex();
+        var latex = elltwo.generate_export('latex');
         send_command("export", {"format": "pdf", "data": latex["out"], "deps": latex["deps"]});
         toggle_expo();
     });
@@ -618,6 +632,19 @@ function connect(path) {
                     }
                 } else if (cmd == "serve") {
                     window.location.replace("/__export/"+cont);
+                } else if (cmd == "card") {
+                    var href = cont["link"];
+                    var title = cont["title"];
+                    var prev = cont["preview"];
+                    $("a.card").each(function() {
+                        var link = $(this);
+                        if (link.attr("href") == href) {
+                            if (title.length > 0) {
+                                link.text(title);
+                                link.removeClass("card");
+                            }
+                        }
+                    });
                 }
             }
         };
@@ -638,10 +665,12 @@ function disconnect() {
 
 // public interface
 return {
-    init: function(path) {
+    init: function(path, config) {
         console.log(path);
+        console.log(config);
 
         // run
+        elltwo.update_config(config);
         initialize();
         connect(path);
     }

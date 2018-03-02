@@ -159,3 +159,26 @@ body {
 }
 
 */
+
+/* math errors */
+
+.equation .math-error {
+    text-align: left;
+    border: 1px solid #ebcccc;
+    border-radius: 3px;
+}
+
+.equation .math-error .math-code {
+    font-family: monospace;
+    padding: 5px;
+}
+
+.equation .math-error .err-msg {
+    color: #a94442;
+    background-color: #f2dede;
+    padding: 5px;
+}
+
+#elltwo a.card {
+    color: red;
+}

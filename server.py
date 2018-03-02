@@ -38,7 +38,8 @@ ap.add_argument('--path', type=str, default='.', help='path for markdown files')
 ap.add_argument('--port', type=int, default=0, help='port to serve on')
 ap.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
 ap.add_argument('--demo', action='store_true', help='run in demo mode')
-ap.add_argument('--auth', type=str, default=None)
+ap.add_argument('--auth', type=str, default=None, help='login information')
+ap.add_argument('--macros', type=str, default=None, help='katex macros file')
 ap.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
 ap.add_argument('--browser', action='store_true', help='open browser to portal')
 args = ap.parse_args()
@@ -49,6 +50,15 @@ port = args.port if args.port != 0 else get_open_port()
 local_libs = args.local_libs
 tmp_dir = '/tmp'
 blank_doc = '#! Title\n\nBody text.'
+
+# help text
+helptext = open('static/help.txt').read()
+
+# macros
+if args.macros is None:
+    macros = "{}"
+else:
+    macros = open(args.macros).read().replace('\\', '\\\\')
 
 # base directory
 basedir = os.path.abspath(args.path)
@@ -193,7 +203,7 @@ class PathHandler(tornado.web.RequestHandler):
         elif os.path.isfile(fpath):
             (_, ext) = os.path.splitext(fname)
             if ext in ('.md', '.rst', ''):
-                self.render('editor.html', path=path, fname=fname, local_libs=local_libs)
+                self.render('editor.html', path=path, fname=fname, macros=macros, helptext=helptext, local_libs=local_libs)
             else:
                 (mime_type, encoding) = mimetypes.guess_type(path)
                 if mime_type:
@@ -327,20 +337,20 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         elif cmd == 'create':
             newid = int(cont['newid'])
             prev = int(cont['prev'])
-            next = int(cont['next'])
+            succ = int(cont['next'])
             if prev is not -1:
                 self.cells[prev]['next'] = newid
-            if next is not -1:
-                self.cells[next]['prev'] = newid
-            self.cells[newid] = {'prev': prev, 'next': next, 'body': ''}
+            if succ is not -1:
+                self.cells[succ]['prev'] = newid
+            self.cells[newid] = {'prev': prev, 'next': succ, 'body': ''}
         elif cmd == 'delete':
             cid = int(cont['cid'])
             prev = int(cont['prev'])
-            next = int(cont['next'])
+            succ = int(cont['next'])
             if prev is not -1:
-                self.cells[prev]['next'] = next
-            if next is not -1:
-                self.cells[next]['prev'] = prev
+                self.cells[prev]['next'] = succ
+            if succ is not -1:
+                self.cells[succ]['prev'] = prev
             del self.cells[cid]
         elif cmd == 'write':
             output = construct_markdown(self.cells)
@@ -398,6 +408,26 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
 
             # reply with location
             self.write_message(json.dumps({'cmd': 'serve', 'content': os.path.join(uuid, name_new)}))
+        elif cmd == 'card':
+            link = cont['link']
+            if link.startswith('/'):
+                cpath = validate_path(link.lstrip('/'), basedir)
+            else:
+                cpath = validate_path(link, self.fulldir)
+            if os.path.isfile(cpath):
+                with open(cpath) as fid:
+                    fline = fid.readline()
+                ret = re.match(r'#! *(.*)', fline)
+                if ret is not None:
+                    title, = ret.groups()
+                else:
+                    title = '???'
+            else:
+                title = ''
+            self.write_message(json.dumps({
+                'cmd': 'card',
+                'content': {'link': link, 'title': title}
+            }))
 
 class FileHandler(tornado.websocket.WebSocketHandler):
     def initialize(self):
@@ -505,7 +535,7 @@ class Application(tornado.web.Application):
         else:
             handlers += [
                 (r'/?', BrowseHandler),
-                (r'/(.*)', PathHandler)
+                (r'/(.+?)/?', PathHandler)
             ]
 
         settings = dict(

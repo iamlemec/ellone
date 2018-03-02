@@ -538,6 +538,7 @@ var inline = {
   link: /^!?\[(inside)\]\(href\)/,
   reflink: /^!?\[(inside)\]\s*\[([^\]]*)\]/,
   nolink: /^!?\[((?:\[[^\]]*\]|[^\[\]])*)\]/,
+  ilink: /^\[\[([^\]]+)\]\]/,
   strong: /^__([\s\S]+?)__(?!_)|^\*\*([\s\S]+?)\*\*(?!\*)/,
   em: /^\b_((?:[^_]|__)+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
   code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
@@ -689,6 +690,13 @@ InlineLexer.prototype.output = function(src) {
       src = src.substring(cap[0].length);
       out += this.renderer.footnote(this.output(cap[1]));
       continue;
+    }
+
+    // internal link
+    if (cap = this.rules.ilink.exec(src)) {
+      src = src.substring(cap[0].length);
+      href = cap[1];
+      out += this.renderer.ilink(href);
     }
 
     // autolink
@@ -1007,6 +1015,11 @@ Renderer.prototype.link = function(href, title, text) {
   out += '>' + escape(text) + '</a>';
   return out;
 };
+
+Renderer.prototype.ilink = function(href) {
+  var out = '<a class="internal" href="' + href + '">' + href + '</a>';
+  return out;
+}
 
 Renderer.prototype.escape = function(esc) {
   return escape(esc);
@@ -1690,3 +1703,145 @@ if (typeof module !== 'undefined' && typeof exports === 'object') {
 }).call(function() {
   return this || (typeof window !== 'undefined' ? window : global);
 }());
+
+/*
+ * Data
+ */
+
+var export_pre = {
+mdplus: `<!doctype html>
+<html>
+
+<head>
+
+<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+
+</head>
+
+<body>
+
+<div id="elltwo">
+
+`,
+html: `<!doctype html>
+<html>
+
+<head>
+
+<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+
+</head>
+
+<body>
+
+<div id="elltwo">
+
+`,
+latex: `\\documentclass[12pt]{article}
+
+\\usepackage{amsmath}
+\\usepackage{amssymb}
+\\usepackage[utf8]{inputenc}
+\\usepackage{parskip}
+\\usepackage{graphicx}
+\\usepackage[colorlinks,linkcolor=blue]{hyperref}
+\\usepackage{cleveref}
+\\usepackage{listings}
+\\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
+
+\\Crefformat{equation}{#2Equation~#1#3}
+
+\\setlength{\\parindent}{0cm}
+\\setlength{\\parskip}{0.5cm}
+\\renewcommand{\\baselinestretch}{1.1}
+
+\\begin{document}
+
+`
+};
+
+var export_post = {
+mdplus: `
+
+</div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+
+<script type="text/javascript">
+elltwo.init({
+    markdown: true
+});
+</script>
+
+</body>
+
+</html>`,
+html: `
+
+</div>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+
+<script type="text/javascript">
+elltwo.init();
+</script>
+
+</body>
+
+</html>`,
+latex: `
+
+\\end{document}`
+};
+
+/*
+ * Exporting functions
+ */
+
+// exporting to markdown in html
+function generate_mdplus(md) {
+    return export_pre["mdplus"] + md + export_post["mdplus"];
+}
+
+// construct html parser
+var opts_html = marktwo.merge({}, marktwo.defaults, {
+    renderer: new marktwo.Renderer
+});
+var lexer_html = new marktwo.Lexer(opts_html);
+var parser_html = new marktwo.Parser(opts_html);
+function parse_html(src) {
+    return parser_html.parse(lexer_html.lex(src));
+}
+
+// exporting to html
+function generate_html(md) {
+    var html = parse_html(md);
+    return export_pre["html"] + html.trim() + export_post["html"];
+}
+
+// construct latex parser
+var opts_latex = marktwo.merge({}, marktwo.defaults, {
+    renderer: new marktwo.LatexRenderer,
+    deps: true,
+    flatten: true
+});
+var lexer_latex = new marktwo.Lexer(opts_latex);
+var parser_latex = new marktwo.Parser(opts_latex);
+function parse_latex(src) {
+    return parser_latex.parse(lexer_latex.lex(src));
+}
+
+// exporting to latex/pdf
+function generate_latex(md) {
+    var latex = parse_latex(md);
+    latex['out'] = export_pre["latex"] + latex['out'].trim() + export_post["latex"];
+    return latex;
+}
