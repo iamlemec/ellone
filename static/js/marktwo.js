@@ -1715,7 +1715,7 @@ mdplus: `<!doctype html>
 <head>
 
 <link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.css">
 
 </head>
 
@@ -1730,7 +1730,7 @@ html: `<!doctype html>
 <head>
 
 <link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.css">
 
 </head>
 
@@ -1767,8 +1767,8 @@ mdplus: `
 
 </div>
 
-<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.js"></script>
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
 
@@ -1785,8 +1785,8 @@ html: `
 
 </div>
 
-<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.js"></script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.js"></script>
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
 
