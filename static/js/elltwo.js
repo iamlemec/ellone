@@ -478,7 +478,7 @@ function generate_export(fmt) {
     } else if (fmt == 'html') {
         txt = generate_html(txt);
     } else if ((fmt == 'tex') || (fmt == 'latex')) {
-        txt = generate_latex(txt);
+        txt = generate_latex(txt)['out'];
     } else {
         txt = 'Format must be one of: md, markdown, mdplus, html, tex, latex.';
     }
