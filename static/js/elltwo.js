@@ -478,7 +478,7 @@ function generate_export(fmt) {
     } else if (fmt == 'html') {
         txt = generate_html(txt);
     } else if ((fmt == 'tex') || (fmt == 'latex')) {
-        txt = generate_latex(txt)['out'];
+        txt = generate_latex(txt);
     } else {
         txt = 'Format must be one of: md, markdown, mdplus, html, tex, latex.';
     }
@@ -489,6 +489,9 @@ function generate_export(fmt) {
 // export dispatcher
 function display_export(fmt) {
     var txt = generate_export(fmt);
+    if ((fmt == 'tex') || (fmt == 'latex')) {
+        txt = txt['out'];
+    }
     content.empty();
     content.addClass("overlay");
     var pre = $("<pre>");
