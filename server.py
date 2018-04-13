@@ -216,8 +216,8 @@ class PathHandler(tornado.web.RequestHandler):
 class UploadHandler(tornado.web.RequestHandler):
     @authenticated
     def post(self, rpath):
-        file = self.request.files['payload'][0]
-        fname = file['filename']
+        finfo = self.request.files['payload'][0]
+        fname = finfo['filename']
         rname = os.path.join(rpath, fname)
         plocal = validate_path(rname, basedir)
         if plocal is None:
@@ -226,8 +226,8 @@ class UploadHandler(tornado.web.RequestHandler):
         if os.path.isdir(plocal):
             print('Directory exists!')
             return
-        out = open(plocal, 'wb')
-        out.write(file['body'])
+        with open(plocal, 'wb') as out:
+            out.write(finfo['body'])
 
 class DemoHandler(tornado.web.RequestHandler):
     def get(self):

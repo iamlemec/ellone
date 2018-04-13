@@ -168,7 +168,7 @@ function activate_next(cell) {
 }
 
 // create cell
-function insert_cell(cell, edit) {
+function insert_cell(cell, edit, after) {
     // generate id and stitch into linked list
     var newid = max(get_ids($(".cell"))) + 1;
     var prev = cell.attr("cid");
@@ -179,7 +179,11 @@ function insert_cell(cell, edit) {
 
     // generate html
     var outer = create_cell("", newid, prev, next);
-    outer.insertAfter(cell);
+    if (after) {
+        outer.insertAfter(cell);
+    } else {
+        outer.insertBefore(cell);
+    }
 
     // activate cell
     activate_cell(outer);
@@ -293,7 +297,7 @@ function paste_clipboard() {
     var prev = active;
     for (i in clipboard) {
         var text = clipboard[i];
-        var outer = insert_cell(prev, false);
+        var outer = insert_cell(prev, false, true);
         outer.attr("base-text", text);
         render_cell(outer);
         save_cell(outer);
@@ -508,16 +512,21 @@ function initialize() {
                     freeze_cell(active);
                     return false;
                 }
-            } else if (keyCode == 79) { // o
+            } else if ((keyCode == 79) || (keyCode == 66)) { // o or b
                 if (!actEdit) {
-                    insert_cell(active, true);
+                    insert_cell(active, true, true);
+                    return false;
+                }
+            } else if (keyCode == 65) { // a
+                if (!actEdit) {
+                    insert_cell(active, true, false);
                     return false;
                 }
             } else if (keyCode == 13) { // return
                 if (actEdit) {
                     if (event.shiftKey) {
                         freeze_cell(active);
-                        insert_cell(active, true);
+                        insert_cell(active, true, true);
                         return false;
                     }
                 }

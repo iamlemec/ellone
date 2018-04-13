@@ -130,7 +130,7 @@ function initialize() {
     var formData = new FormData($(this)[0]);
 
     $.ajax({
-      url: '/__upload/' + dirname,
+      url: '/__upload/' + relpath,
       type: 'POST',
       data: formData,
       contentType: false,
