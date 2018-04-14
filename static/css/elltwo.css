@@ -10,15 +10,11 @@
     font-family: Montserrat;
     font-size: 18px;
     font-weight: 300;
-    width: 700px !important;
     margin: 0px auto;
     padding-top: 80px;
     padding-bottom: 200px;
     background-color: white;
     color: #333;
-    -webkit-box-sizing: content-box;
-    -moz-box-sizing: content-box;
-    box-sizing: content-box;
 }
 
 #elltwo * {

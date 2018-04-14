@@ -16,40 +16,27 @@
 <link href="{{ static_url('css/elltwo.css') }}" type="text/css" rel="stylesheet"/>
 <link href="{{ static_url('css/editor.css') }}" type="text/css" rel="stylesheet"/>
 
+<style>
+html, body, #target {
+    height: 100%;
+}
+body {
+    margin: 0;
+}
+#target {
+    margin: auto;
+}
+#elltwo .cell {
+    width: 60%;
+    margin: auto;
+}
+</style>
+
 </head>
 
 <body>
 
-<div id="whitebar"></div>
-
-<span id="marquee"></span>
-<span id="canary">connecting</span>
-
-<div id="help">
-<pre>
-{{ helptext }}
-</pre>
-</div>
-
-<div id="topbar">
-<div id="topbar-control">
-<span id="topbar-save" class="topbar-button">Save</span>
-<span id="topbar-revert" class="topbar-button">Revert</span>
-<span id="topbar-reload" class="topbar-button">Reload</span>
-<span id="topbar-editing" class="topbar-button">Editing</span>
-<span id="topbar-export" class="topbar-button">Export</span>
-</div>
-<br/>
-<div id="topbar-slide">
-<span id="topbar-markdown" class="topbar-button topbar-dropdown">.md</span><br/>
-<span id="topbar-mdplus" class="topbar-button topbar-dropdown">.md+</span><br/>
-<span id="topbar-html" class="topbar-button topbar-dropdown">.html</span><br/>
-<span id="topbar-latex" class="topbar-button topbar-dropdown">.tex</span><br/>
-<span id="topbar-pdf" class="topbar-button topbar-dropdown">.pdf</span><br/>
-</div>
-</div>
-
-<div id="elltwo"></div>
+<div id="target"></div>
 
 {% if local_libs %}
 <script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
@@ -63,7 +50,7 @@
 <script src="{{ static_url('js/editor.js') }}" type="text/javascript"></script>
 
 <script type="text/javascript">
-editor.init("{{ path }}", {
+editor.init($("#target"), "{{ path }}", {
     macros: {% raw macros %}
 });
 </script>

@@ -5,7 +5,7 @@
 var elltwo = (function() {
 
 // find outer box
-var content = $("#elltwo");
+var content;
 
 /*
  * configuration
@@ -553,14 +553,20 @@ function update_config(opts) {
     config = merge({}, defaults, opts || {});
 }
 
+function set_content(cont) {
+    content = cont;
+}
+
 // render for static docs
-function init(opts) {
+function init(cont, opts) {
     if (opts != undefined) {
         update_config(opts);
     }
 
     console.log("init");
     console.log(config);
+
+    set_content(cont);
 
     if ("markdown" in config) {
         var mdsrc = config["markdown"];
@@ -580,6 +586,7 @@ function init(opts) {
 return {
     init: init,
     update_config: update_config,
+    set_content: set_content,
     apply_render: apply_render,
     full_update: full_update,
     number_footnotes: number_footnotes,

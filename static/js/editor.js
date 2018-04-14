@@ -6,10 +6,8 @@
 var editor = (function() {
 
 // find outer box
-var html = $("html");
-var body = $("body");
-var whitebar = $("#whitebar");
-var content = $("#elltwo");
+var bounds;
+var content;
 
 // hard coded options
 var scrollSpeed = 100;
@@ -109,23 +107,28 @@ function autoresize(el) {
 // cell level selection
 function select_cell(cell, clear) {
     if (clear) {
-        $(".cell.select").removeClass("select");
+        content.find(".cell.select").removeClass("select");
     }
     cell.addClass("select");
 }
 
 // scroll cell into view
 function ensure_visible(cell) {
-    var cell_top = cell.offset().top;
+    var scroll = content.scrollTop();
+    var height = content.height();
+
+    var cell_top = scroll + cell.position().top;
     var cell_bot = cell_top + cell.height();
-    var page_top = window.scrollY + whitebar.height();
-    var page_bot = window.scrollY + window.innerHeight;
+
+    var page_top = scroll;
+    var page_bot = page_top + height;
+
     if (cell_top < page_top + scrollFudge) {
-        html.stop();
-        html.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
+        content.stop();
+        content.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
     } else if (cell_bot > page_bot - scrollFudge) {
-        html.stop();
-        html.animate({scrollTop: cell_bot - window.innerHeight + scrollFudge}, scrollSpeed);
+        content.stop();
+        content.animate({scrollTop: cell_bot - height + scrollFudge}, scrollSpeed);
     }
 }
 
@@ -170,10 +173,10 @@ function activate_next(cell) {
 // create cell
 function insert_cell(cell, edit, after) {
     // generate id and stitch into linked list
-    var newid = max(get_ids($(".cell"))) + 1;
+    var newid = max(get_ids(content.find(".cell"))) + 1;
     var prev = cell.attr("cid");
     var next = cell.attr("next");
-    var cnext = $(".cell[cid="+next+"]");
+    var cnext = content.find(".cell[cid="+next+"]");
     cnext.attr("prev", newid);
     cell.attr("next", newid);
 
@@ -197,7 +200,7 @@ function insert_cell(cell, edit, after) {
     send_command("create", {"newid": newid, "prev": prev, "next": next});
 
     // mark document modified
-    body.addClass("modified");
+    bounds.addClass("modified");
 
     // return created cell
     return outer;
@@ -214,7 +217,7 @@ function create_cell(text, cid, prev, next) {
 
     // event handlers
     outer.click(function(event) {
-        if (is_editing(body)) {
+        if (is_editing(bounds)) {
             activate_cell(outer);
             select_cell(outer, true);
         }
@@ -228,8 +231,8 @@ function delete_cell(cell, defer) {
     // snip out of linked list
     prev = cell.attr("prev");
     next = cell.attr("next");
-    cprev = $(".cell[cid="+prev+"]");
-    cnext = $(".cell[cid="+next+"]");
+    cprev = content.find(".cell[cid="+prev+"]");
+    cnext = content.find(".cell[cid="+next+"]");
     cprev.attr("next", next);
     cnext.attr("prev", prev);
 
@@ -246,13 +249,13 @@ function delete_cell(cell, defer) {
     send_command("delete", {"cid": cid, "prev": prev, "next": next});
 
     // mark document modified
-    body.addClass("modified");
+    bounds.addClass("modified");
 }
 
 // cell cut/copy/paste
 function copy_selection() {
     clipboard = [];
-    var sel = $(".cell.select");
+    var sel = content.find(".cell.select");
     sel.each(function() {
         var c = $(this);
         var text = c.attr("base-text");
@@ -267,7 +270,7 @@ function cut_selection(copy) {
     if (copy) {
         sel = copy_selection();
     } else {
-        sel = $(".cell.select");
+        sel = content.find(".cell.select");
     }
 
     // find next active cell
@@ -369,7 +372,7 @@ function save_cell(cell) {
     send_command("save", {"cid": cid, "body": text});
 
     // mark document as modified (cell not so)
-    body.addClass("modified");
+    bounds.addClass("modified");
     cell.removeClass("modified");
 }
 
@@ -377,26 +380,22 @@ function save_cell(cell) {
 function save_document() {
     console.log("saving document");
     send_command("write");
-    body.removeClass("modified");
+    bounds.removeClass("modified");
 }
 
 // initialization code
 function initialize() {
     // marquee box
-    var marquee = $("#marquee");
-    var help = $("#help");
+    var marquee = bounds.find("#marquee");
     if (marquee.length > 0) {
         var span = $("<span>", {class: "latex"});
         katex.render("\\ell^2", span[0], {throwOnError: false});
         marquee.append(span);
     }
-    marquee.click(function() {
-        help.slideToggle("fast");
-    });
 
     // topbar button handlers
-    var expo_button = $("#topbar-export");
-    var expo_slide = $("#topbar-slide");
+    var expo_button = bounds.find("#topbar-export");
+    var expo_slide = bounds.find("#topbar-slide");
     var toggle_expo = function() {
         expo_slide.slideToggle("fast");
         expo_button.toggleClass("expanded");
@@ -406,61 +405,61 @@ function initialize() {
         toggle_expo();
     });
 
-    $("#topbar-markdown").click(function() {
+    bounds.find("#topbar-markdown").click(function() {
         var md = elltwo.generate_export('md');
         send_command("export", {"format": "md", "data": md});
         toggle_expo();
     });
 
-    $("#topbar-mdplus").click(function() {
+    bounds.find("#topbar-mdplus").click(function() {
         var mdplus = elltwo.generate_export('mdplus');
         send_command("export", {"format": "mdplus", "data": mdplus});
         toggle_expo();
     });
 
-    $("#topbar-html").click(function() {
+    bounds.find("#topbar-html").click(function() {
         var html = elltwo.generate_export('html');
         send_command("export", {"format": "html", "data": html});
         toggle_expo();
     });
 
-    $("#topbar-latex").click(function() {
+    bounds.find("#topbar-latex").click(function() {
         var latex = elltwo.generate_export('latex');
         send_command("export", {"format": "latex", "data": latex["out"]});
         toggle_expo();
     });
 
-    $("#topbar-pdf").click(function() {
+    bounds.find("#topbar-pdf").click(function() {
         var latex = elltwo.generate_export('latex');
         send_command("export", {"format": "pdf", "data": latex["out"], "deps": latex["deps"]});
         toggle_expo();
     });
 
-    $("#topbar-save").click(function() {
+    bounds.find("#topbar-save").click(function() {
         save_document();
     });
 
-    $("#topbar-revert").click(function() {
+    bounds.find("#topbar-revert").click(function() {
         send_command("revert");
-        body.removeClass("modified");
+        bounds.removeClass("modified");
     });
 
-    $("#topbar-reload").click(function() {
+    bounds.find("#topbar-reload").click(function() {
         send_command("fetch");
     });
 
-    $("#topbar-editing").click(function() {
-        if (!body.hasClass("locked")) {
-            body.toggleClass("editing");
+    bounds.find("#topbar-editing").click(function() {
+        if (!bounds.hasClass("locked")) {
+            bounds.toggleClass("editing");
         }
     });
 
     // vim-like controls :)
-    $(window).keydown(function(event) {
+    $(document).keydown(function(event) {
         // console.log(event.keyCode);
 
         var keyCode = event.keyCode;
-        var docEdit = is_editing(body);
+        var docEdit = is_editing(bounds);
         var actEdit = (active != undefined) && is_editing(active);
 
         if (docEdit) {
@@ -574,12 +573,53 @@ function initialize() {
     });
 }
 
+function scaffold(targ) {
+    // whitebar
+    var whitebar = $("<div/>", {id: "whitebar"});
+    var marquee = $("<span/>", {id: "marquee"});
+    var canary = $("<span/>", {id: "canary"});
+
+    // topbar controls
+    var topbar_control = $("<div/>", {id: "topbar-control"});
+    topbar_control.append($("<span/>", {id: "topbar-save", class: "topbar-button", text: "Save"}));
+    topbar_control.append($("<span/>", {id: "topbar-revert", class: "topbar-button", text: "Revert"}));
+    topbar_control.append($("<span/>", {id: "topbar-reload", class: "topbar-button", text: "Reload"}));
+    topbar_control.append($("<span/>", {id: "topbar-editing", class: "topbar-button", text: "Editing"}));
+    topbar_control.append($("<span/>", {id: "topbar-export", class: "topbar-button", text: "Export"}));
+
+    // export popdown
+    var topbar_slide = $("<div/>", {id: "topbar-slide"});
+    topbar_slide.append($("<span/>", {id: "topbar-markdown", class: "topbar-button topbar-dropdown", text: ".md"}));
+    topbar_slide.append($("<span/>", {id: "topbar-mdplus", class: "topbar-button topbar-dropdown", text: ".md+"}));
+    topbar_slide.append($("<span/>", {id: "topbar-html", class: "topbar-button topbar-dropdown", text: ".html"}));
+    topbar_slide.append($("<span/>", {id: "topbar-latex", class: "topbar-button topbar-dropdown", text: ".tex"}));
+    topbar_slide.append($("<span/>", {id: "topbar-pdf", class: "topbar-button topbar-dropdown", text: ".pdf"}));
+
+    // topbar buttons
+    var topbar = $("<div/>", {id: "topbar"});
+    topbar.append(marquee);
+    topbar.append(canary);
+    topbar.append(topbar_control);
+    topbar.append(topbar_slide);
+
+    // content box
+    content = $("<div/>", {id: "elltwo"});
+
+    // all together
+    bounds = $("<div/>", {id: "bounds"});
+    bounds.append(topbar);
+    bounds.append(content);
+
+    // final
+    targ.append(bounds);
+}
+
 // keep alive magic
 function keep_alive() {
     // console.log("heartbeet");
     if (ws.readyState == ws.CLOSED) {
         console.log('reconnecting');
-        $("#canary").text("connecting");
+        bounds.find("#canary").text("connecting");
         delete(ws);
         connect();
     }
@@ -635,9 +675,9 @@ function connect(path) {
                     activate_cell(first);
                     select_cell(first, true);
                     if (cmd == "fetch") {
-                        body.addClass("editing");
+                        bounds.addClass("editing");
                     } else {
-                        body.addClass("locked");
+                        bounds.addClass("locked");
                     }
                 } else if (cmd == "serve") {
                     window.location.replace("/__export/"+cont);
@@ -645,7 +685,7 @@ function connect(path) {
                     var href = cont["link"];
                     var title = cont["title"];
                     var prev = cont["preview"];
-                    $("a.card").each(function() {
+                    content.find("a.card").each(function() {
                         var link = $(this);
                         if (link.attr("href") == href) {
                             if (title.length > 0) {
@@ -674,12 +714,14 @@ function disconnect() {
 
 // public interface
 return {
-    init: function(path, config) {
+    init: function(targ, path, config) {
         console.log(path);
         console.log(config);
 
         // run
+        scaffold(targ);
         elltwo.update_config(config);
+        elltwo.set_content(content);
         initialize();
         connect(path);
     }
