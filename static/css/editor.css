@@ -38,6 +38,7 @@
 
 #bounds {
     position: relative;
+    outline: 0;
 }
 
 #bounds.editing .cell.active {
@@ -90,7 +91,9 @@
 
 #topbar-slide {
     display: none;
-    margin-top: 3px;
+    position: relative;
+    top: 8px;
+    right: 8px;
 }
 
 .topbar-dropdown {

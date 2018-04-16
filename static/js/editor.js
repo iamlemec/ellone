@@ -5,6 +5,9 @@
 // begin module
 var editor = (function() {
 
+// comms
+var send_command;
+
 // find outer box
 var bounds;
 var content;
@@ -12,10 +15,8 @@ var content;
 // hard coded options
 var scrollSpeed = 100;
 var scrollFudge = 100;
-var canary_freq = 5000;
 
 // globals
-var ws;
 var active;
 var clipboard = [];
 var opened = false;
@@ -384,15 +385,7 @@ function save_document() {
 }
 
 // initialization code
-function initialize() {
-    // marquee box
-    var marquee = bounds.find("#marquee");
-    if (marquee.length > 0) {
-        var span = $("<span>", {class: "latex"});
-        katex.render("\\ell^2", span[0], {throwOnError: false});
-        marquee.append(span);
-    }
-
+function connect_handlers() {
     // topbar button handlers
     var expo_button = bounds.find("#topbar-export");
     var expo_slide = bounds.find("#topbar-slide");
@@ -455,7 +448,7 @@ function initialize() {
     });
 
     // vim-like controls :)
-    $(document).keydown(function(event) {
+    bounds.keydown(function(event) {
         // console.log(event.keyCode);
 
         var keyCode = event.keyCode;
@@ -579,6 +572,11 @@ function scaffold(targ) {
     var marquee = $("<span/>", {id: "marquee"});
     var canary = $("<span/>", {id: "canary"});
 
+    // marquee
+    var logo = $("<span>", {class: "latex"});
+    katex.render("\\ell^2", logo[0], {throwOnError: false});
+    marquee.append(logo);
+
     // topbar controls
     var topbar_control = $("<div/>", {id: "topbar-control"});
     topbar_control.append($("<span/>", {id: "topbar-save", class: "topbar-button", text: "Save"}));
@@ -606,7 +604,7 @@ function scaffold(targ) {
     content = $("<div/>", {id: "elltwo"});
 
     // all together
-    bounds = $("<div/>", {id: "bounds"});
+    bounds = $("<div/>", {id: "bounds", tabindex: 0});
     bounds.append(topbar);
     bounds.append(content);
 
@@ -614,117 +612,66 @@ function scaffold(targ) {
     targ.append(bounds);
 }
 
-// keep alive magic
-function keep_alive() {
-    // console.log("heartbeet");
-    if (ws.readyState == ws.CLOSED) {
-        console.log('reconnecting');
-        bounds.find("#canary").text("connecting");
-        delete(ws);
-        connect();
-    }
-    timeoutID = window.setTimeout(keep_alive, [canary_freq]);
-}
-
-function send_command(cmd, cont) {
-    if (cont == undefined) cont = "";
-    var msg = JSON.stringify({"cmd": cmd, "content": cont});
-    ws.send(msg);
-}
-
-// websockets
-function connect(path) {
-    if ("MozWebSocket" in window) {
-        WebSocket = MozWebSocket;
-    }
-    if ("WebSocket" in window) {
-        var ws_con = "ws://" + window.location.host + "/__elledit/" + path;
-        // console.log(ws_con);
-
-        ws = new WebSocket(ws_con);
-
-        ws.onopen = function() {
-            console.log("websocket connected!");
-            $("#canary").text("connected");
-            if (!opened) {
-                send_command("fetch");
-            }
-            timeoutID = window.setTimeout(keep_alive, [canary_freq]);
-        };
-
-        ws.onmessage = function (evt) {
-            var msg = evt.data;
-            // console.log("Received: " + msg);
-
-            var json_data = JSON.parse(msg);
-            if (json_data) {
-                var cmd = json_data["cmd"];
-                var cont = json_data["content"];
-                if ((cmd == "fetch") || (cmd == "readonly")) {
-                    opened = true;
-                    var cells = json_data["content"];
-                    content.empty();
-                    for (i in cells) {
-                        var c = cells[i];
-                        var outer = create_cell(c["body"], c["cid"], c["prev"], c["next"]);
-                        content.append(outer);
-                        render_cell(outer, true);
-                    }
-                    elltwo.full_update();
-                    var first = content.children(".cell").first();
-                    activate_cell(first);
-                    select_cell(first, true);
-                    if (cmd == "fetch") {
-                        bounds.addClass("editing");
-                    } else {
-                        bounds.addClass("locked");
-                    }
-                } else if (cmd == "serve") {
-                    window.location.replace("/__export/"+cont);
-                } else if (cmd == "card") {
-                    var href = cont["link"];
-                    var title = cont["title"];
-                    var prev = cont["preview"];
-                    content.find("a.card").each(function() {
-                        var link = $(this);
-                        if (link.attr("href") == href) {
-                            if (title.length > 0) {
-                                link.text(title);
-                                link.removeClass("card");
-                            }
-                        }
-                    });
+// incoming commands - fetch, readonly, serve, card
+function recv_command(cmd, cont) {
+    if ((cmd == "fetch") || (cmd == "readonly")) {
+        content.empty();
+        for (i in cont) {
+            var c = cont[i];
+            var outer = create_cell(c["body"], c["cid"], c["prev"], c["next"]);
+            content.append(outer);
+            render_cell(outer, true);
+        }
+        elltwo.full_update();
+        var first = content.children(".cell").first();
+        activate_cell(first);
+        select_cell(first, true);
+        if (cmd == "fetch") {
+            bounds.addClass("editing");
+        } else {
+            bounds.addClass("locked");
+        }
+    } else if (cmd == "serve") {
+        window.location.replace("/__export/"+cont);
+    } else if (cmd == "card") {
+        var href = cont["link"];
+        var title = cont["title"];
+        var prev = cont["preview"];
+        content.find("a.card").each(function() {
+            var link = $(this);
+            if (link.attr("href") == href) {
+                if (title.length > 0) {
+                    link.text(title);
+                    link.removeClass("card");
                 }
             }
-        };
-
-        ws.onclose = function() {
-            console.log('websocket closed.');
-        };
-    } else {
-        console.log("Sorry, your browser does not support websockets.");
+        });
+    } else if (cmd == "canary") {
+        bounds.find("#canary").text("connecting");
     }
 }
 
-function disconnect() {
-    if (ws) {
-        ws.close();
-    }
+function init(targ, config, callback) {
+    console.log(config);
+
+    send_command = callback;
+
+    // create ui
+    scaffold(targ);
+    connect_handlers();
+
+    // initialize elltwo manually
+    elltwo.update_config(config);
+    elltwo.set_content(content);
+
+    // focus editor
+    bounds.focus();
 }
 
 // public interface
 return {
-    init: function(targ, path, config) {
-        console.log(path);
-        console.log(config);
-
-        // run
-        scaffold(targ);
-        elltwo.update_config(config);
-        elltwo.set_content(content);
-        initialize();
-        connect(path);
-    }
+    init: init,
+    recv_command: recv_command
 }
 
 // end module
