@@ -57,11 +57,13 @@
 
 #topbar {
     font-family: Montserrat;
-    position: absolute;
+    position: sticky;
     height: 37px;
     background-color: white;
     border-bottom: 1px solid #CCC;
-    width: 100%;
+    left: 0;
+    right: 0;
+    top: 0;
     z-index: 2;
 }
 
@@ -168,20 +170,17 @@
 
 #elltwo {
     box-sizing: border-box;
-    height: 100%;
-    overflow-y: scroll;
-    position: relative;
-    padding-top: 80px;
+    padding-top: 50px;
     padding-bottom: 50px;
-    padding-left: 30px;
-    padding-right: 30px;
 }
 
 #bounds {
     height: 100%;
     margin: 0;
+    overflow-y: scroll;
+    position: relative;
 }
 
 #elltwo::-webkit-scrollbar {
-    display: none;
+    /*display: none;*/
 }

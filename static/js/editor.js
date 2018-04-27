@@ -115,8 +115,8 @@ function select_cell(cell, clear) {
 
 // scroll cell into view
 function ensure_visible(cell) {
-    var scroll = content.scrollTop();
-    var height = content.height();
+    var scroll = bounds.scrollTop();
+    var height = bounds.height();
 
     var cell_top = scroll + cell.position().top;
     var cell_bot = cell_top + cell.height();
@@ -125,11 +125,11 @@ function ensure_visible(cell) {
     var page_bot = page_top + height;
 
     if (cell_top < page_top + scrollFudge) {
-        content.stop();
-        content.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
+        bounds.stop();
+        bounds.animate({scrollTop: cell_top - scrollFudge}, scrollSpeed);
     } else if (cell_bot > page_bot - scrollFudge) {
-        content.stop();
-        content.animate({scrollTop: cell_bot - height + scrollFudge}, scrollSpeed);
+        bounds.stop();
+        bounds.animate({scrollTop: cell_bot - height + scrollFudge}, scrollSpeed);
     }
 }
 
@@ -145,7 +145,7 @@ function activate_cell(cell) {
     ensure_visible(cell);
 
     // change focus
-    cell.focus();
+    // cell.focus();
 
     // update cell var
     active = cell;
@@ -345,6 +345,7 @@ function freeze_cell(outer) {
     if (outer.hasClass("modified")) {
         save_cell(outer);
     }
+    bounds.focus();
 }
 
 // start editing cell
@@ -361,6 +362,7 @@ function unfreeze_cell(outer) {
     });
     set_caret_at_end(outer);
     select_cell(outer, true);
+    inner.focus();
 }
 
 // save cell to server
@@ -494,6 +496,8 @@ function connect_handlers() {
                 } else {
                     select_cell(active, !event.shiftKey);
                 }
+            } else if (keyCode == 33) { // page up
+            } else if (keyCode == 34) { // page down
             } else if (keyCode == 87) { // w
                 if (!actEdit) {
                     unfreeze_cell(active);
@@ -530,6 +534,8 @@ function connect_handlers() {
                             delete_cell(outer);
                             if (is_editing(active)) {
                                 set_caret_at_end(active);
+                            } else {
+                                bounds.focus();
                             }
                         }
                         return false;
