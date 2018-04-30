@@ -184,3 +184,17 @@
 #elltwo::-webkit-scrollbar {
     /*display: none;*/
 }
+
+#help {
+    position: absolute;
+    top: 35px;
+    display: none;
+}
+
+#help > pre {
+    font-size: 12px;
+    color: #333;
+    padding: 3px;
+    margin: 0;
+    cursor: default;
+}

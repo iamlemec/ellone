@@ -21,6 +21,33 @@ var active;
 var clipboard = [];
 var opened = false;
 
+// constants
+helptext = `title: #!
+heading: #'s
+list: - (u) or + (o)
+image: ![caption](url)
+equation: $$ [id] ...
+code block: \`\`⏎ code
+
+link: [text](url)
+inline math: $...$
+reference: @[id]
+footnote: ^[text]
+italics: *text*
+bold: **text**
+literal: \`text\`
+
+up/down: move active cell
+w: edit active cell
+esc: exit edit mode
+o: create new cell
+shift+enter: exit edit + create
+ctrl+s: save document
+
+D: delete cell
+C: copy cell
+P: paste cell`;
+
 // utils
 function max(arr) {
     return Math.max.apply(null, arr);
@@ -579,9 +606,18 @@ function scaffold(targ) {
     var canary = $("<span/>", {id: "canary"});
 
     // marquee
-    var logo = $("<span>", {class: "latex"});
+    var logo = $("<span/>", {class: "latex"});
     katex.render("\\ell^2", logo[0], {throwOnError: false});
     marquee.append(logo);
+
+    // help
+    var help = $("<div/>", {id: "help"});
+    var pre = $("<pre/>", {text: helptext});
+    help.append(pre);
+    marquee.append(help);
+    marquee.click(function() {
+        help.slideToggle("fast");
+    });
 
     // topbar controls
     var topbar_control = $("<div/>", {id: "topbar-control"});
