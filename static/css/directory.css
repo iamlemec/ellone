@@ -32,7 +32,7 @@ html {
 }
 
 .directory .entry:hover {
-  background-color: #FBFBFB;
+  background-color: #F7F7F7;
 }
 
 .directory .entry:first-child {
@@ -81,7 +81,7 @@ html {
   border: 1px solid rgb(53, 122, 232);
 }
 
-.directory .entry.tools {
+.directory #tools {
   box-sizing: border-box;
   display: table;
   width: 100%;
@@ -89,11 +89,11 @@ html {
   padding: 0px;
 }
 
-.directory .entry.tools:hover {
+.directory #tools:hover {
   background-color: white;
 }
 
-.directory .create {
+.directory #create {
   display: table-cell;
   vertical-align: middle;
   width: 50%;
@@ -104,15 +104,15 @@ html {
   border-right: 1px solid #CCC;
 }
 
-.directory .create:hover {
+.directory #create:hover {
+  background-color: #EFEFEF;
+}
+
+body:not(.editing) .directory #create {
   background-color: #DEDEDE;
 }
 
-body:not(.editing) .directory .create {
-  background-color: #DEDEDE;
-}
-
-.directory .upload {
+.directory #upload {
   display: table-cell;
   vertical-align: middle;
   cursor: default;
@@ -121,12 +121,12 @@ body:not(.editing) .directory .create {
   width: 50%;
 }
 
-body:not(.editing) .directory .upload {
+body:not(.editing) .directory #upload {
   background-color: #DEDEDE;
 }
 
-.directory .upload:hover {
-  background-color: #DEDEDE;
+.directory #upload:hover {
+  background-color: #EFEFEF;
 }
 
 .directory .entry input {
@@ -169,3 +169,17 @@ body.editing .entry:hover .delbox {
   display: block;
 }
 
+.delbox > img {
+    width: 10px;
+    height: 10px;
+}
+
+#create > img {
+    width: 13px;
+    height: 13px;
+}
+
+#upload > img {
+    width: 13px;
+    height: 13px;
+}

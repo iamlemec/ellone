@@ -2,13 +2,15 @@
 
 var body = $('body');
 
-function make_entry(type,name) {
-  var entry = $("<div>",{class:"entry"});
+function make_entry(type, name) {
+  var entry = $("<div>", {class: "entry"});
   entry.addClass(type);
   var href = "/" + relpath + name;
-  var link = $("<a>",{href:href,html:name});
+  var link = $("<a>", {href: href, html: name});
   entry.append(link);
-  var del = $("<div>",{class:"delbox",html:"&#x2715;"});
+  var del = $("<div>", {class:"delbox"});
+  var dimg = $("<img>", {src: "/static/svg/xout.svg"});
+  del.append(dimg);
   del.click(function() {
     result = window.confirm('Are you sure you want to delete ' + name + '?');
     if (result) {
@@ -87,8 +89,8 @@ function disconnect()
 function initialize() {
   console.log(dirname);
 
-  create = $(".directory .create");
-  tools = $(".directory .tools");
+  create = $("#create");
+  tools = $("#tools");
 
   if (relpath.length == 0) {
     relpath = "";

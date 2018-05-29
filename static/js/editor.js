@@ -559,6 +559,7 @@ function connect_handlers() {
                     if (get_cell_empty(active)) {
                         if (activate_prev()) {
                             delete_cell(outer);
+                            select_cell(active, true);
                             if (is_editing(active)) {
                                 set_caret_at_end(active);
                             } else {
