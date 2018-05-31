@@ -690,7 +690,7 @@ function recv_command(cmd, cont) {
             }
         });
     } else if (cmd == "canary") {
-        bounds.find("#canary").text("connecting");
+        bounds.find("#canary").text(cont);
     }
 }
 
