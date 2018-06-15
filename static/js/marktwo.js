@@ -1219,9 +1219,9 @@ LatexRenderer.prototype.math = function(tex) {
 
 LatexRenderer.prototype.equation = function(id, tex) {
   if (id) {
-    var out = '\\begin{align} \\label{' + id + '}\n' + tex + '\\end{align}\n\n';
+    var out = '\\begin{align} \\label{' + id + '}\n' + tex + '\\end{align}\n';
   } else {
-    var out = '\\begin{align*}\n' + tex + '\\end{align*}\n\n';
+    var out = '\\begin{align*}\n' + tex + '\\end{align*}\n';
   }
   return out;
 };
