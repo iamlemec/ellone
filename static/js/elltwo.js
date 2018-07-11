@@ -554,6 +554,9 @@ function update_config(opts) {
 }
 
 function set_content(cont) {
+    if (typeof(cont) == "string") {
+        cont = $(cont);
+    }
     content = cont;
 }
 
