@@ -1717,6 +1717,12 @@ mdplus: `<!doctype html>
 <link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.css">
 
+<style>
+#elltwo {
+    width: 700px;
+}
+</style>
+
 </head>
 
 <body>
@@ -1731,6 +1737,12 @@ html: `<!doctype html>
 
 <link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.css">
+
+<style>
+#elltwo {
+    width: 700px;
+}
+</style>
 
 </head>
 
@@ -1773,7 +1785,7 @@ mdplus: `
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
 
 <script type="text/javascript">
-elltwo.init({
+elltwo.init('#elltwo', {
     markdown: true
 });
 </script>
@@ -1791,7 +1803,7 @@ html: `
 <script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
 
 <script type="text/javascript">
-elltwo.init();
+elltwo.init('#elltwo');
 </script>
 
 </body>
