@@ -230,9 +230,7 @@ class DemoHandler(tornado.web.RequestHandler):
     def get(self):
         drand = rand_hex()
         fullpath = os.path.join(basedir, drand)
-        os.mkdir(fullpath)
-        shutil.copy(os.path.join('testing', 'demo.md'), fullpath)
-        shutil.copy(os.path.join('testing', 'Jahnke_gamma_function.png'), fullpath)
+        shutil.copytree('content', fullpath)
         self.redirect('/%s' % drand)
 
 class ExportHandler(tornado.web.RequestHandler):

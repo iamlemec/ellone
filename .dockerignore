@@ -1,0 +1,14 @@
+Dockerfile
+.dockerignore
+.gitmodules
+.git
+screenlog.0
+__pycache__
+auth
+elltwo
+demo
+temp/*
+testing
+demo.gif
+LICENSE
+README.md
