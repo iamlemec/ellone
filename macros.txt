@@ -1,0 +1,20 @@
+{
+    "\eps": "\varepsilon",
+    "\p": "\prime",
+    "\fr": "\frac{#1}{#2}",
+    "\pfr": "\left(\frac{#1}{#2}\right)",
+    "\bfr": "\left[\frac{#1}{#2}\right]",
+    "\cfr": "\left\{\frac{#1}{#2}\right\}",
+    "\pder": "\frac{\partial #1}{\partial #2}",
+    "\gr": "\frac{\dot{#1}}{#1}",
+    "\Ra": "\Rightarrow",
+    "\ra": "\rightarrow",
+    "\Ras": "\ \Rightarrow\ ",
+    "\ras": "\ \rightarrow\ ",
+    "\Raq": "\quad\Rightarrow\quad",
+    "\raq": "\quad\rightarrow\quad",
+    "\par": "\left(#1\right)",
+    "\bra": "\left[#1\right]",
+    "\cur": "\left\{#1\right\}",
+    "\qand": "\quad\text{and}\quad"
+}
