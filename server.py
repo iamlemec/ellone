@@ -37,7 +37,7 @@ ap = argparse.ArgumentParser(description='Elltwo Server.')
 ap.add_argument('--path', type=str, default='.', help='path for markdown files')
 ap.add_argument('--port', type=int, default=0, help='port to serve on')
 ap.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
-ap.add_argument('--demo', action='store_true', help='run in demo mode')
+ap.add_argument('--demo', type=str, default=None, help='run in demo mode with these docs')
 ap.add_argument('--auth', type=str, default=None, help='login information')
 ap.add_argument('--macros', type=str, default=None, help='katex macros file')
 ap.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
@@ -45,7 +45,8 @@ ap.add_argument('--browser', action='store_true', help='open browser to portal')
 args = ap.parse_args()
 
 # others
-use_auth = not (args.demo or args.auth is None)
+is_demo = args.demo is not None
+use_auth = (args.demo is None) and (args.auth is not None)
 port = args.port if args.port != 0 else get_open_port()
 local_libs = args.local_libs
 tmp_dir = '/tmp'
@@ -185,7 +186,7 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
 class BrowseHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self):
-        self.render('directory.html', relpath='', dirname='', pardir='', demo=args.demo)
+        self.render('directory.html', relpath='', dirname='', pardir='', demo=is_demo)
 
 class PathHandler(tornado.web.RequestHandler):
     @authenticated
@@ -196,7 +197,7 @@ class PathHandler(tornado.web.RequestHandler):
             print('Path out of bounds!')
             return
         if os.path.isdir(fpath):
-            self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=args.demo)
+            self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=is_demo)
         elif os.path.isfile(fpath):
             (_, ext) = os.path.splitext(fname)
             if ext in ('.md', '.rst', ''):
@@ -230,7 +231,7 @@ class DemoHandler(tornado.web.RequestHandler):
     def get(self):
         drand = rand_hex()
         fullpath = os.path.join(basedir, drand)
-        shutil.copytree('content', fullpath)
+        shutil.copytree(args.demo, fullpath)
         self.redirect('/%s' % drand)
 
 class ExportHandler(tornado.web.RequestHandler):
