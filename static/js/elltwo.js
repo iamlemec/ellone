@@ -18,6 +18,9 @@ var defaults = {
             reftext += " (" + year + ")";
         }
         return reftext;
+    },
+    seclabel: function(sec_num, lvl) {
+        return sec_num.slice(0, lvl).join(".");
     }
 };
 var config = defaults;
@@ -296,14 +299,13 @@ function apply_render(box, defer) {
 function number_sections() {
     console.log("numbering sections");
     var sec_num = Array();
-    sec_num[0] = "";
-    sec_num[1] = 0;
+    sec_num[0] = 0;
     content.find(".sec-title:not(.nonumber)").each(function() {
         var sec = $(this);
         var lvl = parseInt(sec.attr("sec-lvl"));
-        sec_num[lvl]++;
-        sec_num[lvl+1] = 0;
-        var lab = sec_num.slice(1, lvl+1).join(".");
+        sec_num[lvl-1]++;
+        sec_num[lvl] = 0;
+        var lab = config["seclabel"](sec_num, lvl);
         sec.attr("sec-num", lab);
     });
 }
