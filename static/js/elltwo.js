@@ -12,6 +12,8 @@ var content;
  */
 
 var defaults = {
+    markdown: false,
+    render: true,
     reference: function(authors, year) {
         var reftext = authors;
         if (year != undefined) {
@@ -507,7 +509,7 @@ function display_export(fmt) {
 
 function render(defer) {
     console.log("rendering");
-    if ("markdown" in config) {
+    if (config.markdown != false) {
         var md = unescape_html(content.html());
         content.empty();
         var cells = md.trim().split('\n\n');
@@ -542,7 +544,7 @@ function render_all() {
     render(true);
     full_update();
 
-    if ("markdown" in config) {
+    if (config.markdown != false) {
         var par = new URLSearchParams(location.search);
         var exp = par.get("export");
         if (exp != null) {
@@ -573,10 +575,9 @@ function init(cont, opts) {
 
     set_content(cont);
 
-    if ("markdown" in config) {
-        var mdsrc = config["markdown"];
-        if (typeof(mdsrc) == "string") {
-            $.get(mdsrc, function(data) {
+    if (config.markdown != false) {
+        if (typeof(config.markdown) == "string") {
+            $.get(config.markdown, function(data) {
                 content.text(data);
                 render_all();
             });
@@ -584,7 +585,9 @@ function init(cont, opts) {
         }
     }
 
-    render_all();
+    if (config.render) {
+        render_all();
+    }
 }
 
 // public interface
