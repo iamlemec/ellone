@@ -1750,27 +1750,6 @@ html: `<!doctype html>
 
 <div id="elltwo">
 
-`,
-latex: `\\documentclass[12pt]{article}
-
-\\usepackage{amsmath}
-\\usepackage{amssymb}
-\\usepackage[utf8]{inputenc}
-\\usepackage{parskip}
-\\usepackage{graphicx}
-\\usepackage[colorlinks,linkcolor=blue]{hyperref}
-\\usepackage{cleveref}
-\\usepackage{listings}
-\\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
-
-\\Crefformat{equation}{#2Equation~#1#3}
-
-\\setlength{\\parindent}{0cm}
-\\setlength{\\parskip}{0.5cm}
-\\renewcommand{\\baselinestretch}{1.1}
-
-\\begin{document}
-
 `
 };
 
@@ -1808,10 +1787,7 @@ elltwo.init('#elltwo');
 
 </body>
 
-</html>`,
-latex: `
-
-\\end{document}`
+</html>`
 };
 
 /*
@@ -1851,9 +1827,52 @@ function parse_latex(src) {
     return parser_latex.parse(lexer_latex.lex(src));
 }
 
+function parse_macro(mac) {
+    var sym = mac[0];
+    var exp = mac[1];
+    var num = "";
+    var reg = exp.match(/#[0-9]+/g);
+    if (reg != null) {
+      var idx = reg.map(x => x.slice(1));
+      var max = Math.max(...idx);
+      num = `[${max}]`;
+    }
+    return `\\newcommand{${sym}}${num}{${exp}}`;
+}
+
 // exporting to latex/pdf
-function generate_latex(md) {
+function generate_latex(md, macros) {
+    var rules = "";
+    if (macros != undefined) {
+        var rules = Object.entries(macros).map(parse_macro).join("\n");
+    }
+
     var latex = parse_latex(md);
-    latex['out'] = export_pre["latex"] + latex['out'].trim() + export_post["latex"];
+    var body = latex["out"].trim();
+    latex['out'] = `\\documentclass[12pt]{article}
+
+\\usepackage{amsmath}
+\\usepackage{amssymb}
+\\usepackage[utf8]{inputenc}
+\\usepackage{parskip}
+\\usepackage{graphicx}
+\\usepackage[colorlinks,linkcolor=blue]{hyperref}
+\\usepackage{cleveref}
+\\usepackage{listings}
+\\usepackage[top=1.25in,bottom=1.25in,left=1.25in,right=1.25in]{geometry}
+
+\\Crefformat{equation}{#2Equation~#1#3}
+
+\\setlength{\\parindent}{0cm}
+\\setlength{\\parskip}{0.5cm}
+\\renewcommand{\\baselinestretch}{1.1}
+
+${rules}
+
+\\begin{document}
+
+${body}
+
+\\end{document}`;
     return latex;
 }

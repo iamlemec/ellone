@@ -600,7 +600,7 @@ function connect_handlers() {
     });
 }
 
-function scaffold(targ) {
+function scaffold(targ, links) {
     // whitebar
     var whitebar = $("<div/>", {id: "whitebar"});
     var marquee = $("<span/>", {id: "marquee"});
@@ -619,6 +619,9 @@ function scaffold(targ) {
     marquee.click(function() {
         help.slideToggle("fast");
     });
+
+    // links up
+    var linkbar = $("<span/>", {id: "linkbar", html: links});
 
     // topbar controls
     var topbar_control = $("<div/>", {id: "topbar-control"});
@@ -640,6 +643,7 @@ function scaffold(targ) {
     var topbar = $("<div/>", {id: "topbar"});
     topbar.append(marquee);
     topbar.append(canary);
+    topbar.append(linkbar);
     topbar.append(topbar_control);
     topbar.append(topbar_slide);
 
@@ -694,13 +698,13 @@ function recv_command(cmd, cont) {
     }
 }
 
-function init(targ, config, callback) {
+function init(targ, config, callback, links) {
     console.log(config);
 
     send_command = callback;
 
     // create ui
-    scaffold(targ);
+    scaffold(targ, links);
     connect_handlers();
 
     // initialize elltwo manually

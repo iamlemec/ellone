@@ -5,7 +5,10 @@
     "\pfr": "\left(\frac{#1}{#2}\right)",
     "\bfr": "\left[\frac{#1}{#2}\right]",
     "\cfr": "\left\{\frac{#1}{#2}\right\}",
+    "\der": "\frac{d#1}{d#2}",
     "\pder": "\frac{\partial #1}{\partial #2}",
+    "\eder": "\frac{\varepsilon #1}{\varepsilon #2}",
+    "\E": "\mathbb{E}\br{#1}",
     "\gr": "\frac{\dot{#1}}{#1}",
     "\Ra": "\Rightarrow",
     "\ra": "\rightarrow",
@@ -13,8 +16,8 @@
     "\ras": "\ \rightarrow\ ",
     "\Raq": "\quad\Rightarrow\quad",
     "\raq": "\quad\rightarrow\quad",
-    "\par": "\left(#1\right)",
-    "\bra": "\left[#1\right]",
-    "\cur": "\left\{#1\right\}",
+    "\pr": "\left(#1\right)",
+    "\br": "\left[#1\right]",
+    "\cb": "\left\{#1\right\}",
     "\qand": "\quad\text{and}\quad"
 }

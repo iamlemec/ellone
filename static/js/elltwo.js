@@ -14,6 +14,7 @@ var content;
 var defaults = {
     markdown: false,
     render: true,
+    macros: {},
     reference: function(authors, year) {
         var reftext = authors;
         if (year != undefined) {
@@ -476,15 +477,15 @@ function generate_export(fmt) {
     var txt = md.trimRight();
 
     // convert to proper format
-    if ((fmt == 'md') || (fmt == 'markdown')) {
-    } else if (fmt == 'mdplus') {
+    if ((fmt == "md") || (fmt == "markdown")) {
+    } else if (fmt == "mdplus") {
         txt = generate_mdplus(txt);
-    } else if (fmt == 'html') {
+    } else if (fmt == "html") {
         txt = generate_html(txt);
-    } else if ((fmt == 'tex') || (fmt == 'latex')) {
-        txt = generate_latex(txt);
+    } else if ((fmt == "tex") || (fmt == "latex")) {
+        txt = generate_latex(txt, config["macros"]);
     } else {
-        txt = 'Format must be one of: md, markdown, mdplus, html, tex, latex.';
+        txt = "Format must be one of: md, markdown, mdplus, html, tex, latex.";
     }
 
     return txt;
@@ -493,8 +494,8 @@ function generate_export(fmt) {
 // export dispatcher
 function display_export(fmt) {
     var txt = generate_export(fmt);
-    if ((fmt == 'tex') || (fmt == 'latex')) {
-        txt = txt['out'];
+    if ((fmt == "tex") || (fmt == "latex")) {
+        txt = txt["out"];
     }
     content.empty();
     content.addClass("overlay");

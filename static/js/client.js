@@ -72,8 +72,11 @@ function disconnect() {
     }
 }
 
+
 function init(targ, path, config) {
-    editor.init(targ, config, send_command);
+    var direc = path.replace(/[^\/]+$/, '');
+    var links = "<a href=\"/\">Home</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"/" + direc + "\">Parent</a>";
+    editor.init(targ, config, send_command, links);
     connect(path);
 }
 

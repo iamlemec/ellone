@@ -136,6 +136,26 @@
     z-index: 2;
 }
 
+#linkbar {
+    position: relative;
+    font-size: 14px;
+    left: 60px;
+    top: 7px;
+}
+
+#linkbar a:focus {
+    outline: 0;
+}
+
+#linkbar a {
+    color: blue;
+    text-decoration: none;
+}
+
+#linkbar a:visited {
+    color: blue;
+}
+
 /* dark theme */
 
 /*
