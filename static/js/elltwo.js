@@ -365,6 +365,18 @@ function number_tables() {
 // for a hover event and scale factor (of the realized object), generate appropriate css
 function get_offset(parent, popup, event) {
     var rects = parent[0].getClientRects();
+
+    var trect;
+    var top_rect;
+    for (var i in rects) {
+        trect = rects[i];
+        if (top_rect == undefined) {
+            top_rect = trect;
+        } else if ((trect.top <= top_rect.top) && (trect.left <= top_rect.left)) {
+            top_rect = trect;
+        }
+    }
+
     var mouseX = event.clientX;
     var mouseY = event.clientY;
 
@@ -379,11 +391,14 @@ function get_offset(parent, popup, event) {
     var elem_width = rect.width;
     var elem_height = rect.height;
 
+    var rect_offX = rect.left - top_rect.left;
+    var rect_offY = rect.top - top_rect.top;
+
     var pop_width = popup.outerWidth();
     var pop_height = popup.outerHeight();
 
-    var pos_x = 0.5*(elem_width-pop_width);
-    var pos_y = -pop_height;
+    var pos_x = 0.5*(elem_width-pop_width) + rect_offX - 4; // for footnotes to line up
+    var pos_y = -pop_height + rect_offY;
 
     return {x: pos_x, y: pos_y};
 }
