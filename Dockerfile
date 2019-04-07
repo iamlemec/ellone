@@ -4,7 +4,10 @@ FROM python:3.7.0-alpine
 # Set the working directory
 WORKDIR /opt/elltwo
 
-# Install any needed packages specified in requirements.txt
+# Install system packages
+RUN apk add --update texlive-full
+
+# Install Python packages
 COPY requirements.txt /opt/elltwo
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 

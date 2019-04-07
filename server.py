@@ -397,8 +397,11 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
                             continue
                 cwd = os.getcwd()
                 os.chdir(exp_dir)
-                call(['pdflatex', '-interaction=nonstopmode', name_new])
-                call(['pdflatex', '-interaction=nonstopmode', name_new]) # to resolve references
+                try:
+                    call(['pdflatex', '-interaction=nonstopmode', name_new])
+                    call(['pdflatex', '-interaction=nonstopmode', name_new]) # to resolve references
+                except:
+                    print('Compilation failed hard')
                 os.chdir(cwd)
                 name_new = '%s.pdf' % name_base
 
