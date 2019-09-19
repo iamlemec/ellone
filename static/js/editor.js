@@ -280,6 +280,17 @@ function delete_cell(cell, defer) {
     bounds.addClass("modified");
 }
 
+function get_selection() {
+    var mds = [];
+    var sel = content.find(".cell.select");
+    sel.each(function() {
+        var c = $(this);
+        var text = c.attr("base-text");
+        mds.push(text);
+    });
+    return mds.join('\n\n');
+}
+
 // cell cut/copy/paste
 function copy_selection() {
     clipboard = [];
@@ -592,6 +603,11 @@ function connect_handlers() {
                 if (event.ctrlKey || event.metaKey) {
                     save_document();
                     return false;
+                }
+            } else if (keyCode == 80) { // p
+                if (event.shiftKey && !is_editing(active)) {
+                    var md = get_selection();
+                    console.log(md);
                 }
             }
         } else {
