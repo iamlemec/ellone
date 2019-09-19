@@ -45,8 +45,10 @@ shift+enter: exit edit + create
 ctrl+s: save document
 
 D: delete cell
+X: cut cell
 C: copy cell
-P: paste cell`;
+V: paste cell
+P: print cell`;
 
 // utils
 function max(arr) {
@@ -303,16 +305,9 @@ function copy_selection() {
     return sel;
 }
 
-function cut_selection(copy) {
-    // copy source text
-    var sel;
-    if (copy) {
-        sel = copy_selection();
-    } else {
-        sel = content.find(".cell.select");
-    }
-
+function delete_selection() {
     // find next active cell
+    var sel = content.find(".cell.select");
     var succ = sel.last().next(".cell");
     if (succ.length == 0) {
         succ = sel.first().prev(".cell");
@@ -583,14 +578,21 @@ function connect_handlers() {
                 if (!$(event.target).is("textarea")) {
                     event.preventDefault();
                 }
-            } else if ((keyCode == 88) || (keyCode == 68)) { // x or d
+            } else if (keyCode == 68) { // d
                 if (event.shiftKey && !is_editing(active)) {
-                    var copy = (keyCode == 88);
-                    cut_selection(copy);
+                    delete_selection();
                     if (is_editing(active)) {
                         set_caret_at_end(active);
                     }
                 }
+              } else if (keyCode == 88) { // x
+                  if (event.shiftKey && !is_editing(active)) {
+                      copy_selection();
+                      delete_selection();
+                      if (is_editing(active)) {
+                          set_caret_at_end(active);
+                      }
+                  }
             } else if (keyCode == 67) { // c
                 if (event.shiftKey && !is_editing(active)) {
                     copy_selection();
