@@ -1,13 +1,11 @@
 import os
-import shutil
-import sys
 import re
 import json
+import shutil
 import socket
 import argparse
 import mimetypes
-from operator import itemgetter
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 import codecs
 import random
 from subprocess import call
@@ -56,17 +54,19 @@ blank_doc = '#! Title\n\nBody text.'
 if args.macros is None:
     macros = "{}"
 else:
-    macros = open(args.macros).read().replace('\\', '\\\\')
+    with open(args.macros) as fmac:
+        macros = fmac.read()
+    macros = macros.replace('\\', '\\\\')
 
 # base directory
 basedir = os.path.abspath(args.path)
 if os.path.isdir(basedir):
-    basefile = None
+    basefile = ''
 else:
-    (basedir, basefile) = os.path.split(basedir)
+    basedir, basefile = os.path.split(basedir)
 
 # print state
-print('serving %s on http://%s:%s' % (basedir, args.ip, port))
+print(f'serving {basedir} on http://{args.ip}:{port}')
 
 # randomization
 rand_hex = lambda: hex(random.getrandbits(128))[2:].zfill(32)
@@ -77,7 +77,7 @@ locks = defaultdict(Lock)
 # authentication
 if use_auth:
     with open(args.auth) as fid:
-      auth = json.load(fid)
+        auth = json.load(fid)
     cookie_secret = auth['cookie_secret']
     username_true = auth['username']
     password_true = auth['password']
@@ -100,9 +100,8 @@ else:
 # initialize/open database
 def read_cells(fname):
     try:
-        fid = open(fname, 'r+', encoding='utf-8')
-        text = fid.read()
-        fid.close()
+        with open(fname, 'r+', encoding='utf-8') as fid:
+            text = fid.read()
     except:
         text = 'Error reading file!'
 
@@ -114,7 +113,10 @@ def read_cells(fname):
         cells[max(cells.keys())]['next'] = -1
         cells[min(cells.keys())]['prev'] = -1
     else:
-        cells = {0: {'prev': -1, 'next': 1, 'body': '#! Title'}, 1: {'prev':0, 'next': -1, 'body': 'Body text.'}}
+        cells = {
+            0: {'prev': -1, 'next':  1, 'body': '#! Title'  },
+            1: {'prev':  0, 'next': -1, 'body': 'Body text.'}
+        }
     return cells
 
 def gen_cells(cells):
@@ -129,14 +131,11 @@ def gen_cells(cells):
         cur = cells[nextid] if nextid != -1 else None
 
 def construct_markdown(cells):
-    return '\n\n'.join(map(itemgetter('body'), gen_cells(cells)))
+    return '\n\n'.join([c['body'] for c in gen_cells(cells)])
 
 def get_base_name(fname):
     ret = re.match(r'(.*)\.md', fname)
-    if ret:
-        fname_new = ret.group(1)
-    else:
-        fname_new = fname
+    fname_new = ret.group(1) if ret is not None else fname
     return fname_new
 
 def validate_path(relpath, base, weak=False):
@@ -191,7 +190,7 @@ class BrowseHandler(tornado.web.RequestHandler):
 class PathHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self, path):
-        (pardir, fname) = os.path.split(path)
+        pardir, fname = os.path.split(path)
         fpath = validate_path(path, basedir)
         if fpath is None:
             print('Path out of bounds!')
@@ -199,17 +198,17 @@ class PathHandler(tornado.web.RequestHandler):
         if os.path.isdir(fpath):
             self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=is_demo)
         elif os.path.isfile(fpath):
-            (_, ext) = os.path.splitext(fname)
+            _, ext = os.path.splitext(fname)
             if ext in ('.md', '.rst', ''):
                 self.render('editor.html', path=path, fname=fname, macros=macros, local_libs=local_libs)
             else:
-                (mime_type, encoding) = mimetypes.guess_type(path)
+                mime_type, encoding = mimetypes.guess_type(path)
                 if mime_type:
                     self.set_header("Content-Type", mime_type)
-                fid = open(fpath, 'rb')
-                self.write(fid.read())
+                with open(fpath, 'rb') as fid:
+                    self.write(fid.read())
         else:
-            self.write('File %s not found!' % path)
+            self.write(f'File {path} not found!')
 
 class UploadHandler(tornado.web.RequestHandler):
     @authenticated
@@ -232,7 +231,7 @@ class DemoHandler(tornado.web.RequestHandler):
         drand = rand_hex()
         fullpath = os.path.join(basedir, drand)
         shutil.copytree(args.demo, fullpath)
-        self.redirect('/%s' % drand)
+        self.redirect(f'/{drand}')
 
 class ExportHandler(tornado.web.RequestHandler):
     @authenticated
@@ -241,10 +240,10 @@ class ExportHandler(tornado.web.RequestHandler):
         if fullpath is None:
             print('Path out of bounds!')
             return
-        (curdir, fname) = os.path.split(fullpath)
+        curdir, fname = os.path.split(fullpath)
 
         # determine content type
-        (base_name, ext) = os.path.splitext(fname)
+        base_name, ext = os.path.splitext(fname)
         ext = ext[1:]
         if ext == 'md':
             fmode = 'r'
@@ -260,12 +259,12 @@ class ExportHandler(tornado.web.RequestHandler):
             ctype = 'application/pdf'
 
         # read source
-        fid = open(fullpath, fmode)
-        text = fid.read()
+        with open(fullpath, fmode) as fid:
+            text = fid.read()
 
         # post output
         self.set_header('Content-Type', ctype)
-        self.set_header('Content-Disposition', 'attachment; filename=%s' % fname)
+        self.set_header('Content-Disposition', f'attachment; filename={fname}')
         self.write(text)
     get = post
 
@@ -279,7 +278,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def open(self, path):
-        print('connection received: %s' % path)
+        print(f'connection received: {path}')
         self.fullpath = validate_path(path, basedir)
         if self.fullpath is None:
             print('Path out of bounds!')
@@ -288,7 +287,7 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
         if locks[self.fullpath].acquire(blocking=False):
             self.live = True
         self.path = path
-        (self.fulldir, self.fname) = os.path.split(self.fullpath)
+        self.fulldir, self.fname = os.path.split(self.fullpath)
         self.basename = get_base_name(self.fname)
         self.temppath = os.path.join(tmp_dir, self.fname)
         self.cells = read_cells(self.fullpath)
@@ -306,25 +305,24 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             print('error code not found')
 
     def on_message(self, msg):
-        print('received message: %s' % msg)
+        print(f'received message: {msg}')
 
         data = json.loads(msg)
-        (cmd, cont) = (data['cmd'], data['content'])
+        cmd, cont = data['cmd'], data['content']
 
         if not self.live:
-            print('%s Locked' % self.path)
-            if cmd not in ['fetch', 'export']:
+            print(f'{self.path} Locked')
+            if cmd not in ('fetch', 'export'):
                 return
 
         if cmd == 'fetch':
             rcmd = 'fetch' if self.live else 'readonly'
             self.cells = read_cells(self.fullpath)
-            vcells = [dict(c, cid=i) for (i, c) in self.cells.items()]
-            print(vcells)
+            vcells = [dict(c, cid=i) for i, c in self.cells.items()]
             self.write_message(json.dumps({'cmd': rcmd, 'content': vcells}))
         elif cmd == 'revert':
             self.cells = read_cells(self.fullpath)
-            vcells = [dict(c, cid=i) for (i, c) in self.cells.items()]
+            vcells = [dict(c, cid=i) for i, c in self.cells.items()]
             self.write_message(json.dumps({'cmd': 'fetch', 'content': vcells}))
         elif cmd == 'save':
             cid = int(cont['cid'])
@@ -334,25 +332,24 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             newid = int(cont['newid'])
             prev = int(cont['prev'])
             succ = int(cont['next'])
-            if prev is not -1:
+            if prev != -1:
                 self.cells[prev]['next'] = newid
-            if succ is not -1:
+            if succ != -1:
                 self.cells[succ]['prev'] = newid
             self.cells[newid] = {'prev': prev, 'next': succ, 'body': ''}
         elif cmd == 'delete':
             cid = int(cont['cid'])
             prev = int(cont['prev'])
             succ = int(cont['next'])
-            if prev is not -1:
+            if prev != -1:
                 self.cells[prev]['next'] = succ
-            if succ is not -1:
+            if succ != -1:
                 self.cells[succ]['prev'] = prev
             del self.cells[cid]
         elif cmd == 'write':
             output = construct_markdown(self.cells)
-            fid = codecs.open(self.temppath, 'w+', encoding='utf-8')
-            fid.write(output)
-            fid.close()
+            with codecs.open(self.temppath, 'w+', encoding='utf-8') as fid:
+                fid.write(output)
             shutil.move(self.temppath, self.fullpath)
         elif cmd == 'export':
             fmt = cont['format']
@@ -365,18 +362,19 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
             os.mkdir(exp_dir)
 
             # format specific
-            (name_base, name_ext) = os.path.splitext(self.fname)
+            name_base, name_ext = os.path.splitext(self.fname)
             if fmt == 'md':
-                name_new = '%s.md' % name_base
+                ext_new = 'md'
             elif fmt == 'html' or fmt == 'mdplus':
-                name_new = '%s.html' % name_base
+                ext_new = 'html'
             elif fmt == 'latex' or fmt == 'pdf':
-                name_new = '%s.tex' % name_base
+                ext_new = 'tex'
+            name_new = f'{name_base}.{ext_new}'
 
             # save file
-            fid = codecs.open(os.path.join(exp_dir, name_new), 'w+', encoding='utf-8')
-            fid.write(data)
-            fid.close()
+            path_new = os.path.join(exp_dir, name_new)
+            with codecs.open(path_new, 'w+', encoding='utf-8') as fid:
+                fid.write(data)
 
             # compilation for pdf
             if fmt == 'pdf':
@@ -391,9 +389,9 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
                             try:
                                 shutil.copy(fpv, exp_dir)
                             except FileNotFoundError:
-                                print('%s: File not found!' % fpv)
+                                print(f'{fpv}: File not found!')
                         else:
-                            print('%s: Path out of bounds!' % fp)
+                            print(f'{fp}: Path out of bounds!')
                             continue
                 cwd = os.getcwd()
                 os.chdir(exp_dir)
@@ -403,10 +401,11 @@ class ContentHandler(tornado.websocket.WebSocketHandler):
                 except:
                     print('Compilation failed hard')
                 os.chdir(cwd)
-                name_new = '%s.pdf' % name_base
+                name_new = f'{name_base}.pdf'
 
             # reply with location
-            self.write_message(json.dumps({'cmd': 'serve', 'content': os.path.join(uuid, name_new)}))
+            path_cont = os.path.join(uuid, name_new)
+            self.write_message(json.dumps({'cmd': 'serve', 'content': path_cont}))
         elif cmd == 'card':
             link = cont['link']
             if link.startswith('/'):
@@ -446,7 +445,7 @@ class FileHandler(tornado.websocket.WebSocketHandler):
             return
         if locks[self.curdir].acquire(blocking=False):
             self.live = True
-        (self.pardir, self.dirname) = os.path.split(self.curdir)
+        self.pardir, self.dirname = os.path.split(self.curdir)
 
     def on_close(self):
         print('connection closing')
@@ -461,13 +460,13 @@ class FileHandler(tornado.websocket.WebSocketHandler):
             print('error code not found')
 
     def on_message(self, msg):
-        print('received message: %s' % msg)
+        print(f'received message: {msg}')
 
         data = json.loads(msg)
-        (cmd, cont) = (data['cmd'], data['content'])
+        cmd, cont = data['cmd'], data['content']
 
         if not self.live:
-            print('%s Locked' % self.relpath)
+            print(f'{self.relpath} Locked')
             if cmd not in ['list']:
                 return
 
@@ -489,11 +488,10 @@ class FileHandler(tornado.websocket.WebSocketHandler):
                 if cont.endswith('/'):
                     os.mkdir(fullpath)
                 else:
-                    fid = open(fullpath, 'w+')
-                    fid.write(blank_doc)
-                    fid.close()
+                    with open(fullpath, 'w+') as fid:
+                        fid.write(blank_doc)
             except:
-                print('Could not create file \'%s\'' % fullpath)
+                print(f'Could not create file "{fullpath}"')
         elif cmd == 'delete':
             fullpath = validate_path(cont, self.curdir)
             if fullpath is None:
@@ -508,9 +506,9 @@ class FileHandler(tornado.websocket.WebSocketHandler):
         # list always
         files = sorted(os.listdir(self.curdir))
         dtype = [os.path.isdir(os.path.join(self.curdir, f)) for f in files]
-        dirs = [f for (f, t) in zip(files, dtype) if t]
-        docs = [f for (f, t) in zip(files, dtype) if not t and f.endswith('.md')]
-        misc = [f for (f, t) in zip(files, dtype) if not t and not f.endswith('.md')]
+        dirs = [f for f, t in zip(files, dtype) if t]
+        docs = [f for f, t in zip(files, dtype) if not t and f.endswith('.md')]
+        misc = [f for f, t in zip(files, dtype) if not t and not f.endswith('.md')]
         cont = {'dirs': dirs, 'docs': docs, 'misc': misc}
         self.write_message(json.dumps({'cmd': 'results', 'content': cont, 'readonly': not self.live}))
 
@@ -547,7 +545,7 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, debug=True, **settings)
 
 if args.browser:
-    webbrowser.open('http://%s:%s/%s' % (args.ip, port, basefile or ''))
+    webbrowser.open(f'http://{args.ip}:{port}/{basefile}')
 
 # create server
 application = Application()

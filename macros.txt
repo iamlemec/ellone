@@ -19,5 +19,6 @@
     "\pr": "\left(#1\right)",
     "\br": "\left[#1\right]",
     "\cb": "\left\{#1\right\}",
-    "\qand": "\quad\text{and}\quad"
+    "\qand": "\quad\text{and}\quad",
+    "\st": "\text{s.t.}"
 }
