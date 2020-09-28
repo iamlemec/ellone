@@ -204,11 +204,22 @@ function activate_next(cell) {
 function insert_cell(cell, edit, after) {
     // generate id and stitch into linked list
     var newid = max(get_ids(content.find(".cell"))) + 1;
-    var prev = cell.attr("cid");
-    var next = cell.attr("next");
-    var cnext = content.find(".cell[cid="+next+"]");
-    cnext.attr("prev", newid);
-    cell.attr("next", newid);
+    var prev;
+    var next;
+
+    if (after) {
+        prev = cell.attr("cid");
+        next = cell.attr("next");
+        var cnext = content.find(".cell[cid="+next+"]");
+        cnext.attr("prev", newid);
+        cell.attr("next", newid);
+    } else {
+        prev = cell.attr("prev");
+        next = cell.attr("cid");
+        var cprev = content.find(".cell[cid="+prev+"]");
+        cprev.attr("next", newid);
+        cell.attr("prev", newid);
+    }
 
     // generate html
     var outer = create_cell("", newid, prev, next);

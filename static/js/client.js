@@ -3,6 +3,7 @@ var client = (function() {
 var canary_freq = 5000;
 
 var opened = false;
+var path;
 var ws;
 
 // keep alive magic
@@ -24,7 +25,7 @@ function send_command(cmd, cont) {
 }
 
 // websockets
-function connect(path) {
+function connect() {
     if ("MozWebSocket" in window) {
         WebSocket = MozWebSocket;
     }
@@ -73,11 +74,12 @@ function disconnect() {
 }
 
 
-function init(targ, path, config) {
+function init(targ, path0, config) {
+    path = path0;
     var direc = path.replace(/[^\/]+$/, '');
     var links = "<a href=\"/\">Home</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"/" + direc + "\">Parent</a>";
     editor.init(targ, config, send_command, links);
-    connect(path);
+    connect();
 }
 
 return {
