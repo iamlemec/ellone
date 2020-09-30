@@ -29,7 +29,7 @@ Clicking on a cell, makes it the active cell. One can also move to the previous 
 
 Footnotes can be created with a caret and text in square brackets, as in `^[footnote text]`. Their text will be displayed in a hover over and they will be automatically numbered from 1. For example, this is a footnote ^[The proof is left as an exercise to the reader. 😄]. And here is another ^[And my $\sin(x^2)$ axe! Yes, you can put math in footnotes and even @[eq1] references.].
 
-You can make inline code blocks with ` ` `. Multiline code blocks, similar to multiline equations, can be created by starting and ending a cell with ` `` `, as in:
+You can make inline code blocks with ` ` `. Multiline code blocks, similar to multiline equations, can be created by starting a cell with ` `` `, as in:
 
 ``
 def fib(n):
@@ -66,13 +66,10 @@ This is a reference to @[cities].
 
 # Figures
 
-Here is a numbered figure
+As we've seen, figures and tables are (optionally) numbered environments with certain reference naming conventions. Here is a numbered figure, which can include any inline content
 
 @! [test_image] This is a non-image figure.
 Buncha **rando** content here!
-
-@| [test_table] This is an image table.
-![Ye Old Gamma Function](Jahnke_gamma_function.png)
 
 This is a reference to @[test_image].
 
@@ -84,9 +81,3 @@ Documents can be exported to a variety of formats:
 + HTML: an intermediate language that allows for portable viewing, although uses external javascript libraries
 + LaTeX: naturally we cannot capture all the richness of latex in this environment, but it's a start
 + PDF: auto-compiled version of the previous.
-
-This is a test $x^2$
-
-$$ [eq2] \int f(x) dx
-
-This is a reference @[eq2].
