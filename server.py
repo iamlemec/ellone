@@ -37,6 +37,7 @@ ap.add_argument('--port', type=int, default=0, help='port to serve on')
 ap.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
 ap.add_argument('--demo', type=str, default=None, help='run in demo mode with these docs')
 ap.add_argument('--auth', type=str, default=None, help='login information')
+ap.add_argument('--theme', type=str, default='dark', help='theme name to use')
 ap.add_argument('--macros', type=str, default=None, help='katex macros file')
 ap.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
 ap.add_argument('--browser', action='store_true', help='open browser to portal')
@@ -200,7 +201,7 @@ class PathHandler(tornado.web.RequestHandler):
         elif os.path.isfile(fpath):
             _, ext = os.path.splitext(fname)
             if ext in ('.md', '.rst', ''):
-                self.render('editor.html', path=path, fname=fname, macros=macros, local_libs=local_libs)
+                self.render('editor.html', path=path, fname=fname, theme=args.theme, macros=macros, local_libs=local_libs)
             else:
                 mime_type, encoding = mimetypes.guess_type(path)
                 if mime_type:

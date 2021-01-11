@@ -1,0 +1,34 @@
+:root {
+    --font-col: black;
+    --bg-col: white;
+}
+
+#elltwo, #bounds, #topbar {
+    color: black;
+    background-color: var(--bg-col);
+}
+
+#elltwo .cell {
+    border-left: 1px solid var(--bg-col);
+}
+
+#marquee {
+    color: var(--font-col);
+}
+
+#topbar {
+    border-bottom: 1px solid #CCC;
+}
+
+#topbar a, #topbar a:visited {
+    color: rgb(53, 122, 232);
+}
+
+#elltwo .cell textarea {
+    background-color: var(--bg-col);
+    color: var(--font-col);
+}
+
+#help > pre {
+    color: var(--font-col);
+}

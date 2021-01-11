@@ -1,0 +1,56 @@
+:root {
+    --bg-col: rgb(33, 33, 33);
+    --bg-hl-col: rgb(41, 41, 41);
+    --bg-hl2-col: rgb(51, 51, 51);
+    --bor-col: #6c71c4; /* border and link color */
+    --hl-col: #859900; /* highlight color */
+    --hl2-col: #dc322f ; /* highlight color */
+    --pop-fg-col: #002b36; /* popup text color */
+    --pop-bg-col: #93a1a1; /* popup background color */
+    --bg-font: 15px; /* popup background color */
+    --font-col: #e7f3fd;
+    --font-col-int: #b58900;
+    --dc-blue-col: rgb(33, 150, 243);
+}
+
+#elltwo, #bounds, #topbar {
+    color: var(--font-col);
+    background-color: var(--bg-col);
+    font-family: monospace;
+}
+
+#elltwo .cell {
+    border-left: 1px solid var(--bg-col);
+}
+
+#elltwo .cell textarea {
+    font-size: 18px;
+    line-height: 1.5;
+    padding: 0;
+    margin: 0;
+}
+
+.topbar-button {
+    padding-top: 4px;
+}
+
+#marquee {
+    color: var(--font-col);
+}
+
+#topbar {
+    border-bottom: 1px solid #666;
+}
+
+#topbar a, #topbar a:visited {
+    color: rgb(53, 122, 232);
+}
+
+#elltwo .cell textarea {
+    background-color: var(--bg-col);
+    color: var(--font-col);
+}
+
+#help > pre {
+    color: var(--font-col);
+}
