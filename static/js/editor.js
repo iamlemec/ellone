@@ -626,6 +626,13 @@ function connect_handlers() {
         } else {
             // nothing to do in document frozen mode
         }
+
+        // non-editing commands
+        if (keyCode == 13) { //return
+            if (event.ctrlKey) {
+                $('#topbar').slideToggle(200);
+            }
+        }
     });
 }
 
