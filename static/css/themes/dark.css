@@ -1,3 +1,5 @@
+@import url("../inconsolata.css");
+
 :root {
     --bg-col: rgb(33, 33, 33);
     --bg-hl-col: rgb(41, 41, 41);
@@ -16,7 +18,11 @@
 #elltwo, #bounds, #topbar {
     color: var(--font-col);
     background-color: var(--bg-col);
-    font-family: monospace;
+    font-family: 'Inconsolata';
+}
+
+#elltwo {
+    width: 750px;
 }
 
 #elltwo .cell {
@@ -24,7 +30,9 @@
 }
 
 #elltwo .cell textarea {
+    font-family: 'Inconsolata';
     font-size: 18px;
+    font-weight: 300;
     line-height: 1.5;
     padding: 0;
     margin: 0;
@@ -42,7 +50,7 @@
     border-bottom: 1px solid #666;
 }
 
-#topbar a, #topbar a:visited {
+#topbar a, #topbar a:visited, #elltwo a, #elltwo a:visited {
     color: rgb(53, 122, 232);
 }
 
