@@ -3,4 +3,4 @@
 SOURCE="${BASH_SOURCE[0]}"
 SOURCE="$(realpath "$SOURCE")"
 DIR="$(dirname "$SOURCE")"
-python3 "$DIR/server.py" $@
+python3 "$DIR/server.py" --macros "$DIR/macros.txt" $@

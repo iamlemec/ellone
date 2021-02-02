@@ -186,7 +186,7 @@ class AuthLogoutHandler(tornado.web.RequestHandler):
 class BrowseHandler(tornado.web.RequestHandler):
     @authenticated
     def get(self):
-        self.render('directory.html', relpath='', dirname='', pardir='', demo=is_demo)
+        self.render('directory.html', relpath='', dirname='', pardir='', theme=args.theme, demo=is_demo)
 
 class PathHandler(tornado.web.RequestHandler):
     @authenticated
@@ -197,7 +197,7 @@ class PathHandler(tornado.web.RequestHandler):
             print('Path out of bounds!')
             return
         if os.path.isdir(fpath):
-            self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, demo=is_demo)
+            self.render('directory.html', relpath=path, dirname=fname, pardir=pardir, theme=args.theme, demo=is_demo)
         elif os.path.isfile(fpath):
             _, ext = os.path.splitext(fname)
             if ext in ('.md', '.rst', ''):
