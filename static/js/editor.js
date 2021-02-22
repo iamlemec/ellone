@@ -498,6 +498,7 @@ function connect_handlers() {
         // console.log(event.keyCode);
 
         var keyCode = event.keyCode;
+        var ctrlKey = event.ctrlKey || event.metaKey;
         var docEdit = is_editing(bounds);
         var actEdit = (active != undefined) && is_editing(active);
 
@@ -540,8 +541,18 @@ function connect_handlers() {
                 } else {
                     select_cell(active, !event.shiftKey);
                 }
-            } else if (keyCode == 33) { // page up
-            } else if (keyCode == 34) { // page down
+            } else if (keyCode == 36) { // home
+                if (ctrlKey) {
+                    var first = content.children(".cell").first();
+                    activate_cell(first);
+                    select_cell(first, true);
+                }
+            } else if (keyCode == 35) { // end
+                if (ctrlKey) {
+                    var last = content.children(".cell").last();
+                    activate_cell(last);
+                    select_cell(last, true);
+                }
             } else if (keyCode == 87) { // w
                 if (!actEdit) {
                     unfreeze_cell(active);
@@ -613,8 +624,15 @@ function connect_handlers() {
                     paste_clipboard();
                 }
             } else if (keyCode == 83) { // s
-                if (event.ctrlKey || event.metaKey) {
+                if (ctrlKey) {
                     save_document();
+                    return false;
+                }
+            } else if (keyCode == 69) { // e
+                if (ctrlKey) {
+                    if (!bounds.hasClass("locked")) {
+                        bounds.toggleClass("editing");
+                    }
                     return false;
                 }
             } else if (keyCode == 80) { // p
@@ -629,7 +647,7 @@ function connect_handlers() {
 
         // non-editing commands
         if (keyCode == 13) { //return
-            if (event.ctrlKey) {
+            if (ctrlKey) {
                 $('#topbar').slideToggle(200);
             }
         }
