@@ -10,7 +10,7 @@
 
 #elltwo .cell {
     position: relative;
-    border-left: 1px solid #FFF;
+    border-left: 1px solid rgba(0,0,0,0);
     padding-left: 10px;
     padding-right: 10px;
     width: 100%;
@@ -19,8 +19,6 @@
 
 #elltwo .cell.editing {
     text-align: left;
-    font-family: monospace;
-    font-size: 15px;
     padding-top: 10px;
     padding-bottom: 10px;
 }
@@ -32,7 +30,6 @@
     overflow: hidden;
     width: 100%;
     color: black;
-    font-size: 17px;
     font-family: monospace;
 }
 

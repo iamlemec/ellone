@@ -27,21 +27,19 @@
     color: var(--font-col);
     background-color: var(--bg-col);
     font-family: 'Inconsolata';
+    font-size: 16px;
     font-weight: 400;
 }
 
 #elltwo {
-    width: 750px;
-}
-
-#elltwo .cell {
-    border-left: 1px solid var(--bg-col);
+    width: 650px;
 }
 
 #elltwo .cell textarea {
     font-family: 'Inconsolata';
-    font-size: 18px;
     font-weight: 400;
+    background-color: var(--bg-col);
+    color: var(--font-col);
     line-height: 1.5;
     padding: 0;
     margin: 0;
@@ -57,11 +55,6 @@
 
 #topbar a, #topbar a:visited, #elltwo a, #elltwo a:visited {
     color: rgb(53, 122, 232);
-}
-
-#elltwo .cell textarea {
-    background-color: var(--bg-col);
-    color: var(--font-col);
 }
 
 #help > pre {
