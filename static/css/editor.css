@@ -11,8 +11,6 @@
 #elltwo .cell {
     position: relative;
     border-left: 1px solid rgba(0,0,0,0);
-    padding-left: 10px;
-    padding-right: 10px;
     width: 100%;
     min-height: 47px;
 }

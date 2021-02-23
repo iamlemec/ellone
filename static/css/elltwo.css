@@ -25,6 +25,11 @@
     outline: 0;
 }
 
+#elltwo .cell {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
 /* links */
 
 #elltwo a:focus {
