@@ -20,23 +20,14 @@
 #topbar {
     color: var(--font-col);
     background-color: var(--bg-col);
-    font-family: 'Montserrat';
 }
 
 #elltwo, #bounds {
     color: var(--font-col);
     background-color: var(--bg-col);
-    font-family: 'Inconsolata';
-    font-size: 16px;
-    font-weight: 400;
-}
-
-#elltwo {
-    width: 650px;
 }
 
 #elltwo .cell textarea {
-    font-family: 'Inconsolata';
     font-weight: 400;
     background-color: var(--bg-col);
     color: var(--font-col);
