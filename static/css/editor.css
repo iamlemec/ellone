@@ -29,6 +29,7 @@
     width: 100%;
     color: black;
     font-family: Inconsolata;
+    font-size: 18px;
 }
 
 #bounds {
@@ -168,7 +169,8 @@
 }
 
 .equation .math-error .math-code {
-    font-family: monospace;
+    font-family: Inconsolata;
+    font-size: 18px;
     padding: 5px;
 }
 

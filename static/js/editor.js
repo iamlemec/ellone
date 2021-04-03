@@ -642,7 +642,14 @@ function connect_handlers() {
                 }
             }
         } else {
-            // nothing to do in document frozen mode
+            if (keyCode == 69) { // e
+                if (ctrlKey) {
+                    if (!bounds.hasClass("locked")) {
+                        bounds.toggleClass("editing");
+                    }
+                    return false;
+                }
+            }
         }
 
         // non-editing commands

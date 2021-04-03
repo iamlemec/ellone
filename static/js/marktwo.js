@@ -1039,7 +1039,7 @@ Renderer.prototype.equation = function(id, tex) {
   if (id != undefined) {
     out += ' id="' + id + '"';
   }
-  out += '>\n'
+  out += '>'
   out += tex
   out += '</div>\n\n';
   return out;

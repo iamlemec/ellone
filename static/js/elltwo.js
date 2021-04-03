@@ -163,7 +163,7 @@ function apply_render(box, defer) {
             katex.render(tex, div_inner[0], {displayMode: true, macros: config["macros"]});
         } catch (e) {
             var err_div = $("<div>", {class: "math-error"});
-            var err_code = $("<div>", {class: "math-code", text: src});
+            var err_code = $("<pre>", {class: "math-code", text: src});
             var err_msg = $("<div>", {class: "err-msg", text: e.message});
             err_div.append(err_code);
             err_div.append(err_msg);
