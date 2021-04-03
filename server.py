@@ -41,6 +41,7 @@ ap.add_argument('--theme', type=str, default='dark', help='theme name to use')
 ap.add_argument('--macros', type=str, default=None, help='katex macros file')
 ap.add_argument('--local-libs', action='store_true', help='use local libraries instead of CDN')
 ap.add_argument('--browser', action='store_true', help='open browser to portal')
+ap.add_argument('--debug', action='store_true', help='enable tornado debug logging')
 args = ap.parse_args()
 
 # others
@@ -547,6 +548,18 @@ class Application(tornado.web.Application):
 
 if args.browser:
     webbrowser.open(f'http://{args.ip}:{port}/{basefile}')
+
+# enable debug logging
+if args.debug:
+    import logging
+    import tornado.log
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter(
+        fmt='[%(levelname)1.1s %(asctime)s.%(msecs)d %(module)s:%(lineno)d] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    ))
+    tornado.log.access_log.setLevel(logging.DEBUG)
+    tornado.log.access_log.addHandler(console_handler)
 
 # create server
 application = Application()
