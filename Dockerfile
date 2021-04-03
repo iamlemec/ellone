@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.7.0-alpine
+FROM python:3.9-alpine
 
 # Set the working directory
 WORKDIR /opt/elltwo
@@ -25,4 +25,4 @@ COPY static /opt/elltwo/static
 COPY templates /opt/elltwo/templates
 
 # Run app.py when the container launches
-CMD ["python", "-u", "server.py", "--demo=content", "--path=/data", "--ip=0.0.0.0", "--port=80", "--macros=macros.txt"]
+CMD ["python", "-u", "server.py", "--demo=content", "--path=/data", "--ip=0.0.0.0", "--port=80", "--macros=macros.txt", "--debug"]
