@@ -8,7 +8,7 @@
     "\der": "\frac{d#1}{d#2}",
     "\pder": "\frac{\partial #1}{\partial #2}",
     "\eder": "\frac{\varepsilon #1}{\varepsilon #2}",
-    "\E": "\mathbb{E}\br{#1}",
+    "\E": "\mathbb{E}",
     "\gr": "\frac{\dot{#1}}{#1}",
     "\Ra": "\Rightarrow",
     "\ra": "\rightarrow",
@@ -20,5 +20,7 @@
     "\br": "\left[#1\right]",
     "\cb": "\left\{#1\right\}",
     "\qand": "\quad\text{and}\quad",
-    "\st": "\text{s.t.}"
+    "\st": "\text{s.t.}",
+    "\epr": "\exp\left(#1\right)",
+    "\lpr": "\log\left(#1\right)"
 }
