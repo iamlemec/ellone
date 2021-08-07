@@ -5,7 +5,7 @@ Dockerfile
 screenlog.0
 __pycache__
 auth
-elltwo
+ellone
 demo
 temp/*
 testing

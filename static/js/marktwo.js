@@ -1714,11 +1714,11 @@ mdplus: `<!doctype html>
 
 <head>
 
-<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="http://doughanley.com/ellone/static/css/ellone.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.css">
 
 <style>
-#elltwo {
+#ellone {
     width: 700px;
 }
 </style>
@@ -1727,7 +1727,7 @@ mdplus: `<!doctype html>
 
 <body>
 
-<div id="elltwo">
+<div id="ellone">
 
 `,
 html: `<!doctype html>
@@ -1735,11 +1735,11 @@ html: `<!doctype html>
 
 <head>
 
-<link rel="stylesheet" href="http://doughanley.com/elltwo/static/css/elltwo.css">
+<link rel="stylesheet" href="http://doughanley.com/ellone/static/css/ellone.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.css">
 
 <style>
-#elltwo {
+#ellone {
     width: 700px;
 }
 </style>
@@ -1748,7 +1748,7 @@ html: `<!doctype html>
 
 <body>
 
-<div id="elltwo">
+<div id="ellone">
 
 `
 };
@@ -1760,11 +1760,11 @@ mdplus: `
 
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/ellone/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/ellone/static/js/ellone.js"></script>
 
 <script type="text/javascript">
-elltwo.init('#elltwo', {
+ellone.init('#ellone', {
     markdown: true
 });
 </script>
@@ -1778,11 +1778,11 @@ html: `
 
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0/katex.min.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/marktwo.js"></script>
-<script type="text/javascript" src="http://doughanley.com/elltwo/static/js/elltwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/ellone/static/js/marktwo.js"></script>
+<script type="text/javascript" src="http://doughanley.com/ellone/static/js/ellone.js"></script>
 
 <script type="text/javascript">
-elltwo.init('#elltwo');
+ellone.init('#ellone');
 </script>
 
 </body>

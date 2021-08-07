@@ -1,27 +1,27 @@
 /* cell related rules */
 
-#elltwo .cell.editing {
+#ellone .cell.editing {
     border-right: 1px solid rgb(53, 122, 232) !important;
 }
 
-#elltwo .cell.modified {
+#ellone .cell.modified {
     border-right: 1px solid red !important;
 }
 
-#elltwo .cell {
+#ellone .cell {
     position: relative;
     border-left: 1px solid rgba(0,0,0,0);
     width: 100%;
     min-height: 47px;
 }
 
-#elltwo .cell.editing {
+#ellone .cell.editing {
     text-align: left;
     padding-top: 10px;
     padding-bottom: 10px;
 }
 
-#elltwo .cell textarea {
+#ellone .cell textarea {
     border: 0;
     outline: 0;
     resize: none;
@@ -45,7 +45,7 @@
     border-left: 1px solid #DDD;
 }
 
-#elltwo .cell.editing .sec-title:before {
+#ellone .cell.editing .sec-title:before {
     content: "";
 }
 
@@ -154,7 +154,7 @@
 /* dark theme */
 
 /*
-#elltwo {
+#ellone {
     background-color: #070908;
     color: #E7F3FD;
 }
@@ -180,11 +180,11 @@
     padding: 5px;
 }
 
-#elltwo a.card {
+#ellone a.card {
     color: red;
 }
 
-#elltwo {
+#ellone {
     box-sizing: border-box;
     padding-bottom: 150px;
 }
@@ -196,7 +196,7 @@
     position: relative;
 }
 
-#elltwo::-webkit-scrollbar {
+#ellone::-webkit-scrollbar {
     /*display: none;*/
 }
 

@@ -1,4 +1,4 @@
-// Elltwo editor
+// Ellone editor
 
 var body = $('body');
 

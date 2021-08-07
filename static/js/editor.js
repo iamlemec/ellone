@@ -1,5 +1,5 @@
 /*
-*  Elltwo editor
+*  Ellone editor
 */
 
 // begin module
@@ -282,7 +282,7 @@ function delete_cell(cell, defer) {
 
     // update globals
     if (!defer) {
-        elltwo.full_update();
+        ellone.full_update();
     }
 
     // inform server
@@ -331,7 +331,7 @@ function delete_selection() {
     });
 
     // update references
-    elltwo.full_update();
+    ellone.full_update();
 
     // choose active
     activate_cell(succ);
@@ -365,8 +365,8 @@ function render_cell(outer, defer) {
     outer.empty();
     outer.append(box);
 
-    // elltwo render
-    elltwo.apply_render(box, defer);
+    // ellone render
+    ellone.apply_render(box, defer);
 
     // post-render
     box.find("a.internal").each(function() {
@@ -445,31 +445,31 @@ function connect_handlers() {
     });
 
     bounds.find("#topbar-markdown").click(function() {
-        var md = elltwo.generate_export('md');
+        var md = ellone.generate_export('md');
         send_command("export", {"format": "md", "data": md});
         toggle_expo();
     });
 
     bounds.find("#topbar-mdplus").click(function() {
-        var mdplus = elltwo.generate_export('mdplus');
+        var mdplus = ellone.generate_export('mdplus');
         send_command("export", {"format": "mdplus", "data": mdplus});
         toggle_expo();
     });
 
     bounds.find("#topbar-html").click(function() {
-        var html = elltwo.generate_export('html');
+        var html = ellone.generate_export('html');
         send_command("export", {"format": "html", "data": html});
         toggle_expo();
     });
 
     bounds.find("#topbar-latex").click(function() {
-        var latex = elltwo.generate_export('latex');
+        var latex = ellone.generate_export('latex');
         send_command("export", {"format": "latex", "data": latex["out"]});
         toggle_expo();
     });
 
     bounds.find("#topbar-pdf").click(function() {
-        var latex = elltwo.generate_export('latex');
+        var latex = ellone.generate_export('latex');
         send_command("export", {"format": "pdf", "data": latex["out"], "deps": latex["deps"]});
         toggle_expo();
     });
@@ -709,7 +709,7 @@ function scaffold(targ, links) {
     topbar.append(topbar_slide);
 
     // content box
-    content = $("<div/>", {id: "elltwo"});
+    content = $("<div/>", {id: "ellone"});
 
     // all together
     bounds = $("<div/>", {id: "bounds", tabindex: 0});
@@ -730,7 +730,7 @@ function recv_command(cmd, cont) {
             content.append(outer);
             render_cell(outer, true);
         }
-        elltwo.full_update();
+        ellone.full_update();
         var first = content.children(".cell").first();
         activate_cell(first);
         select_cell(first, true);
@@ -768,9 +768,9 @@ function init(targ, config, callback, links) {
     scaffold(targ, links);
     connect_handlers();
 
-    // initialize elltwo manually
-    elltwo.update_config(config);
-    elltwo.set_content(content);
+    // initialize ellone manually
+    ellone.update_config(config);
+    ellone.set_content(content);
 
     // focus editor
     bounds.focus();

@@ -31,7 +31,7 @@ def get_open_port():
     return port
 
 # parse input arguments
-ap = argparse.ArgumentParser(description='Elltwo Server.')
+ap = argparse.ArgumentParser(description='Ellone Server.')
 ap.add_argument('--path', type=str, default='.', help='path for markdown files')
 ap.add_argument('--port', type=int, default=0, help='port to serve on')
 ap.add_argument('--ip', type=str, default='127.0.0.1', help='ip address to listen on')
@@ -538,7 +538,7 @@ class Application(tornado.web.Application):
             ]
 
         settings = dict(
-            app_name='Elltwo Editor',
+            app_name='Ellone Editor',
             template_path=template_dir,
             static_path=static_dir,
             cookie_secret=cookie_secret

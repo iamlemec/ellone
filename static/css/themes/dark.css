@@ -22,12 +22,12 @@
     background-color: var(--bg-col);
 }
 
-#elltwo, #bounds {
+#ellone, #bounds {
     color: var(--font-col);
     background-color: var(--bg-col);
 }
 
-#elltwo .cell textarea {
+#ellone .cell textarea {
     font-weight: 400;
     background-color: var(--bg-col);
     color: var(--font-col);
@@ -44,7 +44,7 @@
     border-bottom: 1px solid #3A3A3A;
 }
 
-#topbar a, #topbar a:visited, #elltwo a, #elltwo a:visited {
+#topbar a, #topbar a:visited, #ellone a, #ellone a:visited {
     color: rgb(53, 122, 232);
 }
 
@@ -52,23 +52,23 @@
     color: var(--font-col);
 }
 
-#elltwo :not(pre) > code {
+#ellone :not(pre) > code {
     background-color: var(--bg-hl3-col);
 }
 
-#elltwo pre {
+#ellone pre {
     background-color: var(--bg-hl3-col);
 }
 
-#elltwo table > thead > tr > th {
+#ellone table > thead > tr > th {
     border-bottom: 2px solid #E0E0E0;
 }
 
-#elltwo .equation .math-error {
+#ellone .equation .math-error {
     border: 2px solid #a94442;
 }
 
-#elltwo .equation .math-error .err-msg {
+#ellone .equation .math-error .err-msg {
     color: #f2dede;
     background-color: #a94442;
 }

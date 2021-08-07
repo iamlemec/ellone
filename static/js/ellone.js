@@ -1,8 +1,8 @@
 /*
- * Elltwo Module
+ * Ellone Module
  */
 
-var elltwo = (function() {
+var ellone = (function() {
 
 // find outer box
 var content;
